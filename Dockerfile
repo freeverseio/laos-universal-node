@@ -16,7 +16,7 @@ COPY ./go .
 
 RUN go mod download
 # Build the Go program
-RUN CGO_ENABLED=1 go build -race -installsuffix 'static' -o app .
+RUN CGO_ENABLED=1 go build -race -installsuffix 'static' -o universalnode .
 
 # Final stage: the running container.
 FROM alpine AS final
@@ -25,8 +25,6 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder  /app /app
 
-# Run the Go program when the container starts
-CMD ["./app"]
-
+ENTRYPOINT ["./universalnode"]
 # Perform any further action as an unprivileged user.
 USER nobody:nobody
