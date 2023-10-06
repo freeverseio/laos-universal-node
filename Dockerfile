@@ -1,5 +1,5 @@
 # Use an official Go runtime as a parent image
-FROM golang:1.20-alpine AS builder
+FROM golang:1.21-alpine AS builder
 RUN apk add --no-cache ca-certificates git alpine-sdk linux-headers
 
 # Create the user and group files that will be used in the running 
