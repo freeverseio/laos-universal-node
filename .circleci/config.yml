@@ -64,7 +64,7 @@ jobs:
           name: Lint Helm charts for development environment
           command: |
             cd deployment/
-            TAG=$CIRCLE_SHA1 helmfile lint --environment development 
+            TAG=$CIRCLE_SHA1 helmfile lint
   deploy_to_development:
     docker:
       - image: cimg/deploy:2022.11
@@ -82,7 +82,7 @@ jobs:
           name: Deploy to development environment
           command: |
             cd deployment/
-            TAG=$CIRCLE_SHA1 helmfile --environment development sync
+            TAG=$CIRCLE_SHA1 helmfile sync
 
 workflows:
   build_and_test:
