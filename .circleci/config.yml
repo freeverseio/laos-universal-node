@@ -101,7 +101,7 @@ workflows:
           name: dockerize_universalnode
           context: dockerhub
           image: laos-universal-node
-          root: /.
+          root: .
           filters:
             tags:
               only: /.*/
