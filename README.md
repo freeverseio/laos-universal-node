@@ -4,11 +4,11 @@ For a comprehensive understanding of the LAOS system, please refer to the [LAOS 
 
 The LAOS Universal Node is a decentralized node built using Go, focusing primarily on the remote minting and evolution of NFTs (Non-Fungible Tokens).
 
-It allows users to mint assets on any EVM-Compatible Chain without incurring gas fees on those chains.
+It allows users to mint assets on any EVM-Compatible Chain without paying gas fees on those chains.
 
 ## Run your own Node
 
-You can start and sync the evolution node locally with the following command:
+You can start and sync the universal node locally with the following command:
 ```
 $ docker run freeverseio/laos-universal-node:<release> -p 5001:5001
 ```
