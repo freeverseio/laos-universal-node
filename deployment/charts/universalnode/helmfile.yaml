@@ -1,0 +1,10 @@
+releases:
+    - name: universalnode-release
+      namespace: laos-bigbang
+      installed: true
+      createNamespace: false
+      chart: .
+      values:
+        - name: {{ .Values.name }}
+        - imageTag: {{ requiredEnv "TAG" }}
+        - debug: {{ .Values.debug }}

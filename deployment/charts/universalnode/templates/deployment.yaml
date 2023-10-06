@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app.kubernetes.io/app: {{ .Values.name }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: universalnode
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: universalnode
+    spec:
+      containers:
+      - name: universalnode
+        image: freeverseio/laos-universal-node:{{ .Values.imageTag }}
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 5001
+            name: rpc
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "4096Mi"
+            cpu: "4"
+        command: [ ./universalnode ]
+        args: []
