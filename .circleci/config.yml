@@ -17,13 +17,13 @@ commands:
       - run:
           name: Build and push Docker image
           command: |
-            ./scripts/ci/dockerize-and-push.sh freeverseio/<< parameters.image >> << parameters.root >>
+            ./scripts/dockerize-and-push.sh freeverseio/<< parameters.image >> << parameters.root >>
   install_helmfile:
     description: Install helmfile
     steps:
       - run:
           name: Install helmfile
-          command: ./scripts/ci/install-helmfile.sh
+          command: ./scripts/install-helmfile.sh
 
 jobs:
   go_test:
