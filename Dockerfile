@@ -1,32 +1,18 @@
-# Use an official Go runtime as a parent image
-FROM golang:1.21-alpine AS builder
-RUN apk add --no-cache ca-certificates git alpine-sdk linux-headers
+FROM golang:1.21-alpine3.18 AS builder
+# Add C compiler to build the executable with race detection enabled
+RUN apk add --no-cache build-base=~0.5
 
-# Create the user and group files that will be used in the running 
-# container to run the process as an unprivileged user.
-RUN mkdir /user && \
-    echo 'nobody:x:65534:65534:nobody:/:' > /user/passwd && \
-    echo 'nobody:x:65534:' > /user/group
+RUN addgroup -g 1000 nodegroup && \
+    adduser -D nodeuser -u 1000 -G nodegroup
 
-# Set the working directory to /app
 WORKDIR /app
-
-# Copy the current directory contents into the container at /app
 COPY ./go .
+RUN go build -race -o app .
 
-RUN go mod download
-# Build the Go program
-RUN CGO_ENABLED=1 go build -race -installsuffix 'static' -o app .
+FROM alpine:3.18.4 AS final
 
-# Final stage: the running container.
-FROM alpine AS final
-RUN apk --no-cache add ca-certificates
-# Set the working directory to /app
 WORKDIR /app
-COPY --from=builder  /app /app
+COPY --from=builder /app /app
 
-# Run the Go program when the container starts
 CMD ["./app"]
-
-# Perform any further action as an unprivileged user.
 USER nobody:nobody
