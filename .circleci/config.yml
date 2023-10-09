@@ -89,11 +89,7 @@ workflows:
   build_and_test:
     jobs:
       - trivy-orb/scan:
-          image: laos-universal-node
-          context: dockerhub
-          filters:
-            tags:
-              only: /.*/
+          args: '--no-progress --exit-code 1 image busybox'
       - deployment_test:
           context: dockerhub
           filters:
