@@ -1,6 +1,6 @@
 releases:
     - name: universalnode-release
-      namespace: laos-bigbang
+      namespace: {{ .Values.namespace }}
       installed: true
       createNamespace: false
       chart: .

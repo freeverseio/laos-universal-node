@@ -11,5 +11,6 @@ releases:
     chart: ./charts/universalnode
     values:
       - name: universalnode
+      - namespace : laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
       - debug: true

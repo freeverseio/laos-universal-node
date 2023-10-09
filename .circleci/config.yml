@@ -119,7 +119,7 @@ workflows:
           filters:
             branches:
               only:
-                - main
+                - *
           requires:
             - go_test
             - deployment_test
