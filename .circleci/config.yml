@@ -51,6 +51,15 @@ jobs:
       - build_and_push:
           image: << parameters.image >>
           root: << parameters.root >>
+  lint:
+    docker:
+      - image: golangci/golangci-lint:v1.54.2
+    steps:
+      - checkout
+      - run:
+          name: Run golangci-lint
+          command: |
+            cd go && golangci-lint run
   deployment_test:
     docker:
       - image: cimg/base:2022.12
@@ -87,6 +96,7 @@ jobs:
 workflows:
   build_and_test:
     jobs:
+      - lint
       - deployment_test:
           context: dockerhub
           filters:
