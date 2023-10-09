@@ -9,8 +9,9 @@ releases:
   - name: universalnode
     namespace: laos-bigbang
     chart: ./charts/universalnode
+    createNamespace: false
     values:
       - name: universalnode
-      - namespace : laos-bigbang
+      - namespace: laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
       - debug: true
