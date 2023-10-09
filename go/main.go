@@ -6,45 +6,64 @@ import (
 	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"time"
 )
 
 // System is a type that will be exported as an RPC service.
 type System int
 
-type Args struct {
-}
+type args struct{}
 
 // SystemResponse holds the result of the Multiply method.
 type SystemResponse struct {
 	Up int
 }
 
-// System.Up is a method that will be exposed as an RPC method.
-func (a *System) Up(args *Args, reply *SystemResponse) error {
+// Up increments the Up field of the SystemResponse struct by 1.
+// trunk-ignore(golangci-lint/unparam)
+func (a *System) Up(_ *args, reply *SystemResponse) error {
 	reply.Up = 1
 	return nil
 }
 
 func main() {
 	s := new(System)
-	rpc.Register(s)
+	err := rpc.Register(s)
+	if err != nil {
+		fmt.Println("Error while registering RPC service", err)
+		return
+	}
 
 	// Create an HTTP handler for RPC
 	handler := http.NewServeMux()
 	handler.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
 		serverCodec := jsonrpc.NewServerCodec(&httpReadWriteCloser{r.Body, w})
 		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(200)
-		err := rpc.ServeRequest(serverCodec)
-		if err != nil {
-			fmt.Println("Error while serving JSON request", err)
+		w.WriteHeader(http.StatusOK)
+		rpcErr := rpc.ServeRequest(serverCodec)
+		if rpcErr != nil {
+			fmt.Println("Error while serving JSON request", rpcErr)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	})
 
+	// Create an HTTP server with timeouts
+	server := &http.Server{
+		Addr:         ":5001",
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	// Start the HTTP server
 	fmt.Println("Starting server on port 5001...")
-	http.ListenAndServe(":5001", handler)
+	servErr := server.ListenAndServe()
+	if servErr != nil {
+		fmt.Println("Error while starting server", servErr)
+		return
+	}
 }
 
 type httpReadWriteCloser struct {
