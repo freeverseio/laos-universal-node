@@ -10,10 +10,10 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/ERC721"
 )
 
@@ -28,6 +28,23 @@ var (
 	eventApprovalSigHash       = crypto.Keccak256Hash(eventApprovalSig).Hex()
 	eventApprovalForAllSigHash = crypto.Keccak256Hash(eventApprovalForAllSig).Hex()
 )
+
+// EthClient is an interface for interacting with Ethereum.
+// https://github.com/ethereum/go-ethereum/pull/23884
+type EthClient interface {
+	ethereum.ChainReader
+	ethereum.TransactionReader
+	ethereum.ChainSyncReader
+	ethereum.ContractCaller
+	ethereum.LogFilterer
+	ethereum.TransactionSender
+	ethereum.GasPricer
+	ethereum.PendingContractCaller
+	ethereum.GasEstimator
+	bind.ContractBackend
+	ChainID(ctx context.Context) (*big.Int, error)
+	Close()
+}
 
 type EventTransfer struct {
 	From    common.Address
@@ -47,7 +64,7 @@ type EventApprovalForAll struct {
 	Approved bool
 }
 
-func ScanEvents(cli *ethclient.Client, contract common.Address, fromBlock *big.Int, toBlock *big.Int) []interface{} {
+func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) []interface{} {
 	events, err := filterEvents(fromBlock, toBlock, contract, cli)
 	if err != nil {
 		slog.Error("error filtering events", "msg", err.Error())
@@ -108,7 +125,7 @@ func ScanEvents(cli *ethclient.Client, contract common.Address, fromBlock *big.I
 	return parsedEvents
 }
 
-func filterEvents(firstBlock, lastBlock *big.Int, address common.Address, cli *ethclient.Client) ([]types.Log, error) {
+func filterEvents(firstBlock, lastBlock *big.Int, address common.Address, cli EthClient) ([]types.Log, error) {
 	return cli.FilterLogs(context.Background(), ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
