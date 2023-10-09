@@ -34,10 +34,11 @@ func main() {
 	handler.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
 		serverCodec := jsonrpc.NewServerCodec(&httpReadWriteCloser{r.Body, w})
 		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		err := rpc.ServeRequest(serverCodec)
 		if err != nil {
 			fmt.Println("Error while serving JSON request", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	})
