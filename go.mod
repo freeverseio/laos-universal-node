@@ -2,7 +2,10 @@ module github.com/freeverseio/laos-universal-node
 
 go 1.21.2
 
-require github.com/ethereum/go-ethereum v1.12.2
+require (
+	github.com/ethereum/go-ethereum v1.12.2
+	go.uber.org/mock v0.3.0
+)
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect

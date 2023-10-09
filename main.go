@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"math/big"
 	"os"
