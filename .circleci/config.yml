@@ -67,7 +67,7 @@ jobs:
             cd deployment/
             TAG=$CIRCLE_SHA1 helmfile lint
       - trivy-orb/scan:
-          args: '--no-progress --exit-code 1 image .'
+          args: '--no-progress --exit-code 1 image laos-universal-node'
   deploy_to_development:
     docker:
       - image: cimg/deploy:2022.11
