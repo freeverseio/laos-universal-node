@@ -119,4 +119,3 @@ workflows:
           requires:
             - go_test
             - deployment_test
-s
