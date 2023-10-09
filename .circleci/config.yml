@@ -57,8 +57,6 @@ jobs:
       - image: cimg/base:2022.12
     steps:
       - checkout
-      - trivy-orb/scan:
-          args: '--no-progress --exit-code 1 image laos-universal-node'
       - helm/install-helm-client:
           version: v3.11.0
           stable-repo-url: https://charts.helm.sh/stable
@@ -68,6 +66,8 @@ jobs:
           command: |
             cd deployment/
             TAG=$CIRCLE_SHA1 helmfile lint
+      - trivy-orb/scan:
+          args: '--no-progress --exit-code 1 image .'
   deploy_to_development:
     docker:
       - image: cimg/deploy:2022.11
