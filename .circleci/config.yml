@@ -116,10 +116,7 @@ workflows:
             tags:
               only: /.*/
       - deploy_to_development:
-          filters:
-            branches:
-              only:
-                - *
           requires:
             - go_test
             - deployment_test
+s
