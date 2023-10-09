@@ -12,7 +12,7 @@ import (
 // System is a type that will be exported as an RPC service.
 type System int
 
-type args struct{}
+type Args struct{}
 
 // SystemResponse holds the result of the Multiply method.
 type SystemResponse struct {
@@ -21,7 +21,7 @@ type SystemResponse struct {
 
 // Up increments the Up field of the SystemResponse struct by 1.
 // trunk-ignore(golangci-lint/unparam)
-func (a *System) Up(_ *args, reply *SystemResponse) error {
+func (a *System) Up(_ *Args, reply *SystemResponse) error {
 	reply.Up = 1
 	return nil
 }
