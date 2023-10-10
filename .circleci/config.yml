@@ -35,7 +35,7 @@ jobs:
       - run:
           name: Run go tests
           command: |
-            cd go && go test -count=1 -tags=integration -race ./...
+            cd go && go test -race ./...
   dockerize:
     docker:
       - image: cimg/base:2022.12
