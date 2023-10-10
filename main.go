@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	// TODO move flags to config?
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	// 0xBC4... is the Bored Ape ERC721 Ethereum contract
 	contractAddress := flag.String("contract", "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", "Web3 address of the smart contract")
@@ -29,6 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO make logger available to all the application as a singleton
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
