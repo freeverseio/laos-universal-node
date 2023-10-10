@@ -45,9 +45,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		event := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("error occured when scanning events %v", err.Error())
+		}
 
-		_, ok := event[0].(scanner.EventTransfer)
+		_, ok := events[0].(scanner.EventTransfer)
 		if !ok {
 			t.Fatal("error parsing event to EventApproval type")
 		}
@@ -68,6 +71,7 @@ func TestScanEvents(t *testing.T) {
 					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
+				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
 			},
 		}
 
@@ -77,9 +81,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		event := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("error occured when scanning events %v", err.Error())
+		}
 
-		_, ok := event[0].(scanner.EventApproval)
+		_, ok := events[0].(scanner.EventApproval)
 		if !ok {
 			t.Fatal("error parsing event to EventApproval type")
 		}
@@ -95,10 +102,11 @@ func TestScanEvents(t *testing.T) {
 		eventLogs := []types.Log{
 			types.Log{
 				Topics: []common.Hash{
-					common.HexToHash("0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"),
+					common.HexToHash(approveForAllEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
 				},
+				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
 			},
 		}
 
@@ -108,8 +116,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		event := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
-		_, ok := event[0].(scanner.EventApprovalForAll)
+		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("error occured when scanning events %v", err.Error())
+		}
+
+		_, ok := events[0].(scanner.EventApprovalForAll)
 		if !ok {
 			t.Fatal("error parsing event to EventApprovalForAll type")
 		}
@@ -130,6 +142,7 @@ func TestScanEvents(t *testing.T) {
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
 				},
+				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
 			},
 			types.Log{
 				Topics: []common.Hash{
@@ -138,6 +151,7 @@ func TestScanEvents(t *testing.T) {
 					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
+				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
 			},
 			types.Log{
 				Topics: []common.Hash{
@@ -172,7 +186,11 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("error occured when scanning events %v", err.Error())
+		}
+
 		if len(events) != 4 {
 			t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
 		}
