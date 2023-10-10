@@ -29,7 +29,7 @@ func TestScanEvents(t *testing.T) {
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
 		eventLogs := []types.Log{
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(transferEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
@@ -64,14 +64,14 @@ func TestScanEvents(t *testing.T) {
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
 		eventLogs := []types.Log{
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(approveEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
-				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
+				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 			},
 		}
 
@@ -100,13 +100,13 @@ func TestScanEvents(t *testing.T) {
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
 		eventLogs := []types.Log{
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(approveForAllEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
 				},
-				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
+				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 			},
 		}
 
@@ -136,24 +136,24 @@ func TestScanEvents(t *testing.T) {
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
 		eventLogs := []types.Log{
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(approveForAllEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
 				},
-				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
+				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 			},
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(approveEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
-				Data: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
+				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 			},
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(transferEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
@@ -161,7 +161,7 @@ func TestScanEvents(t *testing.T) {
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
 			},
-			types.Log{
+			{
 				Topics: []common.Hash{
 					common.HexToHash(transferEventHash),
 					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
@@ -169,7 +169,7 @@ func TestScanEvents(t *testing.T) {
 					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 				},
 			},
-			types.Log{
+			{
 				Topics: []common.Hash{
 					// Event hash is not included in the list of events to be parsed
 					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
