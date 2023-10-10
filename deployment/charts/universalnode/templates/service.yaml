@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}-rpc
+  labels:
+    app.kubernetes.io/app: {{ .Values.name }}
+spec:
+  selector:
+    app.kubernetes.io/app: {{ .Values.name }}
+  ports:
+  - name: rpc
+    port: 5001
+    targetPort: rpc
