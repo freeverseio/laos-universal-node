@@ -20,7 +20,6 @@ type SystemResponse struct {
 }
 
 // Up increments the Up field of the SystemResponse struct by 1.
-// trunk-ignore(golangci-lint/unparam)
 func (a *System) Up(_ *Args, reply *SystemResponse) error {
 	reply.Up = 1
 	return nil
