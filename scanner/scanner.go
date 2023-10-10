@@ -86,6 +86,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 				slog.Error("error unpacking the event", "event", eventTransferName, "msg", err)
 				return nil, err
 			}
+			// TODO check e.Topics length?
 			transfer.From = common.HexToAddress(e.Topics[1].Hex())
 			transfer.To = common.HexToAddress(e.Topics[2].Hex())
 			transfer.TokenId = e.Topics[3].Big()
