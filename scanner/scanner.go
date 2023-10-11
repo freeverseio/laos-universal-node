@@ -45,6 +45,8 @@ type EthClient interface {
 	Close()
 }
 
+type Event interface{}
+
 type EventTransfer struct {
 	From    common.Address
 	To      common.Address
@@ -63,7 +65,7 @@ type EventApprovalForAll struct {
 	Approved bool
 }
 
-func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) ([]interface{}, error) {
+func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) ([]Event, error) {
 	events, err := filterEvents(fromBlock, toBlock, contract, cli)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
@@ -73,7 +75,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
-	var parsedEvents []interface{}
+	var parsedEvents []Event
 	for _, e := range events {
 		slog.Info("scanning event", "block", e.BlockNumber, "txHash", e.TxHash)
 		switch e.Topics[0].Hex() {
