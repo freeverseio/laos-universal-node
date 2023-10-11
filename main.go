@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	Version = "undefined"
+	version = "undefined"
 )
 
 func main() {
@@ -89,7 +89,7 @@ func setLogger() {
 		Level:     slog.LevelDebug,
 		AddSource: true,
 	}).WithAttrs([]slog.Attr{
-		slog.String("version", Version),
+		slog.String("version", version),
 	}))
 	slog.SetDefault(logger)
 }
