@@ -41,7 +41,7 @@ func main() {
 
 	contract := common.HexToAddress(*contractAddress)
 	if *startingBlock == 0 {
-		*startingBlock, err = getL1LatestBlock(cli, ctx)
+		*startingBlock, err = getL1LatestBlock(ctx, cli)
 		if err != nil {
 			slog.Error("error retrieving the latest block", "err", err.Error())
 			os.Exit(1)
@@ -52,7 +52,7 @@ func main() {
 		case <-ctx.Done():
 			return
 		default:
-			l1LatestBlock, err := getL1LatestBlock(cli, ctx)
+			l1LatestBlock, err := getL1LatestBlock(ctx, cli)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
@@ -72,7 +72,7 @@ func main() {
 	}
 }
 
-func getL1LatestBlock(cli *ethclient.Client, ctx context.Context) (uint64, error) {
+func getL1LatestBlock(ctx context.Context, cli *ethclient.Client) (uint64, error) {
 	lastBlock, err := cli.BlockNumber(ctx)
 	if err != nil {
 		return 0, err
