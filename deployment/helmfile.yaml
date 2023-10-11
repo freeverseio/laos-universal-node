@@ -14,4 +14,3 @@ releases:
       - name: universalnode
       - namespace: laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
-      - debug: true

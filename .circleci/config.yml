@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   kube-orb: circleci/kubernetes@1.3.1
-  helm: circleci/helm@2.0.1
+  helm: circleci/helm@3.0.0
 
 
 commands:
@@ -29,7 +29,6 @@ jobs:
   go_test:
     docker:
       - image: cimg/go:1.21
-      - image: ipfs/kubo:v0.18.1
     steps:
       - checkout
       - run:
@@ -38,7 +37,7 @@ jobs:
             cd go && go test -race ./...
   dockerize:
     docker:
-      - image: cimg/base:2022.12
+      - image: cimg/base:2023.09
     parameters:
       image:
         type: string
@@ -60,13 +59,14 @@ jobs:
           name: Run golangci-lint
           command: |
             cd go && golangci-lint run
-  deployment_test:
+  deployment_lint:
     docker:
-      - image: cimg/base:2022.12
+      - image: cimg/base:2023.09
     steps:
       - checkout
       - helm/install-helm-client:
-          version: v3.11.0
+            - helm/install-helm-client:
+              version: v3.11.0
           stable-repo-url: https://charts.helm.sh/stable
       - install_helmfile
       - run:
@@ -76,7 +76,7 @@ jobs:
             TAG=$CIRCLE_SHA1 helmfile lint
   deploy_to_development:
     docker:
-      - image: cimg/deploy:2022.11
+      - image: cimg/deploy:2023.09
     steps:
       - checkout
       - kube-orb/install-kubectl:
@@ -124,3 +124,4 @@ workflows:
             - lint
             - go_test
             - deployment_test
+            - dockerize_universalnode

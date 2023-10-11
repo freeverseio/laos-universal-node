@@ -7,4 +7,3 @@ releases:
       values:
         - name: {{ .Values.name }}
         - imageTag: {{ requiredEnv "TAG" }}
-        - debug: {{ .Values.debug }}

@@ -12,7 +12,7 @@ RUN go build -race -o universalnode .
 FROM alpine:3.18.4 AS final
 
 WORKDIR /app
-COPY --from=builder /app /app
+COPY --from=builder /app/universalnode .
 
 ENTRYPOINT ["./universalnode"]
 USER nobody:nobody

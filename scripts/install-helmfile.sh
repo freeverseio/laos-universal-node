@@ -7,7 +7,7 @@ set -e
 helm plugin install https://github.com/databus23/helm-diff --version v3.6.0
 
 # Set URL for latest release of helmfile
-URL=https://github.com/helmfile/helmfile/releases/download/v0.150.0/helmfile_0.150.0_linux_amd64.tar.gz
+URL=https://github.com/helmfile/helmfile/releases/download/v0.157.0/helmfile_0.157.0_linux_amd64.tar.gz
 
 # Download helmfile binary
 mkdir helmfile
