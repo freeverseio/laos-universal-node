@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"os"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/freeverseio/laos-universal-node/config"
 	"github.com/freeverseio/laos-universal-node/scanner"
 )
 
@@ -19,29 +20,22 @@ var (
 )
 
 func main() {
-	setLogger()
+	c := config.Load()
 
-	// TODO move flags to config?
-	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
-	// 0xBC4... is the Bored Ape ERC721 Ethereum contract
-	contractAddress := flag.String("contract", "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", "Web3 address of the smart contract")
-	startingBlock := flag.Uint64("starting_block", 18288287, "Initial block where the scanning process should start from")
-	blocksRange := flag.Uint("block_range", 100, "Amount of blocks the scanner processes")
-	blocksMargin := flag.Uint("block_margin", 70, "Number of blocks to assume finality")
-	flag.Parse()
+	setLogger(c.Debug)
 
-	cli, err := ethclient.Dial(*rpc)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
+	defer stop()
+
+	cli, err := ethclient.Dial(c.Rpc)
 	if err != nil {
 		slog.Error("error instantiating eth client", "err", err.Error())
 		os.Exit(1)
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
-	defer stop()
-
-	contract := common.HexToAddress(*contractAddress)
-	if *startingBlock == 0 {
-		*startingBlock, err = getL1LatestBlock(ctx, cli)
+	contract := common.HexToAddress(c.ContractAddress)
+	if c.StartingBlock == 0 {
+		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
 		if err != nil {
 			slog.Error("error retrieving the latest block", "err", err.Error())
 			os.Exit(1)
@@ -57,17 +51,17 @@ func main() {
 				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
 			}
-			lastBlock := calculateLastBlock(*startingBlock, l1LatestBlock, *blocksRange, *blocksMargin)
-			if lastBlock < *startingBlock {
+			lastBlock := calculateLastBlock(c.StartingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
+			if lastBlock < c.StartingBlock {
 				slog.Debug("last calculated block is behind starting block, continue...")
 				break
 			}
-			_, err = scanner.ScanEvents(cli, contract, big.NewInt(int64(*startingBlock)), big.NewInt(int64(lastBlock)))
+			_, err = scanner.ScanEvents(cli, contract, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
-			*startingBlock = lastBlock + 1
+			c.StartingBlock = lastBlock + 1
 		}
 	}
 }
@@ -84,9 +78,15 @@ func calculateLastBlock(startingBlock, l1LatestBlock uint64, blocksRange, blocks
 	return min(startingBlock+uint64(blocksRange), l1LatestBlock-uint64(blocksMargin))
 }
 
-func setLogger() {
+func setLogger(debug bool) {
+	// Default slog.Level is Info (0)
+	var level slog.Level
+	if debug {
+		level = slog.LevelDebug
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelDebug,
+		Level:     level,
 		AddSource: true,
 	}).WithAttrs([]slog.Attr{
 		slog.String("version", version),
