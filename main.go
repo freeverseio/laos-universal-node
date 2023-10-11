@@ -14,7 +14,13 @@ import (
 	"github.com/freeverseio/laos-universal-node/scanner"
 )
 
+var (
+	Version = "undefined"
+)
+
 func main() {
+	setLogger()
+
 	// TODO move flags to config?
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	// 0xBC4... is the Bored Ape ERC721 Ethereum contract
@@ -26,14 +32,10 @@ func main() {
 
 	cli, err := ethclient.Dial(*rpc)
 	if err != nil {
-		slog.Error("error instantiating eth client", "msg", err.Error())
+		slog.Error("error instantiating eth client", "err", err.Error())
 		os.Exit(1)
 	}
 
-	// TODO make logger available to all the application as a singleton
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
@@ -41,7 +43,7 @@ func main() {
 	if *startingBlock == 0 {
 		*startingBlock, err = getL1LatestBlock(cli, ctx)
 		if err != nil {
-			logger.Error("error retrieving the latest block", "msg", err.Error())
+			slog.Error("error retrieving the latest block", "err", err.Error())
 			os.Exit(1)
 		}
 	}
@@ -52,15 +54,19 @@ func main() {
 		default:
 			l1LatestBlock, err := getL1LatestBlock(cli, ctx)
 			if err != nil {
-				logger.Error("error retrieving the latest block", "msg", err.Error())
+				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
 			}
 			lastBlock := calculateLastBlock(*startingBlock, l1LatestBlock, *blocksRange, *blocksMargin)
 			if lastBlock < *startingBlock {
-				logger.Debug("last calculated block is behind starting block, continue...")
+				slog.Debug("last calculated block is behind starting block, continue...")
 				break
 			}
-			scanner.ScanEvents(cli, contract, big.NewInt(int64(*startingBlock)), big.NewInt(int64(lastBlock)))
+			_, err = scanner.ScanEvents(cli, contract, big.NewInt(int64(*startingBlock)), big.NewInt(int64(lastBlock)))
+			if err != nil {
+				slog.Error("error occurred while scanning events", "err", err.Error())
+				break
+			}
 			*startingBlock = lastBlock + 1
 		}
 	}
@@ -76,4 +82,14 @@ func getL1LatestBlock(cli *ethclient.Client, ctx context.Context) (uint64, error
 
 func calculateLastBlock(startingBlock, l1LatestBlock uint64, blocksRange, blocksMargin uint) uint64 {
 	return min(startingBlock+uint64(blocksRange), l1LatestBlock-uint64(blocksMargin))
+}
+
+func setLogger() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     slog.LevelDebug,
+		AddSource: true,
+	}).WithAttrs([]slog.Attr{
+		slog.String("version", Version),
+	}))
+	slog.SetDefault(logger)
 }
