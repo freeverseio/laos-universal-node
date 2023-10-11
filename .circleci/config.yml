@@ -4,7 +4,6 @@ orbs:
   kube-orb: circleci/kubernetes@1.3.1
   helm: circleci/helm@3.0.0
 
-
 commands:
   build_and_push:
     description: Build and push Docker image
@@ -124,4 +123,4 @@ workflows:
             - lint
             - go_test
             - deployment_test
-            - dockerize_universalnode
+            - dockerize
