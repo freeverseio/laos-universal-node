@@ -66,7 +66,7 @@ type EventApprovalForAll struct {
 }
 
 func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) ([]Event, error) {
-	events, err := filterEvents(fromBlock, toBlock, contract, cli)
+	eventLogs, err := filterEventLogs(fromBlock, toBlock, contract, cli)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -76,58 +76,85 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 	var parsedEvents []Event
-	for _, e := range events {
-		slog.Info("scanning event", "block", e.BlockNumber, "txHash", e.TxHash)
-		switch e.Topics[0].Hex() {
+	for _, eL := range eventLogs {
+		slog.Info("scanning event", "block", eL.BlockNumber, "txHash", eL.TxHash)
+		switch eL.Topics[0].Hex() {
 		case eventTransferSigHash:
-			var transfer EventTransfer
-			err := contractAbi.UnpackIntoInterface(&transfer, eventTransferName, e.Data)
+			transfer, err := parseTransfer(eL, contractAbi)
 			if err != nil {
-				return nil, fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
+				return nil, err
 			}
-			// TODO check e.Topics length?
-			transfer.From = common.HexToAddress(e.Topics[1].Hex())
-			transfer.To = common.HexToAddress(e.Topics[2].Hex())
-			transfer.TokenId = e.Topics[3].Big()
-
 			parsedEvents = append(parsedEvents, transfer)
 			slog.Info("received event", eventTransferName, transfer)
 		case eventApprovalSigHash:
-			var approval EventApproval
-			e.Data = nil
-			err := contractAbi.UnpackIntoInterface(&approval, eventApprovalName, e.Data)
+			approval, err := parseApproval(eL, contractAbi)
 			if err != nil {
-				return nil, fmt.Errorf("error unpacking the event %s: %w", eventApprovalName, err)
+				return nil, err
 			}
-			approval.Owner = common.HexToAddress(e.Topics[1].Hex())
-			approval.Approved = common.HexToAddress(e.Topics[2].Hex())
-			approval.TokenId = e.Topics[3].Big()
-
 			parsedEvents = append(parsedEvents, approval)
 			slog.Info("received event", eventApprovalName, approval)
 		case eventApprovalForAllSigHash:
-			var approvalForAll EventApprovalForAll
-			err := contractAbi.UnpackIntoInterface(&approvalForAll, eventApprovalForAllName, e.Data)
+			approvalForAll, err := parseApprovalForAll(eL, contractAbi)
 			if err != nil {
-				return nil, fmt.Errorf("error unpacking the event %s: %w", eventApprovalForAllName, err)
+				return nil, err
 			}
-			approvalForAll.Owner = common.HexToAddress(e.Topics[1].Hex())
-			approvalForAll.Operator = common.HexToAddress(e.Topics[2].Hex())
-
 			parsedEvents = append(parsedEvents, approvalForAll)
 			slog.Info("received event", eventApprovalForAllName, approvalForAll)
 		default:
-			slog.Warn("unrecognized event", "eventType", e.Topics[0].String())
+			slog.Warn("unrecognized event", "eventType", eL.Topics[0].String())
 		}
 	}
 
 	return parsedEvents, nil
 }
 
-func filterEvents(firstBlock, lastBlock *big.Int, address common.Address, cli EthClient) ([]types.Log, error) {
+func filterEventLogs(firstBlock, lastBlock *big.Int, address common.Address, cli EthClient) ([]types.Log, error) {
 	return cli.FilterLogs(context.Background(), ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
 		Addresses: []common.Address{address},
 	})
+}
+
+func parseTransfer(eL types.Log, contractAbi abi.ABI) (EventTransfer, error) {
+	var transfer EventTransfer
+	err := unpackIntoInterface(&transfer, contractAbi, eL)
+	if err != nil {
+		return transfer, err
+	}
+	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
+	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
+	transfer.TokenId = eL.Topics[3].Big()
+	return transfer, nil
+}
+
+func parseApproval(eL types.Log, contractAbi abi.ABI) (EventApproval, error) {
+	var approval EventApproval
+	err := unpackIntoInterface(&approval, contractAbi, eL)
+	if err != nil {
+		return approval, err
+	}
+	approval.Owner = common.HexToAddress(eL.Topics[1].Hex())
+	approval.Approved = common.HexToAddress(eL.Topics[2].Hex())
+	approval.TokenId = eL.Topics[3].Big()
+	return approval, nil
+}
+
+func parseApprovalForAll(eL types.Log, contractAbi abi.ABI) (EventApprovalForAll, error) {
+	var approvalForAll EventApprovalForAll
+	err := unpackIntoInterface(&approvalForAll, contractAbi, eL)
+	if err != nil {
+		return approvalForAll, err
+	}
+	approvalForAll.Owner = common.HexToAddress(eL.Topics[1].Hex())
+	approvalForAll.Operator = common.HexToAddress(eL.Topics[2].Hex())
+	return approvalForAll, nil
+}
+
+func unpackIntoInterface(e Event, contractAbi abi.ABI, eL types.Log) error {
+	err := contractAbi.UnpackIntoInterface(e, eventTransferName, eL.Data)
+	if err != nil {
+		return fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
+	}
+	return nil
 }
