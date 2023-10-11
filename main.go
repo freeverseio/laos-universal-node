@@ -66,11 +66,11 @@ func main() {
 }
 
 func getL1LatestBlock(ctx context.Context, cli *ethclient.Client) (uint64, error) {
-	lastBlock, err := cli.BlockNumber(ctx)
+	l1LatestBlock, err := cli.BlockNumber(ctx)
 	if err != nil {
 		return 0, err
 	}
-	return lastBlock, nil
+	return l1LatestBlock, nil
 }
 
 func calculateLastBlock(startingBlock, l1LatestBlock uint64, blocksRange, blocksMargin uint) uint64 {
