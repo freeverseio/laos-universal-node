@@ -63,25 +63,25 @@ jobs:
       - image: cimg/base:2023.09
     steps:
       - checkout
-          - helm/install-helm-client:
-              version: v3.8.2
-          - install_helmfile
-          - run:
-              name: Lint Helm charts for development environment
-              command: |
-                cd deployment/
-                TAG=$CIRCLE_SHA1 helmfile lint
-      deploy_to_development:
-        docker:
-          - image: cimg/deploy:2023.09
-        steps:
-          - checkout
-          - kube-orb/install-kubectl:
-              kubectl-version: "v1.16.12"
-          - kube-orb/install-kubeconfig:
-              kubeconfig: KUBECONFIG_DEV_DATA
-          - helm/install-helm-client:
-              version: v3.8.2
+      - helm/install-helm-client:
+          version: v3.8.2
+      - install_helmfile
+      - run:
+          name: Lint Helm charts for development environment
+          command: |
+            cd deployment/
+            TAG=$CIRCLE_SHA1 helmfile lint
+  deploy_to_development:
+      docker:
+        - image: cimg/deploy:2023.09
+      steps:
+        - checkout
+        - kube-orb/install-kubectl:
+            kubectl-version: "v1.16.12"
+        - kube-orb/install-kubeconfig:
+            kubeconfig: KUBECONFIG_DEV_DATA
+        - helm/install-helm-client:
+            version: v3.8.2
       - install_helmfile
       - run:
           name: Deploy to development environment
