@@ -66,14 +66,12 @@ type EventApprovalForAll struct {
 func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) ([]interface{}, error) {
 	events, err := filterEvents(fromBlock, toBlock, contract, cli)
 	if err != nil {
-		slog.Error("error filtering events", "msg", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
 
 	contractAbi, err := abi.JSON(strings.NewReader(string(ERC721.ERC721MetaData.ABI)))
 	if err != nil {
-		slog.Error("error instantiating ABI", "msg", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 	var parsedEvents []interface{}
 	for _, e := range events {
@@ -83,8 +81,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 			var transfer EventTransfer
 			err := contractAbi.UnpackIntoInterface(&transfer, eventTransferName, e.Data)
 			if err != nil {
-				slog.Error("error unpacking the event", "event", eventTransferName, "msg", err)
-				return nil, err
+				return nil, fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
 			}
 			// TODO check e.Topics length?
 			transfer.From = common.HexToAddress(e.Topics[1].Hex())
@@ -98,8 +95,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 			e.Data = nil
 			err := contractAbi.UnpackIntoInterface(&approval, eventApprovalName, e.Data)
 			if err != nil {
-				slog.Error("error unpacking the event", "event", eventApprovalName, "msg", err)
-				return nil, err
+				return nil, fmt.Errorf("error unpacking the event %s: %w", eventApprovalName, err)
 			}
 			approval.Owner = common.HexToAddress(e.Topics[1].Hex())
 			approval.Approved = common.HexToAddress(e.Topics[2].Hex())
@@ -111,8 +107,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 			var approvalForAll EventApprovalForAll
 			err := contractAbi.UnpackIntoInterface(&approvalForAll, eventApprovalForAllName, e.Data)
 			if err != nil {
-				slog.Error("error unpacking the event", "event", eventApprovalForAllName, "msg", err)
-				return nil, err
+				return nil, fmt.Errorf("error unpacking the event %s: %w", eventApprovalForAllName, err)
 			}
 			approvalForAll.Owner = common.HexToAddress(e.Topics[1].Hex())
 			approvalForAll.Operator = common.HexToAddress(e.Topics[2].Hex())
@@ -120,7 +115,7 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 			parsedEvents = append(parsedEvents, approvalForAll)
 			slog.Info("received event", eventApprovalForAllName, approvalForAll)
 		default:
-			slog.Info("unrecognized event", "eventType", e.Topics[0].String())
+			slog.Warn("unrecognized event", "eventType", e.Topics[0].String())
 		}
 	}
 
