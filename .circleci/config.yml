@@ -72,16 +72,16 @@ jobs:
             cd deployment/
             TAG=$CIRCLE_SHA1 helmfile lint
   deploy_to_development:
-      docker:
-        - image: cimg/deploy:2023.09
-      steps:
-        - checkout
-        - kube-orb/install-kubectl:
-            kubectl-version: "v1.16.12"
-        - kube-orb/install-kubeconfig:
-            kubeconfig: KUBECONFIG_DEV_DATA
-        - helm/install-helm-client:
-            version: v3.8.2
+    docker:
+      - image: cimg/deploy:2023.09
+    steps:
+      - checkout
+      - kube-orb/install-kubectl:
+          kubectl-version: "v1.16.12"
+      - kube-orb/install-kubeconfig:
+          kubeconfig: KUBECONFIG_DEV_DATA
+      - helm/install-helm-client:
+          version: v3.8.2
       - install_helmfile
       - run:
           name: Deploy to development environment
@@ -93,7 +93,7 @@ workflows:
   build_and_test:
     jobs:
       - lint
-      - deployment_test:
+      - deployment_lint:
           context: dockerhub
           filters:
             tags:
@@ -119,5 +119,5 @@ workflows:
           requires:
             - lint
             - go_test
-            - deployment_test
+            - deployment_lint
             - dockerize
