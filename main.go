@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/config"
-	"github.com/freeverseio/laos-universal-node/scanner"
+	"github.com/freeverseio/laos-universal-node/scan"
 )
 
 var (
@@ -39,9 +39,13 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, c *config.Config, cli scanner.EthClient) error {
-	var err error
+func run(ctx context.Context, c *config.Config, cli scan.EthClient) error {
+
 	contract := common.HexToAddress(c.ContractAddress)
+
+	s := scan.NewScanner(cli, contract)
+
+	var err error
 	if c.StartingBlock == 0 {
 		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
 		if err != nil {
@@ -63,7 +67,7 @@ func run(ctx context.Context, c *config.Config, cli scanner.EthClient) error {
 				slog.Debug("last calculated block is behind starting block, continue...")
 				break
 			}
-			_, err = scanner.ScanEvents(cli, contract, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
+			_, err = s.ScanEvents(big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
@@ -73,7 +77,7 @@ func run(ctx context.Context, c *config.Config, cli scanner.EthClient) error {
 	}
 }
 
-func getL1LatestBlock(ctx context.Context, cli scanner.EthClient) (uint64, error) {
+func getL1LatestBlock(ctx context.Context, cli scan.EthClient) (uint64, error) {
 	l1LatestBlock, err := cli.BlockNumber(ctx)
 	if err != nil {
 		return 0, err

@@ -1,4 +1,4 @@
-package scanner
+package scan
 
 import (
 	"context"
@@ -66,8 +66,24 @@ type EventApprovalForAll struct {
 	Approved bool
 }
 
-func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBlock *big.Int) ([]Event, error) {
-	eventLogs, err := filterEventLogs(fromBlock, toBlock, contract, cli)
+type Scanner interface {
+	ScanEvents(fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
+}
+
+type scanner struct {
+	cli      EthClient
+	contract common.Address
+}
+
+func NewScanner(cli EthClient, contract common.Address) Scanner {
+	return scanner{
+		cli:      cli,
+		contract: contract,
+	}
+}
+
+func (s scanner) ScanEvents(fromBlock *big.Int, toBlock *big.Int) ([]Event, error) {
+	eventLogs, err := s.filterEventLogs(fromBlock, toBlock)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -109,11 +125,11 @@ func ScanEvents(cli EthClient, contract common.Address, fromBlock *big.Int, toBl
 	return parsedEvents, nil
 }
 
-func filterEventLogs(firstBlock, lastBlock *big.Int, address common.Address, cli EthClient) ([]types.Log, error) {
-	return cli.FilterLogs(context.Background(), ethereum.FilterQuery{
+func (s scanner) filterEventLogs(firstBlock, lastBlock *big.Int) ([]types.Log, error) {
+	return s.cli.FilterLogs(context.Background(), ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
-		Addresses: []common.Address{address},
+		Addresses: []common.Address{s.contract},
 	})
 }
 
