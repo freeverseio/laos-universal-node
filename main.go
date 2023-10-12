@@ -33,13 +33,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(ctx, c, cli); err != nil {
+	if err := run(ctx, *c, cli); err != nil {
 		slog.Error("error scanning events", "err", err.Error())
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, c *config.Config, cli scan.EthClient) error {
+func run(ctx context.Context, c config.Config, cli scan.EthClient) error {
 
 	contract := common.HexToAddress(c.ContractAddress)
 
@@ -64,7 +64,8 @@ func run(ctx context.Context, c *config.Config, cli scan.EthClient) error {
 			}
 			lastBlock := calculateLastBlock(c.StartingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
 			if lastBlock < c.StartingBlock {
-				slog.Debug("last calculated block is behind starting block, continue...")
+				slog.Debug("last calculated block is behind starting block, waiting...",
+					"last_block", lastBlock, "starting_block", c.StartingBlock)
 				break
 			}
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
