@@ -42,6 +42,7 @@ type EthClient interface {
 	ethereum.GasEstimator
 	bind.ContractBackend
 	ChainID(ctx context.Context) (*big.Int, error)
+	BlockNumber(ctx context.Context) (uint64, error)
 	Close()
 }
 
