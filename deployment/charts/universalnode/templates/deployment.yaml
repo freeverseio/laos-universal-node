@@ -28,4 +28,3 @@ spec:
             memory: "4096Mi"
             cpu: "2"
         command: [ "./universalnode" ]
-        
