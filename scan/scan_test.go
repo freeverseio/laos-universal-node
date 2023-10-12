@@ -28,6 +28,8 @@ func TestScanEvents(t *testing.T) {
 		toBlock := big.NewInt(100)
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
+		s := scan.NewScanner(climock, contract)
+
 		eventLogs := []types.Log{
 			{
 				Topics: []common.Hash{
@@ -45,7 +47,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
@@ -62,6 +64,8 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
+		s := scan.NewScanner(climock, contract)
 
 		eventLogs := []types.Log{
 			{
@@ -81,7 +85,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
@@ -98,6 +102,8 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
+		s := scan.NewScanner(climock, contract)
 
 		eventLogs := []types.Log{
 			{
@@ -116,7 +122,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
@@ -134,6 +140,8 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
+		s := scan.NewScanner(climock, contract)
 
 		eventLogs := []types.Log{
 			{
@@ -186,7 +194,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}

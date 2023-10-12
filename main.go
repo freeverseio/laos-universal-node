@@ -67,7 +67,7 @@ func run(ctx context.Context, c *config.Config, cli scan.EthClient) error {
 				slog.Debug("last calculated block is behind starting block, continue...")
 				break
 			}
-			_, err = s.ScanEvents(big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
