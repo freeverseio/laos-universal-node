@@ -1,4 +1,4 @@
-package scanner_test
+package scan_test
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/scanner"
-	"github.com/freeverseio/laos-universal-node/scanner/mock"
+	"github.com/freeverseio/laos-universal-node/scan"
+	"github.com/freeverseio/laos-universal-node/scan/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -45,12 +45,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
 
-		_, ok := events[0].(scanner.EventTransfer)
+		_, ok := events[0].(scan.EventTransfer)
 		if !ok {
 			t.Fatal("error parsing event to EventApproval type")
 		}
@@ -81,12 +81,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
 
-		_, ok := events[0].(scanner.EventApproval)
+		_, ok := events[0].(scan.EventApproval)
 		if !ok {
 			t.Fatal("error parsing event to EventApproval type")
 		}
@@ -116,12 +116,12 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
 
-		_, ok := events[0].(scanner.EventApprovalForAll)
+		_, ok := events[0].(scan.EventApprovalForAll)
 		if !ok {
 			t.Fatal("error parsing event to EventApprovalForAll type")
 		}
@@ -186,7 +186,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{contract},
 		}).Return(eventLogs, nil)
 
-		events, err := scanner.ScanEvents(climock, contract, fromBlock, toBlock)
+		events, err := scan.ScanEvents(climock, contract, fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("error occured when scanning events %v", err.Error())
 		}
