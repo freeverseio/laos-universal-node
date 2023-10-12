@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"os"
@@ -32,18 +33,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := run(ctx, c, cli); err != nil {
+		slog.Error("error scanning events", "err", err.Error())
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context, c *config.Config, cli scanner.EthClient) error {
+	var err error
 	contract := common.HexToAddress(c.ContractAddress)
 	if c.StartingBlock == 0 {
 		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
 		if err != nil {
-			slog.Error("error retrieving the latest block", "err", err.Error())
-			os.Exit(1)
+			return fmt.Errorf("error retrieving the latest block: %w", err)
 		}
 	}
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
 			l1LatestBlock, err := getL1LatestBlock(ctx, cli)
 			if err != nil {
@@ -65,7 +73,7 @@ func main() {
 	}
 }
 
-func getL1LatestBlock(ctx context.Context, cli *ethclient.Client) (uint64, error) {
+func getL1LatestBlock(ctx context.Context, cli scanner.EthClient) (uint64, error) {
 	l1LatestBlock, err := cli.BlockNumber(ctx)
 	if err != nil {
 		return 0, err
