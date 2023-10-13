@@ -25,6 +25,10 @@ linters-settings:
       - style
   govet:
     check-shadowing: true
+  revive:
+    rules: 
+      - name: package-comments
+        disabled: true
 
 linters:
   enable:
@@ -42,11 +46,13 @@ linters:
     - ineffassign
     - misspell
     - nakedret
+    - revive
     - staticcheck
     - tparallel
     - typecheck
     - unused
     - unconvert
+    - unparam
     - whitespace
   
 issues:

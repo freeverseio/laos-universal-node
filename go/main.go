@@ -19,7 +19,7 @@ type SystemResponse struct {
 	Up int
 }
 
-// Up increments the Up field of the SystemResponse struct by 1.
+// nolint:unparam // for the first version this implementation is enough
 func (a *System) Up(_ *Args, reply *SystemResponse) error {
 	reply.Up = 1
 	return nil
