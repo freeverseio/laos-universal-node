@@ -74,7 +74,7 @@ jobs:
             TAG=$CIRCLE_SHA1 helmfile lint
   deploy_to_development:
     docker:
-      - image: cimg/deploy:2022.11
+      - image: cimg/deploy:2023.09
     steps:
       - checkout
       - kube-orb/install-kubectl:

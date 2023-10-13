@@ -22,9 +22,9 @@ spec:
             name: rpc
         resources:
           requests:
-            memory: "2Gi"
+            memory: "512Mi"
             cpu: "500m"
           limits:
-            memory: "4096Mi"
+            memory: "2Gi"
             cpu: "2"
         command: [ "./universalnode" ]
