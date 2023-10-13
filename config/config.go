@@ -13,8 +13,8 @@ type Config struct {
 
 func Load() *Config {
 	// 0xBC4... is the Bored Ape ERC721 Ethereum contract
-	blocksRange := flag.Uint("block_range", 100, "Amount of blocks the scanner processes")
-	blocksMargin := flag.Uint("block_margin", 70, "Number of blocks to assume finality")
+	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
+	blocksMargin := flag.Uint("blocks_margin", 70, "Number of blocks to assume finality")
 	contractAddress := flag.String("contract", "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", "Web3 address of the smart contract")
 	debug := flag.Bool("debug", false, "Set logs to debug level")
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
