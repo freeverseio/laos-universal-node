@@ -4,6 +4,10 @@ orbs:
   kube-orb: circleci/kubernetes@1.3.1
   helm: circleci/helm@3.0.0
 
+executors:
+  cimg-base:
+    docker:
+      - image: cimg/base:2023.09
 
 commands:
   build_and_push:
@@ -27,6 +31,7 @@ commands:
 
 jobs:
   go_test:
+    description: Run go tests
     docker:
       - image: cimg/go:1.21
     steps:
@@ -36,8 +41,8 @@ jobs:
           command: |
             cd go && go test -race ./...
   dockerize:
-    docker:
-      - image: cimg/base:2023.09
+    description: Dockerize and push image
+    executor: cimg-base
     parameters:
       image:
         type: string
@@ -51,6 +56,7 @@ jobs:
           image: << parameters.image >>
           root: << parameters.root >>
   lint:
+    description: Run linters for Go
     docker:
       - image: golangci/golangci-lint:v1.54.2
     steps:
@@ -60,8 +66,8 @@ jobs:
           command: |
             cd go && golangci-lint run
   deployment_lint:
-    docker:
-      - image: cimg/base:2023.09
+    description: Lint Helm charts
+    executor: cimg-base
     steps:
       - checkout
       - helm/install_helm_client:
@@ -73,6 +79,7 @@ jobs:
             cd deployment/
             TAG=$CIRCLE_SHA1 helmfile lint
   deploy_to_development:
+    description: Deploy to development environment
     docker:
       - image: cimg/deploy:2023.09
     steps:
