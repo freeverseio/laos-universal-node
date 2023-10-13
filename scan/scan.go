@@ -87,6 +87,10 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *bi
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
+	if len(eventLogs) == 0 {
+		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
+		return nil, nil
+	}
 
 	contractAbi, err := abi.JSON(strings.NewReader(string(ERC721.ERC721MetaData.ABI)))
 	if err != nil {
