@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -36,9 +37,9 @@ func TestRun(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	climock.EXPECT().BlockNumber(ctx).Return(c.StartingBlock, nil)
 	toBlock := int64(c.StartingBlock) + int64(c.BlocksRange)
-	scanmock.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(toBlock)).Return(nil, nil)
+	climock.EXPECT().BlockNumber(ctx).Return(uint64(toBlock), nil).AnyTimes()
+	scanmock.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(toBlock)).Return(nil, fmt.Errorf("error in scan events")).AnyTimes()
 
 	go func() {
 		run(ctx, c, climock, scanmock)
@@ -57,8 +58,14 @@ func TestRun(t *testing.T) {
 		case <-timerCh:
 			return
 		default:
-			if logOutput.String() == "<nil>" {
+			out := logOutput.String()
+			if out == "<nil>" {
 				time.Sleep(time.Millisecond * 500)
+			} else {
+				if out != "" {
+					t.Fatalf("got %s, expected empty logs", out)
+				}
+				return
 			}
 		}
 	}
