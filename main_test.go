@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"log/slog"
+
 	"github.com/freeverseio/laos-universal-node/config"
 	"github.com/freeverseio/laos-universal-node/scan/mock"
 	"go.uber.org/mock/gomock"
-	"golang.org/x/exp/slog"
 )
 
 func TestRun(t *testing.T) {
