@@ -33,18 +33,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(ctx, *c, cli); err != nil {
+	s := scan.NewScanner(cli, common.HexToAddress(c.ContractAddress))
+	if err := run(ctx, *c, cli, s); err != nil {
 		slog.Error("error scanning events", "err", err.Error())
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, c config.Config, cli scan.EthClient) error {
-
-	contract := common.HexToAddress(c.ContractAddress)
-
-	s := scan.NewScanner(cli, contract)
-
+func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanner) error {
 	var err error
 	if c.StartingBlock == 0 {
 		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
