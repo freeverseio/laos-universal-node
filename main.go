@@ -47,6 +47,7 @@ func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanne
 		if err != nil {
 			return fmt.Errorf("error retrieving the latest block: %w", err)
 		}
+		slog.Debug("latest block found", "latest_block", c.StartingBlock)
 	}
 	for {
 		select {
