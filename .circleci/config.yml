@@ -85,7 +85,7 @@ jobs:
     steps:
       - checkout
       - kube-orb/install-kubectl:
-          kubectl-version: "v1.16.12"
+          kubectl-version: "v1.25.14"
       - kube-orb/install-kubeconfig:
           kubeconfig: KUBECONFIG_DEV_DATA
       - helm/install_helm_client:
