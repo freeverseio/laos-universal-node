@@ -1,6 +1,10 @@
 package config
 
-import "flag"
+import (
+	"flag"
+
+	"log/slog"
+)
 
 type Config struct {
 	BlocksMargin    uint
@@ -32,4 +36,9 @@ func Load() *Config {
 	}
 
 	return c
+}
+
+func (c *Config) LogFields() {
+	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "contract", c.ContractAddress,
+		"starting_block", c.StartingBlock, "blocks_margin", c.BlocksMargin, "blocks_range", c.BlocksRange, "debug", c.Debug))
 }

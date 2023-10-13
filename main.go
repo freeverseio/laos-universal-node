@@ -23,6 +23,7 @@ func main() {
 	c := config.Load()
 
 	setLogger(c.Debug)
+	c.LogFields()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
