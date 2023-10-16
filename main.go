@@ -49,6 +49,12 @@ func (h *httpReadWriteCloser) Write(p []byte) (n int, err error) { return h.out.
 func (h *httpReadWriteCloser) Close() error                      { return nil }
 
 func main() {
+	if err := run(); err != nil {
+		slog.Error("error occurred", "err", err)
+	}
+}
+
+func run() error {
 	c := config.Load()
 
 	setLogger(c.Debug)
@@ -57,24 +63,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
-	cli, err := ethclient.Dial(c.Rpc)
-	if err != nil {
-		slog.Error("error instantiating eth client", "err", err.Error())
-		os.Exit(1)
-	}
-
-	s := scan.NewScanner(cli, common.HexToAddress(c.ContractAddress))
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error {
-		return run(ctx, *c, cli, s)
-	})
 
-	sys := new(System)
-	err = rpc.Register(sys)
-	if err != nil {
-		fmt.Println("Error while registering RPC service", err)
-		return
-	}
+	group.Go(func() error {
+		cli, err := ethclient.Dial(c.Rpc)
+		if err != nil {
+			return fmt.Errorf("error instantiating eth client: %w", err)
+		}
+		s := scan.NewScanner(cli, common.HexToAddress(c.ContractAddress))
+		return runScan(ctx, *c, cli, s)
+	})
 
 	// Create an HTTP handler for RPC
 	handler := http.NewServeMux()
@@ -110,17 +108,23 @@ func main() {
 		return nil
 	})
 	group.Go(func() error {
+		sys := new(System)
+		err := rpc.Register(sys)
+		if err != nil {
+			return fmt.Errorf("error registering RPC service: %w", err)
+		}
 		if srvErr := server.ListenAndServe(); srvErr != nil && srvErr != http.ErrServerClosed {
 			return srvErr
 		}
 		return nil
 	})
 	if err := group.Wait(); err != nil {
-		slog.Error("a goroutine returned an error", "err", err)
+		return err
 	}
+	return nil
 }
 
-func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanner) error {
 	var err error
 	if c.StartingBlock == 0 {
 		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
