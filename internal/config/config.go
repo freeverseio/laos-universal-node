@@ -2,9 +2,8 @@ package config
 
 import (
 	"flag"
-	"time"
-
 	"log/slog"
+	"time"
 )
 
 type Config struct {

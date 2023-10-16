@@ -49,7 +49,7 @@ func TestScanEvents(t *testing.T) {
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
-			t.Fatalf("error occured when scanning events %v", err.Error())
+			t.Fatalf("error occurred when scanning events %v", err.Error())
 		}
 
 		_, ok := events[0].(scan.EventTransfer)
@@ -87,7 +87,7 @@ func TestScanEvents(t *testing.T) {
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
-			t.Fatalf("error occured when scanning events %v", err.Error())
+			t.Fatalf("error occurred when scanning events %v", err.Error())
 		}
 
 		_, ok := events[0].(scan.EventApproval)
@@ -124,7 +124,7 @@ func TestScanEvents(t *testing.T) {
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
-			t.Fatalf("error occured when scanning events %v", err.Error())
+			t.Fatalf("error occurred when scanning events %v", err.Error())
 		}
 
 		_, ok := events[0].(scan.EventApprovalForAll)
@@ -133,7 +133,6 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
-
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
 
@@ -196,7 +195,7 @@ func TestScanEvents(t *testing.T) {
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
-			t.Fatalf("error occured when scanning events %v", err.Error())
+			t.Fatalf("error occurred when scanning events %v", err.Error())
 		}
 
 		if len(events) != 4 {

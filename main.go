@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
+	"net/http"
+	"net/rpc"
+	"net/rpc/jsonrpc"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,11 +18,35 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"golang.org/x/sync/errgroup"
 )
 
-var (
-	version = "undefined"
-)
+var version = "undefined"
+
+// System is a type that will be exported as an RPC service.
+type System int
+
+type Args struct{}
+
+// SystemResponse holds the result of the Multiply method.
+type SystemResponse struct {
+	Up int
+}
+
+// nolint:unparam // for the first version this implementation is enough
+func (a *System) Up(_ *Args, reply *SystemResponse) error {
+	reply.Up = 1
+	return nil
+}
+
+type httpReadWriteCloser struct {
+	in  io.Reader
+	out io.Writer
+}
+
+func (h *httpReadWriteCloser) Read(p []byte) (n int, err error)  { return h.in.Read(p) }
+func (h *httpReadWriteCloser) Write(p []byte) (n int, err error) { return h.out.Write(p) }
+func (h *httpReadWriteCloser) Close() error                      { return nil }
 
 func main() {
 	c := config.Load()
@@ -36,9 +64,59 @@ func main() {
 	}
 
 	s := scan.NewScanner(cli, common.HexToAddress(c.ContractAddress))
-	if err := run(ctx, *c, cli, s); err != nil {
-		slog.Error("error scanning events", "err", err.Error())
-		os.Exit(1)
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		return run(ctx, *c, cli, s)
+	})
+
+	sys := new(System)
+	err = rpc.Register(sys)
+	if err != nil {
+		fmt.Println("Error while registering RPC service", err)
+		return
+	}
+
+	// Create an HTTP handler for RPC
+	handler := http.NewServeMux()
+	handler.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
+		serverCodec := jsonrpc.NewServerCodec(&httpReadWriteCloser{r.Body, w})
+		w.Header().Set("Content-type", "application/json")
+		rpcErr := rpc.ServeRequest(serverCodec)
+		if rpcErr != nil {
+			fmt.Println("Error while serving JSON request", rpcErr)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	})
+
+	// Create an HTTP server with timeouts
+	server := &http.Server{
+		Addr:         ":5001",
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	slog.Info("Starting server on port 5001...")
+	group.Go(func() error {
+		<-ctx.Done()
+		slog.Info("shutting down the RPC server...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
+			return fmt.Errorf("error shutting down the RPC server: %w", shutdownErr)
+		}
+		return nil
+	})
+	group.Go(func() error {
+		if srvErr := server.ListenAndServe(); srvErr != nil && srvErr != http.ErrServerClosed {
+			return srvErr
+		}
+		return nil
+	})
+	if err := group.Wait(); err != nil {
+		slog.Error("a goroutine returned an error", "err", err)
 	}
 }
 
