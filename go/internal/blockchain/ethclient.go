@@ -26,3 +26,7 @@ type EthClient interface {
 	Close()
 	Client() *rpc.Client
 }
+
+type EthRPCClient interface {
+	Call(result interface{}, method string, args ...interface{}) error
+}

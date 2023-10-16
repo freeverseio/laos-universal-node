@@ -118,7 +118,6 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes (was %d)", len(argdata))
 	}
 	erc721Abi, err := abi.JSON(strings.NewReader(erc721.Erc721ABI))
-
 	if err != nil {
 		return nil, err
 	}

@@ -4,8 +4,8 @@ package erc721
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -15,96 +15,86 @@ import (
 )
 
 // ProcessCall processes an ERC721 token contract call.
-func ProcessCall( 
-	data string, 
+func ProcessCall(
+	data string,
 	to common.Address,
-	ethcli	blockchain.EthClient,	
-	contractAddr common.Address,	
-	chainID uint64) (hexutil.Bytes, error) {
-
+	ethcli blockchain.EthRPCClient,
+	contractAddr common.Address,
+	chainID uint64,
+) (hexutil.Bytes, error) {
 	callData, err := NewCallData(data)
 	if err != nil {
 		return nil, err
 	}
 	method, err := callData.Method()
-	log.Println(method)
 	if err != nil {
 		return nil, err
 	}
 
 	var result string
-	err = ethcli.Client().Call(&result, "eth_call", map[string]interface{}{
+	err = ethcli.Call(&result, "eth_call", map[string]interface{}{
 		"to":   to,
 		"data": data,
 	}, "latest")
+
 	if err != nil {
 		return nil, err
 	}
 
 	switch method {
 	case OwnerOf:
-		return common.HexToAddress(result).Bytes(), nil
+		return ownerOf(result)
 
 	case TokenURI, URI:
 		return tokenURI(result)
 
 	case BalanceOf:
-		return balanceOf(callData)
+		return balanceOf(result)
 
 	case SupportsInterface:
-		return supportsInterface(callData)
+		return supportsInterface(result)
 
 	case Name:
-		return name()
+		return name(result)
 
 	case ContractURI:
-		return contractURI()
+		return contractURI(result)
 
 	case Decimals:
-		return decimals()
+		return decimals(result)
 
 	case Symbol:
-		return symbol()
+		return symbol(result)
 	}
 
 	return nil, fmt.Errorf("no method found processing erc721 calldata: %s", data)
 }
 
-// name is an internal function that retrieves the name of the ERC721 token.
-func name() ([]byte, error) {
+func ownerOf(result string) ([]byte, error) {
+	if !common.IsHexAddress(result) {
+		return nil, errors.New("not a valid Ethereum address")
+	}
+	return common.HexToAddress(result).Bytes(), nil
+}
+
+func name(result string) ([]byte, error) {
+	return nil, fmt.Errorf("not yet implementd")
+}
+
+func symbol(result string) ([]byte, error) {
+	return nil, fmt.Errorf("not yet implementd")
+}
+
+func contractURI(result string) ([]byte, error) {
 	stringTy, _ := abi.NewType("string", "string", nil)
 	arguments := abi.Arguments{
 		{
 			Type: stringTy,
 		},
 	}
-	return arguments.Pack("Living Assets")
+	return arguments.Pack(result)
 }
 
-// symbol is an internal function that retrieves the symbol of the ERC721 token.
-func symbol() ([]byte, error) {
-	stringTy, _ := abi.NewType("string", "string", nil)
-	arguments := abi.Arguments{
-		{
-			Type: stringTy,
-		},
-	}
-
-	return arguments.Pack("LA")
-}
-
-// contractURI is an internal function that retrieves the contract URI of the ERC721 token.
-func contractURI() ([]byte, error) {
-	stringTy, _ := abi.NewType("string", "string", nil)
-	arguments := abi.Arguments{
-		{
-			Type: stringTy,
-		},
-	}
-	return arguments.Pack("https://livingassets.io/contractUri")
-}
-
-// tokenURI retrieves the token URI for a given token ID.
 func tokenURI(u string) ([]byte, error) {
 	stringTy, _ := abi.NewType("string", "string", nil)
 	arguments := abi.Arguments{
@@ -112,81 +102,54 @@ func tokenURI(u string) ([]byte, error) {
 			Type: stringTy,
 		},
 	}
-	t, err := convertHexStringToText(u)
+	t, err := convert64HexStringToText(u)
 	if err != nil {
 		return nil, err
 	}
-	return arguments.Pack(string(t))
+	return arguments.Pack(t)
 }
 
-// supportsInterface checks if the contract supports a given interface according to the ERC721 standard.
-func supportsInterface(calldata CallData) ([]byte, error) {
-	interfaceIDI, err := calldata.GetParam("interfaceId")
-	if err != nil {
-		return nil, err
-	}
-	interfaceID, ok := interfaceIDI.([4]uint8)
-	if !ok {
-		return nil, fmt.Errorf("invalid interfaceId %s", interfaceIDI)
-	}
-	supports := false
-	if hexutil.Encode(interfaceID[:]) == "0x5b5e139f" {
-		supports = true
-	}
-	boolTy, _ := abi.NewType("bool", "bool", nil)
-	arguments := abi.Arguments{
-		{
-			Type: boolTy,
-		},
-	}
-	return arguments.Pack(supports)
+func supportsInterface(result string) ([]byte, error) {
+	return nil, fmt.Errorf("not yet implementd")
 }
 
-// balanceOf retrieves the balance of a given address according to the ERC721 standard.
-func balanceOf( _ CallData) ([]byte, error) {
-	log.Println("balanceOf..")
+func balanceOf(b string) ([]byte, error) {
 	uint256Ty, _ := abi.NewType("uint256", "uint256", nil)
 	arguments := abi.Arguments{
 		{
 			Type: uint256Ty,
 		},
 	}
-	return arguments.Pack(big.NewInt(1000000))
+	return arguments.Pack(convert16HexStringToDecimal(b))
 }
 
-// decimals packs a uint8 value of 0 into a []byte slice using the Ethereum ABI encoding.
-func decimals() ([]byte, error) {
-	uint8Ty, _ := abi.NewType("uint8", "uint8", nil)
-	arguments := abi.Arguments{
-		{
-			Type: uint8Ty,
-		},
-	}
-	return arguments.Pack(uint8(0))
+func decimals(result string) ([]byte, error) {
+	return nil, fmt.Errorf("not yet implementd")
 }
 
-
-
-func convertHexStringToText(hexStr string) ([]byte, error) {
+func convert64HexStringToText(hexStr string) (string, error) {
 	// Remove the "0x" prefix if it exists.
 	if len(hexStr) > 2 && hexStr[:2] == "0x" {
 		hexStr = hexStr[2:]
 	}
-
-	// Extract the relevant portion based on the ABI encoding.
 	dataStart := 64 // 32 bytes offset * 2 (since 1 byte is 2 hex characters)
 	dataLengthHex := hexStr[dataStart : dataStart+64]
 	dataLength, err := hex.DecodeString(dataLengthHex)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	length := int(dataLength[31]) // Last byte is the length
-
 	dataHex := hexStr[dataStart+64 : dataStart+64+length*2]
 	dataBytes, err := hex.DecodeString(dataHex)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	log.Println(string(dataBytes))
-	return dataBytes, nil
+	return string(dataBytes), nil
+}
+
+func convert16HexStringToDecimal(hexString string) *big.Int {
+	// Create a new Int from a hexadecimal string
+	num := new(big.Int)
+	num.SetString(hexString[2:], 16) // Omit the "0x" prefix and use base 16
+	return num
 }

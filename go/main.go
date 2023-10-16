@@ -2,43 +2,53 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	internalRpc "github.com/freeverseio/laos-universal-node/cmd/rpc"
 )
 
-// System is a type that will be exported as an RPC service.
-type System int
-
-type Args struct{}
-
-// SystemResponse holds the result of the Multiply method.
-type SystemResponse struct {
-	Up int
-}
-
-// Up increments the Up field of the SystemResponse struct by 1.
-func (a *System) Up(_ *Args, reply *SystemResponse) error {
-	reply.Up = 1
-	return nil
-}
+const (
+	ethereumEndpoint = "url"
+	rpcAddress       = "0xc4d9faef49ec1e604a76ee78bc992abadaa29527"
+	listenAddress    = "0.0.0.0:5001"
+	networkID        = 80001
+)
 
 func main() {
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure resources are cleaned up
 
+	// Set up signal catching
+	signals := make(chan os.Signal, 1)
+	// Catch all signals since we are okay with a graceful shut down
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-		ethcli, err := ethclient.Dial("url")
-		if err != nil {
-			log.Printf("failed to connect to Ethereum node: %v", err)
-		}
-		rpcServer, err := internalRpc.NewServer(ctx, ethcli, common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),  80001)
-		
-		if err != nil {
-			log.Printf("failed to create RPC server: %v", err)
-	
-		}
-		rpcServer.ListenAndServe(ctx, "0.0.0.0:5001")
+	// Start a goroutine to handle the shutdown signal
+	go func() {
+		<-signals
+		cancel()
+	}()
 
-}             
+	ethcli, err := ethclient.Dial(ethereumEndpoint)
+	if err != nil {
+		slog.Error("failed to connect to Ethereum node: %v", err)
+	}
+	rpcServer, err := internalRpc.NewServer(
+		internalRpc.WithEthService(ethcli, common.HexToAddress(rpcAddress), networkID),
+		internalRpc.WithNetService(networkID),
+		internalRpc.WithSystemHealthService(),
+	)
+	if err != nil {
+		slog.Error("failed to create RPC server: %v", err)
+	}
+
+	slog.Info("Starting RPC server", "listenAddress", listenAddress)
+	if err := rpcServer.ListenAndServe(ctx, listenAddress); err != nil {
+		slog.Error("failed to start RPC server: %v", err)
+	}
+}
