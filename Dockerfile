@@ -10,7 +10,10 @@ COPY go.mod go.mod
 COPY go.sum go.sum
 COPY internal internal
 COPY main.go main.go
-RUN go build -race -o universalnode .
+
+ARG VERSION
+
+RUN go build -race -ldflags "-X main.version=$VERSION" -o universalnode .
 
 FROM alpine:3.18.4 AS final
 
