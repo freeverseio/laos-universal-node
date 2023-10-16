@@ -1,2 +1,2 @@
 mocks:
-	mockgen -source=scan/scan.go -destination=scan/mock/scan.go -package=mock
+	mockgen -source=internal/scan/scan.go -destination=internal/scan/mock/scan.go -package=mock

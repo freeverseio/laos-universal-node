@@ -11,8 +11,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/freeverseio/laos-universal-node/config"
-	"github.com/freeverseio/laos-universal-node/scan"
+	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 var (

@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/scan"
-	"github.com/freeverseio/laos-universal-node/scan/mock"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
 )
 
