@@ -81,7 +81,7 @@ func run() error {
 		w.Header().Set("Content-type", "application/json")
 		rpcErr := rpc.ServeRequest(serverCodec)
 		if rpcErr != nil {
-			fmt.Println("Error while serving JSON request", rpcErr)
+			slog.Warn("error while serving JSON request", "err", rpcErr)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

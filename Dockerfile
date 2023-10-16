@@ -6,7 +6,10 @@ RUN addgroup -g 1000 nodegroup && \
     adduser -D nodeuser -u 1000 -G nodegroup
 
 WORKDIR /app
-COPY ./go .
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY internal internal
+COPY main.go main.go
 RUN go build -race -o universalnode .
 
 FROM alpine:3.18.4 AS final
