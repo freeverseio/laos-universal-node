@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -53,6 +54,7 @@ func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanne
 	for {
 		select {
 		case <-ctx.Done():
+			slog.Info("context canceled")
 			return nil
 		default:
 			l1LatestBlock, err := getL1LatestBlock(ctx, cli)
@@ -64,6 +66,7 @@ func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanne
 			if lastBlock < c.StartingBlock {
 				slog.Debug("last calculated block is behind starting block, waiting...",
 					"last_block", lastBlock, "starting_block", c.StartingBlock)
+				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
@@ -73,6 +76,15 @@ func run(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanne
 			}
 			c.StartingBlock = lastBlock + 1
 		}
+	}
+}
+
+func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
+	timer := time.NewTimer(waitingTime)
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+	case <-timer.C:
 	}
 }
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"time"
 
 	"log/slog"
 )
@@ -13,6 +14,7 @@ type Config struct {
 	Debug           bool
 	Rpc             string
 	StartingBlock   uint64
+	WaitingTime     time.Duration
 }
 
 func Load() *Config {
@@ -23,6 +25,7 @@ func Load() *Config {
 	debug := flag.Bool("debug", false, "Set logs to debug level")
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	startingBlock := flag.Uint64("starting_block", 18288287, "Initial block where the scanning process should start from")
+	waitingTime := flag.Duration("wait", 5*time.Second, "Waiting time between scans when scanning reaches the last block")
 
 	flag.Parse()
 
@@ -33,6 +36,7 @@ func Load() *Config {
 		Debug:           *debug,
 		Rpc:             *rpc,
 		StartingBlock:   *startingBlock,
+		WaitingTime:     *waitingTime,
 	}
 
 	return c
@@ -40,5 +44,6 @@ func Load() *Config {
 
 func (c *Config) LogFields() {
 	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "contract", c.ContractAddress,
-		"starting_block", c.StartingBlock, "blocks_margin", c.BlocksMargin, "blocks_range", c.BlocksRange, "debug", c.Debug))
+		"starting_block", c.StartingBlock, "blocks_margin", c.BlocksMargin, "blocks_range", c.BlocksRange,
+		"debug", c.Debug, "wait", c.WaitingTime))
 }
