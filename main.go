@@ -89,14 +89,15 @@ func run() error {
 
 	// Create an HTTP server with timeouts
 	server := &http.Server{
-		Addr:         ":5001",
+		Addr:         fmt.Sprintf(":%d", c.Port),
 		Handler:      handler,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
-	slog.Info("Starting server on port 5001...")
+	slog.Info("starting universal node RPC server", "port", c.Port)
+
 	group.Go(func() error {
 		<-ctx.Done()
 		slog.Info("shutting down the RPC server...")
