@@ -39,7 +39,7 @@ jobs:
       - run:
           name: Run go tests
           command: |
-            cd go && go test -race ./...
+            go test -race ./...
   dockerize:
     description: Dockerize and push image
     executor: cimg-base
@@ -64,7 +64,7 @@ jobs:
       - run:
           name: Run golangci-lint
           command: |
-            cd go && golangci-lint run
+            golangci-lint run
   deployment_lint:
     description: Lint Helm charts
     executor: cimg-base
