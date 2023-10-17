@@ -1,0 +1,131 @@
+version: 2.1
+
+orbs:
+  kube-orb: circleci/kubernetes@1.3.1
+  helm: circleci/helm@3.0.0
+
+executors:
+  cimg-base:
+    docker:
+      - image: cimg/base:2023.09
+
+commands:
+  build_and_push:
+    description: Build and push Docker image
+    parameters:
+      image:
+        type: string
+      root:
+        type: string
+    steps:
+      - run:
+          name: Build and push Docker image
+          command: |
+            ./scripts/dockerize-and-push.sh freeverseio/<< parameters.image >> << parameters.root >>
+  install_helmfile:
+    description: Install helmfile
+    steps:
+      - run:
+          name: Install helmfile
+          command: ./scripts/install-helmfile.sh
+
+jobs:
+  go_test:
+    description: Run go tests
+    docker:
+      - image: cimg/go:1.21
+    steps:
+      - checkout
+      - run:
+          name: Run go tests
+          command: |
+            go test -race ./...
+  dockerize:
+    description: Dockerize and push image
+    executor: cimg-base
+    parameters:
+      image:
+        type: string
+      root:
+        type: string
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - build_and_push:
+          image: << parameters.image >>
+          root: << parameters.root >>
+  lint:
+    description: Run linters for Go
+    docker:
+      - image: golangci/golangci-lint:v1.54.2
+    steps:
+      - checkout
+      - run:
+          name: Run golangci-lint
+          command: |
+            golangci-lint run
+  deployment_lint:
+    description: Lint Helm charts
+    executor: cimg-base
+    steps:
+      - checkout
+      - helm/install_helm_client:
+          version: v3.13.0
+      - install_helmfile
+      - run:
+          name: Lint Helm charts for development environment
+          command: |
+            cd deployment/
+            TAG=$CIRCLE_SHA1 helmfile lint
+  deploy_to_development:
+    description: Deploy to development environment
+    docker:
+      - image: cimg/deploy:2023.09
+    steps:
+      - checkout
+      - kube-orb/install-kubectl:
+          kubectl-version: "v1.25.14"
+      - kube-orb/install-kubeconfig:
+          kubeconfig: KUBECONFIG_DEV_DATA
+      - helm/install_helm_client:
+          version: v3.13.0
+      - install_helmfile
+      - run:
+          name: Deploy to development environment
+          command: |
+            cd deployment/
+            TAG=$CIRCLE_SHA1 helmfile sync
+
+workflows:
+  build_and_test:
+    jobs:
+      - lint
+      - deployment_lint:
+          context: dockerhub
+          filters:
+            tags:
+              only: /.*/
+      - go_test:
+          context: dockerhub
+          filters:
+            tags:
+              only: /.*/
+      - dockerize:
+          name: dockerize_universalnode
+          context: dockerhub
+          image: laos-universal-node
+          root: .
+          filters:
+            tags:
+              only: /.*/
+      - deploy_to_development:
+          filters:
+              branches:
+                only:
+                  - main
+          requires:
+            - lint
+            - go_test
+            - deployment_lint
+            - dockerize_universalnode
