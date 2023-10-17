@@ -24,4 +24,35 @@ Right now there is only one method supported:
 
 ## Contributing
 
-Contributions to the LAOS Universal Node project are welcome.
+Contributions to the LAOS Universal Node project are welcome. When you work on this repo, you adhere to the following rules:
+
+### Best-practices
+Follow best-practices and guidelines published by Google and the golang open-source community, such as:
+
+Effective Go - https://go.dev/doc/effective_go
+
+Go style guide - https://google.github.io/styleguide/go/
+
+Go code review comments - https://github.com/golang/go/wiki/CodeReviewComments
+
+Go test comments - https://github.com/golang/go/wiki/TestComments
+
+### Git
+
+#### Rebase
+Whenever `main` is updated and you have to pull changes into your branch, you will rebase your branch with `main` and force-push the changes to the repo. This keeps a clean history in feature branches by avoiding additional `merge` commits
+
+Instructions to rebase:
+```shell
+# first, pull the latest changes from main
+git checkout main && git pull
+git checkout $MY_BRANCH
+# now rebase
+git rebase main
+git push -f
+```
+
+#### Pre-commit hook
+Run `cp git/pre-commit ./.git/hooks` to copy the pre-commit hook to your `.git` folder. This runs a few important checks whenever you have something to commit.
+
+For further details, check [pre-commit](./git/pre-commit).
