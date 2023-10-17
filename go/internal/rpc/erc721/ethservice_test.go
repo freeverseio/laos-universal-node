@@ -2,6 +2,7 @@ package erc721
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -126,4 +127,27 @@ func TestCall(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expectedResult, res.String())
 	})
+
+	t.Run("Could execute Call TokenURI with an error", func(t *testing.T) {
+		mockClient := new(MockRPCClient)
+		// Mock behavior & inject result
+		expectedResult := "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047777773000000000000000000000000000000000000000000000000000000000"
+		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedResult, fmt.Errorf("error from call"))
+
+		service := EthService{
+			Ethcli:       mockClient,
+			ContractAddr: common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),
+		}
+		// Define the test transaction
+		tx := blockchain.Transaction{
+			To:   "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
+			Data: "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000",
+		}
+
+		// Call the Call method
+		_, err := service.Call(tx, "1")
+		assert.Error(t, err, "error from call")
+
+	})
+
 }

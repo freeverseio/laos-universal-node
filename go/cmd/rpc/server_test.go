@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -11,7 +12,33 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain/mock"
 	"github.com/golang/mock/gomock"
+	tmock "github.com/stretchr/testify/mock"
 )
+
+type mockHTTPServer struct {
+	tmock.Mock
+}
+
+func (m *mockHTTPServer) ListenAndServe() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockHTTPServer) Shutdown(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
+func (m *mockHTTPServer) SetKeepAlivesEnabled(v bool) {
+	m.Called(v)
+}
+func (h *mockHTTPServer) SetAddr(addr string) {
+
+}
+
+func (h *mockHTTPServer) SetHandler(handler http.Handler) {
+
+}
 
 func TestNewServer(t *testing.T) {
 	// Preparing mock data
@@ -19,6 +46,7 @@ func TestNewServer(t *testing.T) {
 	mockcli := mock.NewMockEthClient(ctrl)
 	mockcli.EXPECT().Client().Return(nil).AnyTimes()
 	mockRPCServer := mockrpc.NewMockRPCServerer(ctrl)
+
 	mockRPCServer.EXPECT().RegisterName("net", gomock.Any()).Return(nil).Times(2)
 	mockRPCServer.EXPECT().RegisterName("eth", gomock.Any()).Return(nil).Times(2)
 	mockRPCServer.EXPECT().RegisterName("health", gomock.Any()).Return(nil).Times(2)
@@ -49,7 +77,7 @@ func TestNewServer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewServer(
-				WithRPCServer(mockRPCServer),
+				WithRpcServer(mockRPCServer),
 				WithEthService(tt.ethClient, tt.contractAddr, tt.chainID),
 				WithNetService(tt.chainID),
 				WithSystemHealthService(),
@@ -72,8 +100,9 @@ func TestListenAndServe(t *testing.T) {
 	// Simulate ServeHTTP behavior (though for this test, it won't be executed)
 	mockRPCServer.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).AnyTimes()
 	mockRPCServer.EXPECT().RegisterName("health", gomock.Any()).Return(nil).Times(1)
+
 	// Create a server instance with the mock RPC server
-	server, err := NewServer(WithRPCServer(mockRPCServer), WithSystemHealthService())
+	server, err := NewServer(WithRpcServer(mockRPCServer), WithSystemHealthService())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,5 +129,29 @@ func TestListenAndServe(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("ListenAndServe took too long to shut down")
+	}
+}
+
+func TestListenAndServeWithError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRPCServer := mockrpc.NewMockRPCServerer(ctrl)
+	mockHTTPServer := new(mockHTTPServer)
+	mockHTTPServer.On("ListenAndServe").Return(errors.New("mocked error"))
+
+	mockRPCServer.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).AnyTimes()
+
+	server, err := NewServer(
+		WithRpcServer(mockRPCServer),
+		WithHTTPServer(mockHTTPServer),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	err = server.ListenAndServe(context.Background(), ":9999")
+	if err == nil || err.Error() != "RPC HTTP server ListenAndServe: mocked error" {
+		t.Fatalf("expected a mocked error, got: %v", err)
 	}
 }

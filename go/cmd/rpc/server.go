@@ -13,13 +13,46 @@ import (
 	internalRpc "github.com/freeverseio/laos-universal-node/internal/rpc"
 )
 
+type HTTPServerer interface {
+	ListenAndServe() error
+	Shutdown(context.Context) error
+	SetKeepAlivesEnabled(bool)
+	SetAddr(string)
+	SetHandler(http.Handler)
+}
+
+// The real implementation that wraps http.Server
+type HTTPServer struct {
+	server *http.Server
+}
+
+func (h *HTTPServer) ListenAndServe() error {
+	return h.server.ListenAndServe()
+}
+
+func (h *HTTPServer) Shutdown(ctx context.Context) error {
+	return h.server.Shutdown(ctx)
+}
+
+func (h *HTTPServer) SetKeepAlivesEnabled(v bool) {
+	h.server.SetKeepAlivesEnabled(v)
+}
+func (h *HTTPServer) SetAddr(addr string) {
+	h.server.Addr = addr
+}
+
+func (h *HTTPServer) SetHandler(handler http.Handler) {
+	h.server.Handler = handler
+}
+
 type RPCServerer interface {
 	RegisterName(name string, receiver interface{}) error
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
 type Server struct {
-	RPCServer RPCServerer
+	RPCServer  RPCServerer
+	HTTPServer HTTPServerer
 }
 
 type ServerOption func(*Server) error
@@ -49,16 +82,31 @@ func WithSystemHealthService() ServerOption {
 }
 
 // WithRPCServer allows you to provide a custom RPCServerer implementation.
-func WithRPCServer(server RPCServerer) ServerOption {
+func WithRpcServer(rpcServer RPCServerer) ServerOption {
 	return func(s *Server) error {
-		s.RPCServer = server
+		s.RPCServer = rpcServer
+		return nil
+	}
+}
+
+// WithHTTPServer allows you to provide a custom HTTPServerer implementation.
+func WithHTTPServer(httpServer HTTPServerer) ServerOption {
+	return func(s *Server) error {
+		s.HTTPServer = httpServer
 		return nil
 	}
 }
 
 func NewServer(opts ...ServerOption) (*Server, error) {
 	// Default to rpc.NewServer() unless an option overwrites it.
-	server := &Server{RPCServer: rpc.NewServer()}
+	server := &Server{
+		RPCServer: rpc.NewServer(),
+		HTTPServer: &HTTPServer{
+			server: &http.Server{
+				ReadHeaderTimeout: 20 * time.Second,
+			},
+		},
+	}
 
 	for _, opt := range opts {
 		if err := opt(server); err != nil {
@@ -72,13 +120,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 // ListenAndServe starts the RPC server to listen and serve incoming requests on the specified address.
 // It also handles graceful shutdown on receiving a context cancellation signal.
 func (s Server) ListenAndServe(ctx context.Context, addr string) error {
-	h := s.RPCServer
 
-	server := &http.Server{
-		Addr:              addr,
-		Handler:           h,
-		ReadHeaderTimeout: 20 * time.Second,
-	}
+	s.HTTPServer.SetAddr(addr)
+	s.HTTPServer.SetHandler(s.RPCServer)
 
 	slog.Info(
 		"RPC server listening",
@@ -87,20 +131,19 @@ func (s Server) ListenAndServe(ctx context.Context, addr string) error {
 
 	go func() {
 		<-ctx.Done()
-
 		// We received an interrupt signal, shut down.
 		slog.Info("Received server shutdown signal. Shutting down gracefully...")
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 
-		server.SetKeepAlivesEnabled(false)
-		if err := server.Shutdown(ctx); err != nil {
+		s.HTTPServer.SetKeepAlivesEnabled(false)
+		if err := s.HTTPServer.Shutdown(ctx); err != nil {
 			// Error from closing listeners, or context timeout:
 			slog.Error("HTTP server Shutdown: %v", err)
 		}
 	}()
 
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.HTTPServer.ListenAndServe(); err != http.ErrServerClosed {
 		slog.Error("RPC HTTP server ListenAndServe: %v", err)
 		// Error starting or closing listener:
 		return fmt.Errorf("RPC HTTP server ListenAndServe: %v", err)

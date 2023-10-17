@@ -5,11 +5,99 @@
 package mockrpc
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
 )
+
+// MockHTTPServerer is a mock of HTTPServerer interface.
+type MockHTTPServerer struct {
+	ctrl     *gomock.Controller
+	recorder *MockHTTPServererMockRecorder
+}
+
+// MockHTTPServererMockRecorder is the mock recorder for MockHTTPServerer.
+type MockHTTPServererMockRecorder struct {
+	mock *MockHTTPServerer
+}
+
+// NewMockHTTPServerer creates a new mock instance.
+func NewMockHTTPServerer(ctrl *gomock.Controller) *MockHTTPServerer {
+	mock := &MockHTTPServerer{ctrl: ctrl}
+	mock.recorder = &MockHTTPServererMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockHTTPServerer) EXPECT() *MockHTTPServererMockRecorder {
+	return m.recorder
+}
+
+// ListenAndServe mocks base method.
+func (m *MockHTTPServerer) ListenAndServe() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListenAndServe")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ListenAndServe indicates an expected call of ListenAndServe.
+func (mr *MockHTTPServererMockRecorder) ListenAndServe() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenAndServe", reflect.TypeOf((*MockHTTPServerer)(nil).ListenAndServe))
+}
+
+// SetAddr mocks base method.
+func (m *MockHTTPServerer) SetAddr(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAddr", arg0)
+}
+
+// SetAddr indicates an expected call of SetAddr.
+func (mr *MockHTTPServererMockRecorder) SetAddr(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAddr", reflect.TypeOf((*MockHTTPServerer)(nil).SetAddr), arg0)
+}
+
+// SetHandler mocks base method.
+func (m *MockHTTPServerer) SetHandler(arg0 http.Handler) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetHandler", arg0)
+}
+
+// SetHandler indicates an expected call of SetHandler.
+func (mr *MockHTTPServererMockRecorder) SetHandler(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHandler", reflect.TypeOf((*MockHTTPServerer)(nil).SetHandler), arg0)
+}
+
+// SetKeepAlivesEnabled mocks base method.
+func (m *MockHTTPServerer) SetKeepAlivesEnabled(arg0 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetKeepAlivesEnabled", arg0)
+}
+
+// SetKeepAlivesEnabled indicates an expected call of SetKeepAlivesEnabled.
+func (mr *MockHTTPServererMockRecorder) SetKeepAlivesEnabled(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetKeepAlivesEnabled", reflect.TypeOf((*MockHTTPServerer)(nil).SetKeepAlivesEnabled), arg0)
+}
+
+// Shutdown mocks base method.
+func (m *MockHTTPServerer) Shutdown(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Shutdown", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Shutdown indicates an expected call of Shutdown.
+func (mr *MockHTTPServererMockRecorder) Shutdown(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockHTTPServerer)(nil).Shutdown), arg0)
+}
 
 // MockRPCServerer is a mock of RPCServerer interface.
 type MockRPCServerer struct {
