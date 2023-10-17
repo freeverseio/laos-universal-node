@@ -81,7 +81,7 @@ func TestScanEvents(t *testing.T) {
 
 		_, ok := events[0].(scan.EventTransfer)
 		if !ok {
-			t.Fatal("error parsing event to EventApproval type")
+			t.Fatal("error parsing event to EventTransfer type")
 		}
 	})
 	t.Run("it should parse Approval events", func(t *testing.T) {
