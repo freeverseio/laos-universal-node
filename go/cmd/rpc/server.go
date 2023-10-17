@@ -37,6 +37,7 @@ func (h *HTTPServer) Shutdown(ctx context.Context) error {
 func (h *HTTPServer) SetKeepAlivesEnabled(v bool) {
 	h.server.SetKeepAlivesEnabled(v)
 }
+
 func (h *HTTPServer) SetAddr(addr string) {
 	h.server.Addr = addr
 }
@@ -120,7 +121,6 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 // ListenAndServe starts the RPC server to listen and serve incoming requests on the specified address.
 // It also handles graceful shutdown on receiving a context cancellation signal.
 func (s Server) ListenAndServe(ctx context.Context, addr string) error {
-
 	s.HTTPServer.SetAddr(addr)
 	s.HTTPServer.SetHandler(s.RPCServer)
 

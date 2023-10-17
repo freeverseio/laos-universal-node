@@ -32,12 +32,11 @@ func (m *mockHTTPServer) Shutdown(ctx context.Context) error {
 func (m *mockHTTPServer) SetKeepAlivesEnabled(v bool) {
 	m.Called(v)
 }
-func (h *mockHTTPServer) SetAddr(addr string) {
 
+func (h *mockHTTPServer) SetAddr(addr string) {
 }
 
 func (h *mockHTTPServer) SetHandler(handler http.Handler) {
-
 }
 
 func TestNewServer(t *testing.T) {

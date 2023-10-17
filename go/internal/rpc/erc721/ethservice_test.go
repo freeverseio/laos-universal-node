@@ -147,7 +147,5 @@ func TestCall(t *testing.T) {
 		// Call the Call method
 		_, err := service.Call(tx, "1")
 		assert.Error(t, err, "error from call")
-
 	})
-
 }
