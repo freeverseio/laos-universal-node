@@ -45,34 +45,33 @@ func TestMethod(t *testing.T) {
 		expected erc721method
 		err      error
 	}{
-
 		{
-			input:    hexutil.MustDecode("0x6352211e"), // ownerOf(uint256)
+			input:    hexutil.MustDecode("0x6352211e"),
 			expected: OwnerOf,
 			err:      nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x70a08231"), // balanceOf(uint256)
+			input:    hexutil.MustDecode("0x70a08231"),
 			expected: BalanceOf,
 			err:      nil,
 		},
 		{
-			input:    hexutil.MustDecode("0xc87b56dd"), // tokenURI
+			input:    hexutil.MustDecode("0xc87b56dd"),
 			expected: TokenURI,
 			err:      nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x01ffc9a7"), // supportsInterface
+			input:    hexutil.MustDecode("0x01ffc9a7"),
 			expected: SupportsInterface,
 			err:      nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x06fdde03"), // name
+			input:    hexutil.MustDecode("0x06fdde03"),
 			expected: Name,
 			err:      nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x313ce567"), // decimals
+			input:    hexutil.MustDecode("0x313ce567"),
 			expected: Decimals,
 			err:      nil,
 		},

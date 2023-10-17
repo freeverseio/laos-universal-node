@@ -36,5 +36,4 @@ func ProcessCall(
 		return nil, err
 	}
 	return hexutil.Decode(result)
-
 }
