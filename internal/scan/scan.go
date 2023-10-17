@@ -46,26 +46,31 @@ type EthClient interface {
 	Close()
 }
 
+// Event is an alias of interface{} and it represents the ERC721 events
 type Event interface{}
 
+// EventTransfer is the ERC721 Transfer event
 type EventTransfer struct {
 	From    common.Address
 	To      common.Address
 	TokenId *big.Int
 }
 
+// EventApproval is the ERC721 Approval event
 type EventApproval struct {
 	Owner    common.Address
 	Approved common.Address
 	TokenId  *big.Int
 }
 
+// EventApprovalForAll is the ERC721 ApprovalForAll event
 type EventApprovalForAll struct {
 	Owner    common.Address
 	Operator common.Address
 	Approved bool
 }
 
+// Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
 }
@@ -75,6 +80,7 @@ type scanner struct {
 	contract common.Address
 }
 
+// NewScanner instantiates the default implementation for the Scanner interface
 func NewScanner(client EthClient, contract common.Address) Scanner {
 	return scanner{
 		client:   client,
@@ -82,6 +88,7 @@ func NewScanner(client EthClient, contract common.Address) Scanner {
 	}
 }
 
+// ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock)
 	if err != nil {
