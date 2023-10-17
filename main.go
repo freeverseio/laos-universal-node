@@ -66,12 +66,12 @@ func run() error {
 	group, ctx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
-		cli, err := ethclient.Dial(c.Rpc)
+		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		s := scan.NewScanner(cli, common.HexToAddress(c.ContractAddress))
-		return runScan(ctx, *c, cli, s)
+		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress))
+		return runScan(ctx, *c, client, s)
 	})
 
 	// Create an HTTP handler for RPC
@@ -125,10 +125,10 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan.Scanner) error {
 	var err error
 	if c.StartingBlock == 0 {
-		c.StartingBlock, err = getL1LatestBlock(ctx, cli)
+		c.StartingBlock, err = getL1LatestBlock(ctx, client)
 		if err != nil {
 			return fmt.Errorf("error retrieving the latest block: %w", err)
 		}
@@ -140,7 +140,7 @@ func runScan(ctx context.Context, c config.Config, cli scan.EthClient, s scan.Sc
 			slog.Info("context canceled")
 			return nil
 		default:
-			l1LatestBlock, err := getL1LatestBlock(ctx, cli)
+			l1LatestBlock, err := getL1LatestBlock(ctx, client)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
@@ -171,8 +171,8 @@ func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
 	}
 }
 
-func getL1LatestBlock(ctx context.Context, cli scan.EthClient) (uint64, error) {
-	l1LatestBlock, err := cli.BlockNumber(ctx)
+func getL1LatestBlock(ctx context.Context, client scan.EthClient) (uint64, error) {
+	l1LatestBlock, err := client.BlockNumber(ctx)
 	if err != nil {
 		return 0, err
 	}

@@ -71,13 +71,13 @@ type Scanner interface {
 }
 
 type scanner struct {
-	cli      EthClient
+	client   EthClient
 	contract common.Address
 }
 
-func NewScanner(cli EthClient, contract common.Address) Scanner {
+func NewScanner(client EthClient, contract common.Address) Scanner {
 	return scanner{
-		cli:      cli,
+		client:   client,
 		contract: contract,
 	}
 }
@@ -130,7 +130,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 }
 
 func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int) ([]types.Log, error) {
-	return s.cli.FilterLogs(ctx, ethereum.FilterQuery{
+	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
 		Addresses: []common.Address{s.contract},
