@@ -139,7 +139,7 @@ func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big
 
 func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	var transfer EventTransfer
-	err := unpackIntoInterface(&transfer, contractAbi, eL)
+	err := unpackIntoInterface(&transfer, eventTransferName, contractAbi, eL)
 	if err != nil {
 		return transfer, err
 	}
@@ -151,7 +151,7 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 
 func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
 	var approval EventApproval
-	err := unpackIntoInterface(&approval, contractAbi, eL)
+	err := unpackIntoInterface(&approval, eventApprovalName, contractAbi, eL)
 	if err != nil {
 		return approval, err
 	}
@@ -163,7 +163,7 @@ func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
 
 func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForAll, error) {
 	var approvalForAll EventApprovalForAll
-	err := unpackIntoInterface(&approvalForAll, contractAbi, eL)
+	err := unpackIntoInterface(&approvalForAll, eventApprovalForAllName, contractAbi, eL)
 	if err != nil {
 		return approvalForAll, err
 	}
@@ -172,8 +172,8 @@ func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForA
 	return approvalForAll, nil
 }
 
-func unpackIntoInterface(e Event, contractAbi *abi.ABI, eL *types.Log) error {
-	err := contractAbi.UnpackIntoInterface(e, eventTransferName, eL.Data)
+func unpackIntoInterface(e Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
+	err := contractAbi.UnpackIntoInterface(e, eventName, eL.Data)
 	if err != nil {
 		return fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
 	}
