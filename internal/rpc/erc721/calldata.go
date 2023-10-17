@@ -26,36 +26,27 @@ func NewCallData(s string) (CallData, error) { // nolint:revive // TODO refactor
 type erc721method int
 
 const (
-	// OwnerOf represents the 'ownerOf' ERC721 method.
 	OwnerOf erc721method = iota
-	// BalanceOf represents the 'balanceOf' ERC721 method.
 	BalanceOf
-	// TokenURI represents the 'tokenURI' ERC721 method.
 	TokenURI
-	// URI represents the 'uri' ERC721 method.
 	URI
-	// SupportsInterface represents the 'supportsInterface' ERC721 method.
 	SupportsInterface
-	// Name represents the 'name' ERC721 method.
 	Name
-	// ContractURI represents the 'contractURI' ERC721 method.
 	ContractURI
-	// Decimals represents the 'decimals' ERC721 method.
 	Decimals
-	// Symbol represents the 'symbol' ERC721 method.
 	Symbol
 )
 
-var (
-	ownerOfSig           = hexutil.Encode(crypto.Keccak256Hash([]byte("ownerOf(uint256)")).Bytes()[:4])
-	balanceOfSig         = hexutil.Encode(crypto.Keccak256Hash([]byte("balanceOf(address)")).Bytes()[:4])
-	tokenURISig          = hexutil.Encode(crypto.Keccak256Hash([]byte("tokenURI(uint256)")).Bytes()[:4])
-	supportsInterfaceSig = hexutil.Encode(crypto.Keccak256Hash([]byte("supportsInterface(bytes4)")).Bytes()[:4])
-	nameSig              = hexutil.Encode(crypto.Keccak256Hash([]byte("name()")).Bytes()[:4])
-	contractURISig       = hexutil.Encode(crypto.Keccak256Hash([]byte("contractURI()")).Bytes()[:4])
-	decimalsSig          = hexutil.Encode(crypto.Keccak256Hash([]byte("decimals()")).Bytes()[:4])
-	symbolSig            = hexutil.Encode(crypto.Keccak256Hash([]byte("symbol()")).Bytes()[:4])
-)
+var methodSigs = map[string]erc721method{
+	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:4]):          OwnerOf,
+	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:4]):        BalanceOf,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:4]):         TokenURI,
+	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:4]): SupportsInterface,
+	hexutil.Encode(crypto.Keccak256([]byte("name()"))[:4]):                    Name,
+	hexutil.Encode(crypto.Keccak256([]byte("contractURI()"))[:4]):             ContractURI,
+	hexutil.Encode(crypto.Keccak256([]byte("decimals()"))[:4]):                Decimals,
+	hexutil.Encode(crypto.Keccak256([]byte("symbol()"))[:4]):                  Symbol,
+}
 
 // Method returns the ERC721 method invoked by the calldata.
 func (b CallData) Method() (erc721method, error) {
@@ -64,23 +55,8 @@ func (b CallData) Method() (erc721method, error) {
 		return 0, err
 	}
 
-	switch sig {
-	case ownerOfSig:
-		return OwnerOf, nil
-	case balanceOfSig:
-		return BalanceOf, nil
-	case tokenURISig:
-		return TokenURI, nil
-	case supportsInterfaceSig:
-		return SupportsInterface, nil
-	case nameSig:
-		return Name, nil
-	case contractURISig:
-		return ContractURI, nil
-	case decimalsSig:
-		return Decimals, nil
-	case symbolSig:
-		return Symbol, nil
+	if method, exists := methodSigs[sig]; exists {
+		return method, nil
 	}
 
 	return 0, fmt.Errorf("unallowed method: %s", sig)
@@ -134,6 +110,5 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return inputArgs, nil
 }

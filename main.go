@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ethereumEndpoint = "url"
+	ethereumEndpoint = "http://localhost:8545"
 	rpcAddress       = "0xc4d9faef49ec1e604a76ee78bc992abadaa29527"
 	listenAddress    = "0.0.0.0:5001"
 	networkID        = 80001
