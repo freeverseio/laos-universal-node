@@ -6,9 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"math/big"
-	"net/http"
-	"net/rpc"
-	"net/rpc/jsonrpc"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	internalRpc "github.com/freeverseio/laos-universal-node/internal/rpc"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
 )
@@ -74,51 +72,24 @@ func run() error {
 		return runScan(ctx, *c, client, s)
 	})
 
-	// Create an HTTP handler for RPC
-	handler := http.NewServeMux()
-	handler.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
-		serverCodec := jsonrpc.NewServerCodec(&httpReadWriteCloser{r.Body, w})
-		w.Header().Set("Content-type", "application/json")
-		rpcErr := rpc.ServeRequest(serverCodec)
-		if rpcErr != nil {
-			slog.Warn("error while serving JSON request", "err", rpcErr)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	})
-
-	// Create an HTTP server with timeouts
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", c.Port),
-		Handler:      handler,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
-	slog.Info("starting universal node RPC server", "port", c.Port)
-
 	group.Go(func() error {
-		<-ctx.Done()
-		slog.Info("shutting down the RPC server...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
-			return fmt.Errorf("error shutting down the RPC server: %w", shutdownErr)
-		}
-		return nil
-	})
-	group.Go(func() error {
-		sys := new(System)
-		err := rpc.Register(sys)
+		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
-			return fmt.Errorf("error registering RPC service: %w", err)
+			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		if srvErr := server.ListenAndServe(); srvErr != nil && srvErr != http.ErrServerClosed {
-			return srvErr
+		rpcServer, err := internalRpc.NewServer(
+			internalRpc.WithEthService(client, common.HexToAddress(c.ContractAddress), c.ChainID),
+			internalRpc.WithNetService(c.ChainID),
+			internalRpc.WithSystemHealthService(),
+		)
+		if err != nil {
+			slog.Error("failed to create RPC server: %v", err)
 		}
-		return nil
+		listenAddress := "0.0.0.0:5001"
+		slog.Info("Starting RPC server", "listenAddress", listenAddress)
+		return rpcServer.ListenAndServe(ctx, listenAddress)
 	})
+
 	if err := group.Wait(); err != nil {
 		return err
 	}

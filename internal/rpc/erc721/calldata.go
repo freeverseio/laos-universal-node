@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain/erc721"
+	ERC721 "github.com/freeverseio/laos-universal-node/internal/blockchain/erc721"
 )
 
 // calldata represents the data for an ERC721 function call.
@@ -93,7 +93,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	if len(argdata)%32 != 0 {
 		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes (was %d)", len(argdata))
 	}
-	erc721Abi, err := abi.JSON(strings.NewReader(erc721.Erc721ABI))
+	erc721Abi, err := abi.JSON(strings.NewReader(ERC721.ERC721MetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
