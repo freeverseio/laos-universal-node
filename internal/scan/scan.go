@@ -146,6 +146,7 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
+
 	return transfer, nil
 }
 
@@ -158,6 +159,7 @@ func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
 	approval.Owner = common.HexToAddress(eL.Topics[1].Hex())
 	approval.Approved = common.HexToAddress(eL.Topics[2].Hex())
 	approval.TokenId = eL.Topics[3].Big()
+
 	return approval, nil
 }
 
@@ -169,6 +171,7 @@ func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForA
 	}
 	approvalForAll.Owner = common.HexToAddress(eL.Topics[1].Hex())
 	approvalForAll.Operator = common.HexToAddress(eL.Topics[2].Hex())
+
 	return approvalForAll, nil
 }
 
@@ -177,5 +180,6 @@ func unpackIntoInterface(e Event, eventName string, contractAbi *abi.ABI, eL *ty
 	if err != nil {
 		return fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
 	}
+
 	return nil
 }

@@ -2,6 +2,7 @@ package scan_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -20,6 +21,32 @@ const (
 )
 
 func TestScanEvents(t *testing.T) {
+	t.Run("it returns when there are no events", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		climock := mock.NewMockEthClient(ctrl)
+
+		fromBlock := big.NewInt(0)
+		toBlock := big.NewInt(100)
+		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
+		s := scan.NewScanner(climock, contract)
+
+		eventLogs := []types.Log{}
+
+		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+			FromBlock: fromBlock,
+			ToBlock:   toBlock,
+			Addresses: []common.Address{contract},
+		}).Return(eventLogs, nil)
+
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("nil error expected, got %v", err)
+		}
+		if events != nil {
+			t.Fatalf("nil events expected, got %v", events)
+		}
+	})
 	t.Run("it should parse Transfer events", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
@@ -200,6 +227,27 @@ func TestScanEvents(t *testing.T) {
 
 		if len(events) != 4 {
 			t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
+		}
+	})
+	t.Run("it raises an error when call to blockchain fails", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		climock := mock.NewMockEthClient(ctrl)
+
+		fromBlock := big.NewInt(0)
+		toBlock := big.NewInt(100)
+		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
+		s := scan.NewScanner(climock, contract)
+
+		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+			FromBlock: fromBlock,
+			ToBlock:   toBlock,
+			Addresses: []common.Address{contract},
+		}).Return(nil, fmt.Errorf("error filtering events"))
+
+		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+		if err == nil {
+			t.Fatal("error expected, got nil")
 		}
 	})
 }
