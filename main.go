@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	internalRpc "github.com/freeverseio/laos-universal-node/cmd/rpc"
+	internalRpc "github.com/freeverseio/laos-universal-node/internal/rpc"
 )
 
 const (

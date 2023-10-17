@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	mockrpc "github.com/freeverseio/laos-universal-node/cmd/rpc/mock"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain/mock"
+	mockrpc "github.com/freeverseio/laos-universal-node/internal/rpc/mock"
 	"github.com/golang/mock/gomock"
 	tmock "github.com/stretchr/testify/mock"
 )
