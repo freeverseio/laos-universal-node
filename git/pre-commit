@@ -1,0 +1,81 @@
+#!/bin/sh
+
+### Colors
+BGBLUE='\033[44m'
+RED='\033[91m'
+GREEN="\e[32m"
+NC='\033[0m' # No Color
+
+### Styles
+NORMAL=$(tput sgr0)
+BOLD=$(tput bold)
+
+### Outputs
+abort_commit() {
+   printf "${RED}Commit aborted 🛑 ${NORMAL} \n"
+}
+
+success_commit() {
+  printf "${GREEN} All good ✅ ${NORMAL} \n"
+  exit 0
+}
+
+check_errors() {
+    ERROR=$1
+    if [ "${ERROR}" -ne "0" ]
+    then
+        abort_commit
+        exit "${ERROR}"
+    fi
+}
+
+check_required_commands() {
+    if ! command -v "$1" >/dev/null 2>&1;
+    then
+        printf "${RED}${BOLD}$1${NORMAL}${RED} is required but it's not installed. Install it please, and then try committing again ${NORMAL} \n"
+        abort_commit
+        exit 1
+    fi
+}
+
+#### START PRE-COMMIT HOOK ###
+echo "${BGBLUE}Running pre-commit checks on your code...${NORMAL}"
+for COMMAND in "go" "golangci-lint" "hadolint" "trivy"; do
+    check_required_commands "${COMMAND}"
+done
+
+#### golangci-lint
+echo "${BGBLUE}>> golangci-lint run${NC}"
+golangci-lint run
+check_errors $?
+
+#### Format
+FILES=$(go list ./...  | grep -v mock)
+echo "${BGBLUE}>> go fmt${NC}"
+go fmt ${FILES}
+
+#### Modules
+echo "${BGBLUE}>> go mod tidy${NC}"
+go mod tidy
+
+#### Check all files for suspicious constructs
+echo "${BGBLUE}>> go vet${NC}"
+go vet ${FILES}
+check_errors $?
+
+#### Launching tests
+echo "${BGBLUE}>> go test -count=1 -race ./...${NC}"
+go test -count=1 -race ./...
+check_errors $?
+
+#### hadolint lint dockerfiles
+echo "${BGBLUE}>> hadolint Dockerfile ${NC}"
+hadolint Dockerfile
+
+#### trivy detect configuration issues in dockerfiles
+echo "${BGBLUE}>> trivy --config trivy.yml config . ${NC}"
+trivy --config trivy.yml config .
+check_errors $?
+
+### Success!
+success_commit
