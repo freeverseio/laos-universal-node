@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -24,23 +23,33 @@ func TestChainId(t *testing.T) {
 	}
 	chainId := service.ChainId()
 	expectedChainId := (*hexutil.Big)(big.NewInt(42))
-	assert.Equal(t, expectedChainId, chainId)
+	if chainId.ToInt().Cmp(expectedChainId.ToInt()) != 0 {
+		t.Errorf("Expected chain ID to be %v but got %v", expectedChainId, chainId)
+	}
 }
 
 // Test for BlockNumber method
 func TestBlockNumber(t *testing.T) {
 	service := EthService{}
 	blockNumber, err := service.BlockNumber(context.Background())
-	assert.Equal(t, hexutil.Uint64(0), blockNumber)
-	assert.NoError(t, err)
+	if blockNumber != hexutil.Uint64(0) {
+		t.Errorf("Expected block number to be 0 but got %v", blockNumber)
+	}
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
 }
 
 // Test for GetBlockByNumber method
 func TestGetBlockByNumber(t *testing.T) {
 	service := EthService{}
 	block, err := service.GetBlockByNumber("0x123", true)
-	assert.NotNil(t, block)
-	assert.NoError(t, err)
+	if block == nil {
+		t.Errorf("Expected block not to be nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
 }
 
 type MockRPCClient struct {
@@ -77,8 +86,12 @@ func TestCall(t *testing.T) {
 
 		// Call the Call method
 		res, err := service.Call(tx, "1")
-		assert.NoError(t, err)
-		assert.Equal(t, ExpectedData, res.String())
+		if err != nil {
+			t.Fatalf("Expected no error but got %v", err)
+		}
+		if res.String() != ExpectedData {
+			t.Errorf("Expected data to be %v but got %v", ExpectedData, res.String())
+		}
 	})
 
 	t.Run("Could execute Call OwnerOf without an error", func(t *testing.T) {
@@ -99,8 +112,12 @@ func TestCall(t *testing.T) {
 
 		// Call the Call method
 		res, err := service.Call(tx, "1")
-		assert.NoError(t, err)
-		assert.Equal(t, expectedResult, res.String())
+		if err != nil {
+			t.Fatalf("Expected no error but got %v", err)
+		}
+		if res.String() != expectedResult {
+			t.Errorf("Expected result to be %v but got %v", expectedResult, res.String())
+		}
 	})
 
 	t.Run("Could execute Call BalanceOf without an error", func(t *testing.T) {
@@ -123,8 +140,12 @@ func TestCall(t *testing.T) {
 
 		// Call the Call method
 		res, err := service.Call(tx, "1")
-		assert.NoError(t, err)
-		assert.Equal(t, expectedResult, res.String())
+		if err != nil {
+			t.Fatalf("Expected no error but got %v", err)
+		}
+		if res.String() != expectedResult {
+			t.Errorf("Expected result to be %v but got %v", expectedResult, res.String())
+		}
 	})
 
 	t.Run("Could execute Call TokenURI with an error", func(t *testing.T) {
@@ -144,6 +165,8 @@ func TestCall(t *testing.T) {
 
 		// Call the Call method
 		_, err := service.Call(tx, "1")
-		assert.Error(t, err, "error from call")
+		if err == nil || err.Error() != "error from call" {
+			t.Fatalf("Expected error 'error from call' but got %v", err)
+		}
 	})
 }
