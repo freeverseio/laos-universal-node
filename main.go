@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"math/big"
 	"os"
@@ -20,31 +19,6 @@ import (
 )
 
 var version = "undefined"
-
-// System is a type that will be exported as an RPC service.
-type System int
-
-type Args struct{}
-
-// SystemResponse holds the result of the Multiply method.
-type SystemResponse struct {
-	Up int
-}
-
-// nolint:unparam // for the first version this implementation is enough
-func (a *System) Up(_ *Args, reply *SystemResponse) error {
-	reply.Up = 1
-	return nil
-}
-
-type httpReadWriteCloser struct {
-	in  io.Reader
-	out io.Writer
-}
-
-func (h *httpReadWriteCloser) Read(p []byte) (n int, err error)  { return h.in.Read(p) }
-func (h *httpReadWriteCloser) Write(p []byte) (n int, err error) { return h.out.Write(p) }
-func (h *httpReadWriteCloser) Close() error                      { return nil }
 
 func main() {
 	if err := run(); err != nil {
@@ -96,6 +70,7 @@ func run() error {
 	return nil
 }
 
+// nolint:gocritic // refactor later hugeParam
 func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan.Scanner) error {
 	var err error
 	if c.StartingBlock == 0 {
