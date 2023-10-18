@@ -31,7 +31,7 @@ commands:
 
 jobs:
   go_test:
-    description: Run go tests 
+    description: Run go tests
     docker:
       - image: cimg/go:1.21
     steps:
