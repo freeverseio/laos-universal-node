@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCalldata(t *testing.T) {
@@ -29,12 +28,19 @@ func TestNewCalldata(t *testing.T) {
 
 	for _, test := range tests {
 		output, err := NewCallData(test.input)
-		assert.Equal(t, test.expected, output)
+
+		if !slicesEqual(output, test.expected) {
+			t.Errorf("Expected: %v, got: %v", test.expected, output)
+		}
+
 		if test.expectedError == "" {
-			assert.Nil(t, err)
+			if err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
 		} else {
-			assert.NotNil(t, err)
-			assert.Contains(t, err.Error(), test.expectedError)
+			if err == nil || err.Error() != test.expectedError {
+				t.Errorf("Expected error: %v, got: %v", test.expectedError, err)
+			}
 		}
 	}
 }
@@ -89,8 +95,14 @@ func TestMethod(t *testing.T) {
 
 	for _, test := range tests {
 		output, err := test.input.Method()
-		assert.Equal(t, test.expected, output)
-		assert.Equal(t, test.err, err)
+		if output != test.expected {
+			t.Errorf("Expected: %v, got: %v", test.expected, output)
+		}
+		if err == nil && test.err != nil {
+			if err.Error() != test.err.Error() {
+				t.Errorf("Expected error: %v, got: %v", test.err, err)
+			}
+		}
 	}
 }
 
@@ -113,7 +125,23 @@ func TestGetParam(t *testing.T) {
 
 	for _, test := range tests {
 		output, err := test.input.GetParam(test.param)
-		assert.Equal(t, test.expected, output)
-		assert.Equal(t, test.err, err)
+		if output != test.expected {
+			t.Errorf("Expected: %v, got: %v", test.expected, output)
+		}
+		if err != test.err {
+			t.Errorf("Expected error: %v, got: %v", test.err, err)
+		}
 	}
+}
+
+func slicesEqual(a, b CallData) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
