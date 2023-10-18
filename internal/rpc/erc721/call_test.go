@@ -10,9 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const (
-	expectedData = "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047777773000000000000000000000000000000000000000000000000000000000"
-)
+const ExpectedData = "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047777773000000000000000000000000000000000000000000000000000000000"
 
 func TestProcessCallUnallowedMethod(t *testing.T) {
 	mockEthClient := new(MockRPCClient)
@@ -31,7 +29,7 @@ func TestProcessCallUnallowedMethod(t *testing.T) {
 func TestProcessCall(t *testing.T) {
 	mockClient := new(MockRPCClient)
 	// Mock behavior & inject result
-	mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedData, nil)
+	mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, nil)
 
 	data := "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000" // Example data
 	to := common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527")
@@ -42,7 +40,7 @@ func TestProcessCall(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert that the returned result matches the expected one
-	assert.Equal(t, expectedData, hexutil.Encode(res))
+	assert.Equal(t, ExpectedData, hexutil.Encode(res))
 
 	// Additional validation for the decoded data (if necessary)
 	decodedData, err := hexutil.Decode(hexutil.Encode(res))

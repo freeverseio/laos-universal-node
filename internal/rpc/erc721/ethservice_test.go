@@ -63,7 +63,7 @@ func TestCall(t *testing.T) {
 	t.Run("Could execute Call TokenURI without an error", func(t *testing.T) {
 		mockClient := new(MockRPCClient)
 		// Mock behavior & inject result
-		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedData, nil)
+		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, nil)
 
 		service := EthService{
 			Ethcli:       mockClient,
@@ -78,7 +78,7 @@ func TestCall(t *testing.T) {
 		// Call the Call method
 		res, err := service.Call(tx, "1")
 		assert.NoError(t, err)
-		assert.Equal(t, expectedData, res.String())
+		assert.Equal(t, ExpectedData, res.String())
 	})
 
 	t.Run("Could execute Call OwnerOf without an error", func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestCall(t *testing.T) {
 	t.Run("Could execute Call TokenURI with an error", func(t *testing.T) {
 		mockClient := new(MockRPCClient)
 		// Mock behavior & inject result
-		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedData, fmt.Errorf("error from call"))
+		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, fmt.Errorf("error from call"))
 
 		service := EthService{
 			Ethcli:       mockClient,
