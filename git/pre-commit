@@ -1,4 +1,5 @@
 #!/bin/sh
+
 ### Colors
 BGBLUE='\033[44m'
 RED='\033[91m'
@@ -20,7 +21,7 @@ success_commit() {
 }
 
 check_errors() {
-    let "ERROR = $1"
+    ERROR=$1
     if [ "${ERROR}" -ne "0" ]
     then
         abort_commit
@@ -39,7 +40,7 @@ check_required_commands() {
 
 #### START PRE-COMMIT HOOK ###
 echo "${BGBLUE}Running pre-commit checks on your code...${NORMAL}"
-for COMMAND in "golangci-lint" "hadolint" "trivy"; do
+for COMMAND in "go" "golangci-lint" "hadolint" "trivy"; do
     check_required_commands "${COMMAND}"
 done
 
