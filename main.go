@@ -85,9 +85,9 @@ func run() error {
 		if err != nil {
 			slog.Error("failed to create RPC server: %v", err)
 		}
-		listenAddress := "0.0.0.0:5001"
-		slog.Info("Starting RPC server", "listenAddress", listenAddress)
-		return rpcServer.ListenAndServe(ctx, listenAddress)
+		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
+		slog.Info("Starting RPC server", "listenAddress", addr)
+		return rpcServer.ListenAndServe(ctx, addr)
 	})
 
 	if err := group.Wait(); err != nil {
