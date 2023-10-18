@@ -2,8 +2,6 @@ package erc721
 
 import (
 	"context"
-	"errors"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,9 +10,8 @@ import (
 )
 
 type EthService struct {
-	Ethcli       blockchain.EthRPCClient
-	ContractAddr common.Address
-	ChainID      uint64
+	Ethcli  blockchain.EthRPCClient
+	ChainID uint64
 }
 
 // ChainId returns the chain ID of the ethService as a hexutil.Big.
@@ -39,12 +36,7 @@ func (b *EthService) GetBlockByNumber(blockNumber string, _ bool) (*blockchain.B
 
 // Call processes an Ethereum transaction call by delegating to erc721.ProcessCall.
 func (b *EthService) Call(t blockchain.Transaction, blockNumber string) (hexutil.Bytes, error) {
-	log.Println("Call")
-	to := common.HexToAddress(t.To)
-	if to != b.ContractAddr {
-		return nil, errors.New("to != b.contractAddr")
-	}
-	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli, b.ContractAddr, b.ChainID)
+	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli, b.ChainID)
 }
 
 // GetBalance returns a hardcoded value of 0 as the balance for a given Ethereum address.

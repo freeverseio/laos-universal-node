@@ -60,7 +60,7 @@ type ServerOption func(*Server) error
 // WithEthService initializes and registers the eth service with the server.
 func WithEthService(ethcli blockchain.EthClient, contractAddr common.Address, chainID uint64) ServerOption {
 	return func(s *Server) error {
-		eth := NewEthService(ethcli.Client(), contractAddr, chainID)
+		eth := NewEthService(ethcli.Client(), chainID)
 		return s.RPCServer.RegisterName("eth", eth)
 	}
 }

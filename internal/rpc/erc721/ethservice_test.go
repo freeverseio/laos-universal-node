@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain"
 	"github.com/stretchr/testify/mock"
@@ -75,8 +74,7 @@ func TestCall(t *testing.T) {
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, nil)
 
 		service := EthService{
-			Ethcli:       mockClient,
-			ContractAddr: common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),
+			Ethcli: mockClient,
 		}
 		// Define the test transaction
 		tx := blockchain.Transaction{
@@ -101,8 +99,7 @@ func TestCall(t *testing.T) {
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedResult, nil)
 
 		service := EthService{
-			Ethcli:       mockClient,
-			ContractAddr: common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),
+			Ethcli: mockClient,
 		}
 		// Define the test transaction
 		tx := blockchain.Transaction{
@@ -129,8 +126,7 @@ func TestCall(t *testing.T) {
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedResult, nil)
 
 		service := EthService{
-			Ethcli:       mockClient,
-			ContractAddr: common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),
+			Ethcli: mockClient,
 		}
 		// Define the test transaction
 		tx := blockchain.Transaction{
@@ -154,8 +150,7 @@ func TestCall(t *testing.T) {
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, fmt.Errorf("error from call"))
 
 		service := EthService{
-			Ethcli:       mockClient,
-			ContractAddr: common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527"),
+			Ethcli: mockClient,
 		}
 		// Define the test transaction
 		tx := blockchain.Transaction{
