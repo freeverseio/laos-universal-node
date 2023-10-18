@@ -7,3 +7,5 @@ releases:
       values:
         - name: {{ .Values.name }}
         - imageTag: {{ requiredEnv "TAG" }}
+        - contractAddress: {{ .Values.name  }}
+        - rpc: {{ .Values.rpc }}

@@ -28,3 +28,5 @@ spec:
             memory: "2Gi"
             cpu: "2"
         command: [ "./universalnode" ]
+        args: [ -contract={{ .Values.contractAddress }},
+        -rpc={{ .Values.rpc }} ]
