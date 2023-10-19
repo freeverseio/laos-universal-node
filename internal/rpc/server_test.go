@@ -77,7 +77,7 @@ func TestNewServer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewServer(
 				WithRpcServer(mockRPCServer),
-				WithEthService(tt.ethClient, tt.contractAddr, tt.chainID),
+				WithEthService(tt.ethClient),
 				WithNetService(tt.chainID),
 				WithSystemHealthService(),
 			)

@@ -48,7 +48,7 @@ func run() error {
 
 	group.Go(func() error {
 		rpcServer, err := rpc.NewServer(
-			rpc.WithEthService(client, common.HexToAddress(c.ContractAddress), c.ChainID),
+			rpc.WithEthService(client),
 			rpc.WithNetService(c.ChainID),
 			rpc.WithSystemHealthService(),
 		)

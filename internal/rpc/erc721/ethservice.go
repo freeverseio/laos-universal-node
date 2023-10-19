@@ -10,14 +10,22 @@ import (
 )
 
 type EthService struct {
-	Ethcli  blockchain.EthRPCClient
-	ChainID uint64
+	Ethcli blockchain.EthRPCClient
 }
 
 // ChainId returns the chain ID of the ethService as a hexutil.Big.
 // nolint:revive // needs to be named ChainId for EVM compatibility.
 func (b *EthService) ChainId() *hexutil.Big {
-	return (*hexutil.Big)(big.NewInt(int64(b.ChainID)))
+	var result string
+	err := b.Ethcli.Call(&result, "eth_chainId")
+	if err != nil {
+		return nil
+	}
+	bigNum, err := hexutil.DecodeBig(result)
+	if err != nil {
+		return (*hexutil.Big)(big.NewInt(int64(0)))
+	}
+	return (*hexutil.Big)(bigNum)
 }
 
 // BlockNumber returns a hardcoded value of 0 as the block number.
@@ -36,7 +44,7 @@ func (b *EthService) GetBlockByNumber(blockNumber string, _ bool) (*blockchain.B
 
 // Call processes an Ethereum transaction call by delegating to erc721.ProcessCall.
 func (b *EthService) Call(t blockchain.Transaction, blockNumber string) (hexutil.Bytes, error) {
-	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli, b.ChainID)
+	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli)
 }
 
 // GetBalance returns a hardcoded value of 0 as the balance for a given Ethereum address.

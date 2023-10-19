@@ -14,9 +14,8 @@ func TestProcessCallUnallowedMethod(t *testing.T) {
 	mockEthClient := new(MockRPCClient)
 	data := "0x12345678" // Example data
 	to := common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678")
-	chainID := uint64(1)
 
-	_, err := ProcessCall(data, to, mockEthClient, chainID)
+	_, err := ProcessCall(data, to, mockEthClient)
 	if err == nil || err.Error() != "unallowed method: 0x12345678" {
 		t.Errorf("Expected error: unallowed method: 0x12345678, got: %v", err)
 	}
@@ -29,9 +28,8 @@ func TestProcessCall(t *testing.T) {
 
 	data := "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000" // Example data
 	to := common.HexToAddress("0xc4d9faef49ec1e604a76ee78bc992abadaa29527")
-	chainID := uint64(1)
 
-	res, err := ProcessCall(data, to, mockClient, chainID)
+	res, err := ProcessCall(data, to, mockClient)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}

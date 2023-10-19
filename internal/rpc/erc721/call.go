@@ -13,7 +13,6 @@ func ProcessCall(
 	data string,
 	to common.Address,
 	ethcli blockchain.EthRPCClient,
-	chainID uint64,
 ) (hexutil.Bytes, error) {
 	callData, err := NewCallData(data)
 	if err != nil {

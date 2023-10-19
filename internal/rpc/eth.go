@@ -23,10 +23,8 @@ type Eth interface {
 // and returns it as an Eth interface.
 func NewEthService(
 	ethcli blockchain.EthRPCClient,
-	chainID uint64,
 ) Eth {
 	return &erc721.EthService{
-		Ethcli:  ethcli,
-		ChainID: chainID,
+		Ethcli: ethcli,
 	}
 }

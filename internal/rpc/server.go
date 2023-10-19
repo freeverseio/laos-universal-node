@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/freeverseio/laos-universal-node/internal/blockchain"
 )
@@ -58,9 +57,9 @@ type Server struct {
 type ServerOption func(*Server) error
 
 // WithEthService initializes and registers the eth service with the server.
-func WithEthService(ethcli blockchain.EthClient, contractAddr common.Address, chainID uint64) ServerOption {
+func WithEthService(ethcli blockchain.EthClient) ServerOption {
 	return func(s *Server) error {
-		eth := NewEthService(ethcli.Client(), chainID)
+		eth := NewEthService(ethcli.Client())
 		return s.RPCServer.RegisterName("eth", eth)
 	}
 }

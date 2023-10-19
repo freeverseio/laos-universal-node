@@ -11,17 +11,31 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// Implementing the methods of blockchain.EthClient with mock methods
+type MockRPCClient struct {
+	mock.Mock
+}
 
-// ... Add other mocked methods as needed
+func (m *MockRPCClient) Call(result interface{}, method string, args ...interface{}) error {
+	argsIn := []interface{}{result, method}
+	argsIn = append(argsIn, args...)
+	retValues := m.Called(argsIn...)
+	// Check if a result is provided, if so, set the result value
+	if retValues.Get(0) != nil {
+		*result.(*string) = retValues.Get(0).(string)
+	}
+	return retValues.Error(1)
+}
 
 // Test for ChainId method
 func TestChainId(t *testing.T) {
+	mockClient := new(MockRPCClient)
+	// Mock behavior & inject result
+	mockClient.On("Call", mock.Anything, "eth_chainId").Return("0x13881", nil)
 	service := EthService{
-		ChainID: 42, // Sample chain ID
+		Ethcli: mockClient,
 	}
 	chainId := service.ChainId()
-	expectedChainId := (*hexutil.Big)(big.NewInt(42))
+	expectedChainId := (*hexutil.Big)(big.NewInt(80001))
 	if chainId.ToInt().Cmp(expectedChainId.ToInt()) != 0 {
 		t.Errorf("Expected chain ID to be %v but got %v", expectedChainId, chainId)
 	}
@@ -49,21 +63,6 @@ func TestGetBlockByNumber(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error but got %v", err)
 	}
-}
-
-type MockRPCClient struct {
-	mock.Mock
-}
-
-func (m *MockRPCClient) Call(result interface{}, method string, args ...interface{}) error {
-	argsIn := []interface{}{result, method}
-	argsIn = append(argsIn, args...)
-	retValues := m.Called(argsIn...)
-	// Check if a result is provided, if so, set the result value
-	if retValues.Get(0) != nil {
-		*result.(*string) = retValues.Get(0).(string)
-	}
-	return retValues.Error(1)
 }
 
 // Test for Call method
@@ -164,4 +163,5 @@ func TestCall(t *testing.T) {
 			t.Fatalf("Expected error 'error from call' but got %v", err)
 		}
 	})
+
 }
