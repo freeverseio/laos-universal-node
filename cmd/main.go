@@ -12,8 +12,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/rpc"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
 )
@@ -47,10 +47,10 @@ func run() error {
 	})
 
 	group.Go(func() error {
-		rpcServer, err := rpc.NewServer(
-			rpc.WithEthService(client),
-			rpc.WithNetService(c.ChainID),
-			rpc.WithSystemHealthService(),
+		rpcServer, err := server.NewServer(
+			server.WithEthService(client),
+			server.WithNetService(c.ChainID),
+			server.WithSystemHealthService(),
 		)
 		if err != nil {
 			slog.Error("failed to create RPC server: %v", err)

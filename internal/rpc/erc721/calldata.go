@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	ERC721 "github.com/freeverseio/laos-universal-node/internal/blockchain/erc721"
+	ERC721 "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/erc721"
 )
 
 // calldata represents the data for an ERC721 function call.

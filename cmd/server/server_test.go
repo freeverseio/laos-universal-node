@@ -1,4 +1,4 @@
-package rpc
+package server
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain/mock"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	mockrpc "github.com/freeverseio/laos-universal-node/internal/rpc/mock"
 	tmock "github.com/stretchr/testify/mock"
 	gomock "go.uber.org/mock/gomock"

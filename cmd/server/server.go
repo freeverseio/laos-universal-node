@@ -1,4 +1,4 @@
-package rpc
+package server
 
 import (
 	"context"
@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
+	internalRpc "github.com/freeverseio/laos-universal-node/internal/rpc"
 )
 
 type HTTPServerer interface {
@@ -59,7 +60,7 @@ type ServerOption func(*Server) error
 // WithEthService initializes and registers the eth service with the server.
 func WithEthService(ethcli blockchain.EthClient) ServerOption {
 	return func(s *Server) error {
-		eth := NewEthService(ethcli.Client())
+		eth := internalRpc.NewEthService(ethcli.Client())
 		return s.RPCServer.RegisterName("eth", eth)
 	}
 }
@@ -67,7 +68,7 @@ func WithEthService(ethcli blockchain.EthClient) ServerOption {
 // WithNetService initializes and registers the net service with the server.
 func WithNetService(chainID uint64) ServerOption {
 	return func(s *Server) error {
-		net := NewNetService(chainID)
+		net := internalRpc.NewNetService(chainID)
 		return s.RPCServer.RegisterName("net", net)
 	}
 }
@@ -75,7 +76,7 @@ func WithNetService(chainID uint64) ServerOption {
 // WithSystemHealthService initializes and registers the system health service with the server.
 func WithSystemHealthService() ServerOption {
 	return func(s *Server) error {
-		systemHealth := NewSystemHealthService()
+		systemHealth := internalRpc.NewSystemHealthService()
 		return s.RPCServer.RegisterName("health", systemHealth)
 	}
 }

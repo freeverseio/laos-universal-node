@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 )
 
 type EthService struct {

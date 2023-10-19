@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/freeverseio/laos-universal-node/internal/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/stretchr/testify/mock"
 )
 
