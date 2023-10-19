@@ -28,29 +28,25 @@ func main() {
 
 func run() error {
 	c := config.Load()
-
 	setLogger(c.Debug)
 	c.LogFields()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
+	client, err := ethclient.Dial(c.Rpc)
+	if err != nil {
+		return fmt.Errorf("error instantiating eth client: %w", err)
+	}
+
 	group, ctx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
-		client, err := ethclient.Dial(c.Rpc)
-		if err != nil {
-			return fmt.Errorf("error instantiating eth client: %w", err)
-		}
 		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress))
 		return runScan(ctx, *c, client, s)
 	})
 
 	group.Go(func() error {
-		client, err := ethclient.Dial(c.Rpc)
-		if err != nil {
-			return fmt.Errorf("error instantiating eth client: %w", err)
-		}
 		rpcServer, err := internalRpc.NewServer(
 			internalRpc.WithEthService(client, common.HexToAddress(c.ContractAddress), c.ChainID),
 			internalRpc.WithNetService(c.ChainID),
@@ -58,6 +54,7 @@ func run() error {
 		)
 		if err != nil {
 			slog.Error("failed to create RPC server: %v", err)
+			return err
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("Starting RPC server", "listenAddress", addr)
