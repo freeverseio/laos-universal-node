@@ -71,7 +71,11 @@ func (b *EthService) GetBalance(addr common.Address, blockNumber string) (hexuti
 	return hexutil.Uint64(balance), nil
 }
 
-// GetCode returns a hardcoded value of 0 as the code for a given Ethereum address.
-func (b *EthService) GetCode(_ common.Address, blockNumber string) (hexutil.Bytes, error) {
-	return nil, nil
+func (b *EthService) GetCode(addr common.Address, blockNumber string) (hexutil.Bytes, error) {
+	var result string
+	err := b.Ethcli.Call(&result, "eth_getCode", addr, blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode(result)
 }

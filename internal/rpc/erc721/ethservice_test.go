@@ -243,3 +243,23 @@ func TestGetBalance(t *testing.T) {
 		t.Errorf("Expected no error but got %v", err)
 	}
 }
+
+func TestGetCode(t *testing.T) {
+	mockClient := new(MockRPCClient)
+	// Mock behavior & inject result
+	mockClient.On("Call", mock.Anything, "eth_getCode", common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest").Return("0x5cec30275aa9343c", nil)
+	service := EthService{
+		Ethcli: mockClient,
+	}
+	code, err := service.GetCode(common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest")
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+
+	if code.String() != "0x5cec30275aa9343c" {
+		t.Errorf("Expected block number to be 0x5cec30275aa9343c but got %v", code)
+	}
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
+}
