@@ -44,7 +44,7 @@ func (b *EthService) GetBlockByNumber(blockNumber string, _ bool) (*blockchain.B
 
 // Call processes an Ethereum transaction call by delegating to erc721.ProcessCall.
 func (b *EthService) Call(t blockchain.Transaction, blockNumber string) (hexutil.Bytes, error) {
-	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli)
+	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli, blockNumber)
 }
 
 // GetBalance returns a hardcoded value of 0 as the balance for a given Ethereum address.

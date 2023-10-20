@@ -163,5 +163,4 @@ func TestCall(t *testing.T) {
 			t.Fatalf("Expected error 'error from call' but got %v", err)
 		}
 	})
-
 }

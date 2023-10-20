@@ -13,6 +13,7 @@ func ProcessCall(
 	data string,
 	to common.Address,
 	ethcli blockchain.EthRPCClient,
+	blockNumber string,
 ) (hexutil.Bytes, error) {
 	callData, err := NewCallData(data)
 	if err != nil {
@@ -28,7 +29,7 @@ func ProcessCall(
 	err = ethcli.Call(&result, "eth_call", map[string]interface{}{
 		"to":   to,
 		"data": data,
-	}, "latest")
+	}, blockNumber)
 
 	if err != nil {
 		return nil, err

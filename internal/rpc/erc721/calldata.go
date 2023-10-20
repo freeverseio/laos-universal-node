@@ -14,7 +14,7 @@ import (
 type CallData []byte
 
 // NewCalldata creates a new calldata instance from a hexadecimal string.
-func NewCallData(s string) (CallData, error) { // nolint:revive // TODO refactor: unexported return type
+func NewCallData(s string) (CallData, error) {
 	b, err := hexutil.Decode(s)
 	if err != nil {
 		return CallData{}, err
