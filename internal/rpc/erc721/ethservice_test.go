@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/stretchr/testify/mock"
@@ -121,7 +122,6 @@ func TestGetBlockByNumber(t *testing.T) {
 	if !ok || difficulty != "0x7" {
 		t.Errorf("Expected difficulty to be '0x7', got %v", difficulty)
 	}
-
 }
 
 // Test for Call method
@@ -222,4 +222,24 @@ func TestCall(t *testing.T) {
 			t.Fatalf("Expected error 'error from call' but got %v", err)
 		}
 	})
+}
+
+func TestGetBalance(t *testing.T) {
+	mockClient := new(MockRPCClient)
+	// Mock behavior & inject result
+	mockClient.On("Call", mock.Anything, "eth_getBalance", common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest").Return("0x5cec30275aa9343c", nil)
+	service := EthService{
+		Ethcli: mockClient,
+	}
+	balance, err := service.GetBalance(common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest")
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+
+	if balance != hexutil.Uint64(6695779691575981116) {
+		t.Errorf("Expected block number to be 0 but got %v", balance)
+	}
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
 }
