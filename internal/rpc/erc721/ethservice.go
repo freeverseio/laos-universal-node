@@ -21,16 +21,25 @@ func (b *EthService) ChainId() *hexutil.Big {
 	if err != nil {
 		return nil
 	}
-	bigNum, err := hexutil.DecodeBig(result)
+	chainId, err := hexutil.DecodeBig(result)
 	if err != nil {
 		return (*hexutil.Big)(big.NewInt(int64(0)))
 	}
-	return (*hexutil.Big)(bigNum)
+	return (*hexutil.Big)(chainId)
 }
 
 // BlockNumber returns a hardcoded value of 0 as the block number.
 func (b *EthService) BlockNumber(_ context.Context) (hexutil.Uint64, error) {
-	return hexutil.Uint64(0), nil
+	var result string
+	err := b.Ethcli.Call(&result, "eth_blockNumber")
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+	blockNum, err := hexutil.DecodeUint64(result)
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+	return hexutil.Uint64(blockNum), nil
 }
 
 // GetBlockByNumber returns the block information for the specified block number.

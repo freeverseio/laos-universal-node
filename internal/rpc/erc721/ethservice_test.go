@@ -43,9 +43,14 @@ func TestChainId(t *testing.T) {
 
 // Test for BlockNumber method
 func TestBlockNumber(t *testing.T) {
-	service := EthService{}
+	mockClient := new(MockRPCClient)
+	// Mock behavior & inject result
+	mockClient.On("Call", mock.Anything, "eth_blockNumber").Return("0x277f60e", nil)
+	service := EthService{
+		Ethcli: mockClient,
+	}
 	blockNumber, err := service.BlockNumber(context.Background())
-	if blockNumber != hexutil.Uint64(0) {
+	if blockNumber != hexutil.Uint64(41416206) {
 		t.Errorf("Expected block number to be 0 but got %v", blockNumber)
 	}
 	if err != nil {
