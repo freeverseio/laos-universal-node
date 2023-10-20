@@ -21,7 +21,15 @@ func (m *MockRPCClient) Call(result interface{}, method string, args ...interfac
 	retValues := m.Called(argsIn...)
 	// Check if a result is provided, if so, set the result value
 	if retValues.Get(0) != nil {
-		*result.(*string) = retValues.Get(0).(string)
+		switch v := result.(type) {
+		case *map[string]interface{}:
+			*v = retValues.Get(0).(map[string]interface{})
+		case *string:
+			*v = retValues.Get(0).(string)
+		// Add more types if needed
+		default:
+			return fmt.Errorf("unsupported type: %T", v)
+		}
 	}
 	return retValues.Error(1)
 }
@@ -60,7 +68,37 @@ func TestBlockNumber(t *testing.T) {
 
 // Test for GetBlockByNumber method
 func TestGetBlockByNumber(t *testing.T) {
-	service := EthService{}
+	mockClient := new(MockRPCClient)
+	mockResult := map[string]interface{}{
+		"baseFeePerGas":   "0x10",
+		"difficulty":      "0x7",
+		"extraData":       "0xd78301000683626f7288676f312e32302e35856c696e757800000000000000006116f632ba8263ce3d3e570e3689d6fbfe4f40c9aa9b8b05b2be3a0c3da6c6b74a8d915e78970f28dd7653ee2b1c3ad3e8dd86b0a1afd077beab9f83690b8ef900",
+		"gasLimit":        "0x1c2324b",
+		"gasUsed":         "0x586e3",
+		"hash":            "0x1486afd8523cb57dcf6d11659dddf3f2123618614d12ecb015a104c30ef4ef20",
+		"logsBloom":       "0x000000000420000000000100002000000000000800000000000100802200012000000200060000000400801200000030000080000000040010000000002000000000000000000100000200081000008000000000008010040041002000008800000800080200000200000004004008000000000000c8000880400810000000000004080000000000000000240000000000000000000000020004000200000000220020400000100000000000000000000000000002000000000100080000000004000000002000000000001001000021008000000000000808000108008000020000210000000000080000000000040000020040002004000000080000800100004",
+		"miner":           "0x0000000000000000000000000000000000000000",
+		"mixHash":         "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"nonce":           "0x0000000000000000",
+		"number":          "0x277f60e",
+		"parentHash":      "0x72e288bbacd6c55fd28ad660e26265a414c68ae805db408907e45cbd7ebac0a8",
+		"receiptsRoot":    "0x0a7d86ed4c6c6b4e47645cb600f1e013896783186c1d528dbd3aa34258881ab5",
+		"sha3Uncles":      "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+		"size":            "0x76f",
+		"stateRoot":       "0x823a4c5b853eac0208d83ec4d31b6464fd8eb7d674baefce658713d25df9d5b1",
+		"timestamp":       "0x653218f4",
+		"totalDifficulty": "0xf19a0fd",
+		"transactions": []string{
+			"0x17ccefdbb21e7b93e621cf975f95a939b22c9e659057deb881f731dcb9b2f82c",
+		},
+		"transactionsRoot": "0x8b3c3bd57474ac3c60ced349928994ea30930519968478eac592268f024caf9b",
+		"uncles":           []interface{}{},
+	}
+	// Mock behavior & inject result
+	mockClient.On("Call", mock.Anything, "eth_getBlockByNumber", "0x123", true).Return(mockResult, nil)
+	service := EthService{
+		Ethcli: mockClient,
+	}
 	block, err := service.GetBlockByNumber("0x123", true)
 	if block == nil {
 		t.Errorf("Expected block not to be nil")
@@ -68,6 +106,22 @@ func TestGetBlockByNumber(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error but got %v", err)
 	}
+	if block == nil {
+		t.Errorf("Expected block not to be nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error but got %v", err)
+	}
+
+	baseFeePerGas, ok := block["baseFeePerGas"].(string)
+	if !ok || baseFeePerGas != "0x10" {
+		t.Errorf("Expected baseFeePerGas to be '0x10', got %v", baseFeePerGas)
+	}
+	difficulty, ok := block["difficulty"].(string)
+	if !ok || difficulty != "0x7" {
+		t.Errorf("Expected difficulty to be '0x7', got %v", difficulty)
+	}
+
 }
 
 // Test for Call method

@@ -43,12 +43,13 @@ func (b *EthService) BlockNumber(_ context.Context) (hexutil.Uint64, error) {
 }
 
 // GetBlockByNumber returns the block information for the specified block number.
-// We return an empty object(this is needed for Metamask integration)
-func (b *EthService) GetBlockByNumber(blockNumber string, _ bool) (*blockchain.Block, error) {
-	return &blockchain.Block{
-		// adding empty transactions otherwise it will be nil
-		Transactions: []blockchain.Transaction{},
-	}, nil
+func (b *EthService) GetBlockByNumber(blockNumber string, includeTransactions bool) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := b.Ethcli.Call(&result, "eth_getBlockByNumber", blockNumber, includeTransactions)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // Call processes an Ethereum transaction call by delegating to erc721.ProcessCall.

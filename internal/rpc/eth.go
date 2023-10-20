@@ -16,7 +16,7 @@ type Eth interface {
 	Call(t blockchain.Transaction, blockNumber string) (hexutil.Bytes, error)
 	GetBalance(address common.Address, blockNumber string) (hexutil.Uint64, error)
 	GetCode(address common.Address, blockNumber string) (hexutil.Bytes, error)
-	GetBlockByNumber(blockNumber string, includeTransactions bool) (*blockchain.Block, error)
+	GetBlockByNumber(blockNumber string, includeTransactions bool) (map[string]interface{}, error)
 }
 
 // NewEthService creates a new instance of ethService with the given parameters,
