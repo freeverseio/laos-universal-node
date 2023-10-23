@@ -29,17 +29,19 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contract := scan.ERC721BridgelessContract{
-			Address: address,
-			Block:   fromBlock.Uint64(),
-			BaseURI: "johndoe/collection",
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
 		}
 
 		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{}
 
-		storage.EXPECT().ReadAll(context.Background()).Return([]scan.ERC721BridgelessContract{contract}, nil).Times(1)
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
@@ -62,6 +64,13 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
+		}
 
 		s := scan.NewScanner(climock, address, storage)
 
@@ -76,6 +85,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
@@ -100,6 +110,13 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
+		}
 
 		s := scan.NewScanner(climock, address, storage)
 
@@ -115,6 +132,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
@@ -139,7 +157,13 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
+		}
 		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{
@@ -153,6 +177,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
@@ -177,6 +202,13 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
+		}
 
 		s := scan.NewScanner(climock, address, storage)
 
@@ -225,6 +257,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
@@ -248,9 +281,17 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contracts := []scan.ERC721BridgelessContract{
+			{
+				Address: address,
+				Block:   fromBlock.Uint64(),
+				BaseURI: "johndoe/collection",
+			},
+		}
 
 		s := scan.NewScanner(climock, address, storage)
 
+		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
