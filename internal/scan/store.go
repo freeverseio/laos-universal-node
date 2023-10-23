@@ -82,12 +82,10 @@ func (fs fsStorage) ReadAll(ctx context.Context) ([]ERC721BridgelessContract, er
 			return nil, err
 		}
 
-		slog.Info("readall contracts found", "contract", contract)
 		contracts = append(contracts, contract)
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
