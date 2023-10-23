@@ -58,6 +58,9 @@ func TestRunScanOk(t *testing.T) {
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
+			scanner.EXPECT().ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
+				Return(nil).
+				Times(tt.scanEventsTimes)
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
@@ -86,6 +89,12 @@ func TestRunScanTwice(t *testing.T) {
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
 		Times(3)
+	scanner.EXPECT().ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(51))).
+		Return(nil).
+		Times(1)
+	scanner.EXPECT().ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
+		Return(nil).
+		Times(1)
 	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51)).
 		Return(nil, nil).
 		Times(1)
