@@ -10,14 +10,20 @@ import (
 )
 
 type EthService struct {
-	Ethcli blockchain.EthRPCClient
+	ethcli blockchain.EthRPCClient
+}
+
+func NewEthService(ethcli blockchain.EthRPCClient) *EthService {
+	return &EthService{
+		ethcli: ethcli,
+	}
 }
 
 // ChainId returns the chain ID of the ethService as a hexutil.Big.
 // nolint:revive // needs to be named ChainId for EVM compatibility.
 func (b *EthService) ChainId() *hexutil.Big {
 	var result string
-	err := b.Ethcli.Call(&result, "eth_chainId")
+	err := b.ethcli.Call(&result, "eth_chainId")
 	if err != nil {
 		return nil
 	}
@@ -31,7 +37,7 @@ func (b *EthService) ChainId() *hexutil.Big {
 // BlockNumber returns a hardcoded value of 0 as the block number.
 func (b *EthService) BlockNumber(_ context.Context) (hexutil.Uint64, error) {
 	var result string
-	err := b.Ethcli.Call(&result, "eth_blockNumber")
+	err := b.ethcli.Call(&result, "eth_blockNumber")
 	if err != nil {
 		return hexutil.Uint64(0), err
 	}
@@ -45,7 +51,7 @@ func (b *EthService) BlockNumber(_ context.Context) (hexutil.Uint64, error) {
 // GetBlockByNumber returns the block information for the specified block number.
 func (b *EthService) GetBlockByNumber(blockNumber string, includeTransactions bool) (map[string]interface{}, error) {
 	var result map[string]interface{}
-	err := b.Ethcli.Call(&result, "eth_getBlockByNumber", blockNumber, includeTransactions)
+	err := b.ethcli.Call(&result, "eth_getBlockByNumber", blockNumber, includeTransactions)
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +60,13 @@ func (b *EthService) GetBlockByNumber(blockNumber string, includeTransactions bo
 
 // Call processes an Ethereum transaction call by delegating to erc721.ProcessCall.
 func (b *EthService) Call(t blockchain.Transaction, blockNumber string) (hexutil.Bytes, error) {
-	return ProcessCall(t.Data, common.HexToAddress(t.To), b.Ethcli, blockNumber)
+	return ProcessCall(t.Data, common.HexToAddress(t.To), b.ethcli, blockNumber)
 }
 
-// GetBalance returns a hardcoded value of 0 as the balance for a given Ethereum address.
+// GetBalance returns the balance of the specified address.
 func (b *EthService) GetBalance(addr common.Address, blockNumber string) (hexutil.Uint64, error) {
 	var result string
-	err := b.Ethcli.Call(&result, "eth_getBalance", addr, blockNumber)
+	err := b.ethcli.Call(&result, "eth_getBalance", addr, blockNumber)
 	if err != nil {
 		return hexutil.Uint64(0), err
 	}
@@ -73,7 +79,7 @@ func (b *EthService) GetBalance(addr common.Address, blockNumber string) (hexuti
 
 func (b *EthService) GetCode(addr common.Address, blockNumber string) (hexutil.Bytes, error) {
 	var result string
-	err := b.Ethcli.Call(&result, "eth_getCode", addr, blockNumber)
+	err := b.ethcli.Call(&result, "eth_getCode", addr, blockNumber)
 	if err != nil {
 		return nil, err
 	}

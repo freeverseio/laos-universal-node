@@ -40,9 +40,7 @@ func TestChainId(t *testing.T) {
 	mockClient := new(MockRPCClient)
 	// Mock behavior & inject result
 	mockClient.On("Call", mock.Anything, "eth_chainId").Return("0x13881", nil)
-	service := EthService{
-		Ethcli: mockClient,
-	}
+	service := NewEthService(mockClient)
 	chainId := service.ChainId()
 	expectedChainId := (*hexutil.Big)(big.NewInt(80001))
 	if chainId.ToInt().Cmp(expectedChainId.ToInt()) != 0 {
@@ -55,9 +53,7 @@ func TestBlockNumber(t *testing.T) {
 	mockClient := new(MockRPCClient)
 	// Mock behavior & inject result
 	mockClient.On("Call", mock.Anything, "eth_blockNumber").Return("0x277f60e", nil)
-	service := EthService{
-		Ethcli: mockClient,
-	}
+	service := NewEthService(mockClient)
 	blockNumber, err := service.BlockNumber(context.Background())
 	if blockNumber != hexutil.Uint64(41416206) {
 		t.Errorf("Expected block number to be 0 but got %v", blockNumber)
@@ -97,9 +93,7 @@ func TestGetBlockByNumber(t *testing.T) {
 	}
 	// Mock behavior & inject result
 	mockClient.On("Call", mock.Anything, "eth_getBlockByNumber", "0x123", true).Return(mockResult, nil)
-	service := EthService{
-		Ethcli: mockClient,
-	}
+	service := NewEthService(mockClient)
 	block, err := service.GetBlockByNumber("0x123", true)
 	if block == nil {
 		t.Errorf("Expected block not to be nil")
@@ -131,9 +125,7 @@ func TestCall(t *testing.T) {
 		// Mock behavior & inject result
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, nil)
 
-		service := EthService{
-			Ethcli: mockClient,
-		}
+		service := NewEthService(mockClient)
 		// Define the test transaction
 		tx := blockchain.Transaction{
 			To:   "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
@@ -156,9 +148,7 @@ func TestCall(t *testing.T) {
 		expectedResult := "0x1b0b4a597c764400ea157ab84358c8788a89cd28"
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedResult, nil)
 
-		service := EthService{
-			Ethcli: mockClient,
-		}
+		service := NewEthService(mockClient)
 		// Define the test transaction
 		tx := blockchain.Transaction{
 			To:   "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
@@ -183,9 +173,7 @@ func TestCall(t *testing.T) {
 		expectedResult := "0x0000000000000000000000000000000000000000000000000000000000000001"
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedResult, nil)
 
-		service := EthService{
-			Ethcli: mockClient,
-		}
+		service := NewEthService(mockClient)
 		// Define the test transaction
 		tx := blockchain.Transaction{
 			To:   "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
@@ -207,9 +195,7 @@ func TestCall(t *testing.T) {
 		// Mock behavior & inject result
 		mockClient.On("Call", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ExpectedData, fmt.Errorf("error from call"))
 
-		service := EthService{
-			Ethcli: mockClient,
-		}
+		service := NewEthService(mockClient)
 		// Define the test transaction
 		tx := blockchain.Transaction{
 			To:   "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
@@ -228,9 +214,7 @@ func TestGetBalance(t *testing.T) {
 	mockClient := new(MockRPCClient)
 	// Mock behavior & inject result
 	mockClient.On("Call", mock.Anything, "eth_getBalance", common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest").Return("0x5cec30275aa9343c", nil)
-	service := EthService{
-		Ethcli: mockClient,
-	}
+	service := NewEthService(mockClient)
 	balance, err := service.GetBalance(common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest")
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
@@ -248,9 +232,7 @@ func TestGetCode(t *testing.T) {
 	mockClient := new(MockRPCClient)
 	// Mock behavior & inject result
 	mockClient.On("Call", mock.Anything, "eth_getCode", common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest").Return("0x5cec30275aa9343c", nil)
-	service := EthService{
-		Ethcli: mockClient,
-	}
+	service := NewEthService(mockClient)
 	code, err := service.GetCode(common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"), "latest")
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)

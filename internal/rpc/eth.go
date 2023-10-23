@@ -24,7 +24,5 @@ type Eth interface {
 func NewEthService(
 	ethcli blockchain.EthRPCClient,
 ) Eth {
-	return &erc721.EthService{
-		Ethcli: ethcli,
-	}
+	return erc721.NewEthService(ethcli)
 }
