@@ -104,6 +104,8 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 		HTTPServer: &HTTPServer{
 			server: &http.Server{
 				ReadHeaderTimeout: 20 * time.Second,
+				WriteTimeout:      20 * time.Second,
+				ReadTimeout:       20 * time.Second,
 			},
 		},
 	}
@@ -138,14 +140,14 @@ func (s Server) ListenAndServe(ctx context.Context, addr string) error {
 		s.HTTPServer.SetKeepAlivesEnabled(false)
 		if err := s.HTTPServer.Shutdown(ctx); err != nil {
 			// Error from closing listeners, or context timeout:
-			slog.Error("HTTP server Shutdown: %v", err)
+			slog.Error("HTTP server Shutdown: %w", err)
 		}
 	}()
 
 	if err := s.HTTPServer.ListenAndServe(); err != http.ErrServerClosed {
-		slog.Error("RPC HTTP server ListenAndServe: %v", err)
+		slog.Error("RPC HTTP server ListenAndServe: %w", err)
 		// Error starting or closing listener:
-		return fmt.Errorf("RPC HTTP server ListenAndServe: %v", err)
+		return fmt.Errorf("RPC HTTP server ListenAndServe: %w", err)
 	}
 
 	slog.Info("RPC server successfully stopped.")
