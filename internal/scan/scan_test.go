@@ -24,19 +24,26 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it returns when there are no events", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contract := scan.ERC721BridgelessContract{
+			Address: address,
+			Block:   fromBlock.Uint64(),
+			BaseURI: "johndoe/collection",
+		}
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{}
 
+		storage.EXPECT().ReadAll(context.Background()).Return([]scan.ERC721BridgelessContract{contract}, nil).Times(1)
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
@@ -50,12 +57,13 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it should parse Transfer events", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -71,7 +79,7 @@ func TestScanEvents(t *testing.T) {
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
@@ -87,12 +95,13 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it should parse Approval events", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -109,7 +118,7 @@ func TestScanEvents(t *testing.T) {
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
@@ -125,12 +134,13 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it should parse ApprovalForAll events", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -146,7 +156,7 @@ func TestScanEvents(t *testing.T) {
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
@@ -162,12 +172,13 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -217,7 +228,7 @@ func TestScanEvents(t *testing.T) {
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
@@ -232,17 +243,18 @@ func TestScanEvents(t *testing.T) {
 	t.Run("it raises an error when call to blockchain fails", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		climock := mock.NewMockEthClient(ctrl)
+		storage := mock.NewMockStorage(ctrl)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
-		contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
 
-		s := scan.NewScanner(climock, contract)
+		s := scan.NewScanner(climock, address, storage)
 
 		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{contract},
+			Addresses: []common.Address{address},
 		}).Return(nil, fmt.Errorf("error filtering events"))
 
 		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)

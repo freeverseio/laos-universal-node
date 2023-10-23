@@ -70,7 +70,11 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress))
+		storage, err := scan.NewFSStorage("erc721_contracts.txt")
+		if err != nil {
+			return fmt.Errorf("error initializing storage: %w", err)
+		}
+		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress), storage)
 		return runScan(ctx, *c, client, s)
 	})
 

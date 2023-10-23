@@ -3,7 +3,6 @@ package scan
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"math/big"
 	"strings"
@@ -93,11 +92,7 @@ type scanner struct {
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, contract common.Address) Scanner {
-	s, err := NewFSStorage("erc721_contracts.txt")
-	if err != nil {
-		log.Fatalf("error init FSStorage: %v", err.Error())
-	}
+func NewScanner(client EthClient, contract common.Address, s Storage) Scanner {
 	return scanner{
 		client:   client,
 		contract: contract,
@@ -158,12 +153,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 	}
 
 	if len(contracts) == 0 {
+		slog.Debug("no contracts found")
 		return nil, nil
 	}
 
-	slog.Info("contracts found", "contracts", contracts)
-
-	addresses := make([]common.Address, len(contracts))
+	addresses := make([]common.Address, 0)
 	for _, c := range contracts {
 		addresses = append(addresses, c.Address)
 	}
