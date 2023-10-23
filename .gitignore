@@ -23,3 +23,7 @@ api/node_modules
 .vscode
 
 .trunk
+
+# erc721BridgelessMinting contracts storage 
+erc721_contracts.txt
+
