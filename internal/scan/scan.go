@@ -3,6 +3,7 @@ package scan
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"math/big"
 	"strings"
@@ -13,19 +14,22 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/freeverseio/laos-universal-node/internal/ERC721"
+	"github.com/freeverseio/laos-universal-node/internal/ERC721BridgelessMinting"
 )
 
 var (
-	eventTransferName          = "Transfer"
-	eventApprovalName          = "Approval"
-	eventApprovalForAllName    = "ApprovalForAll"
-	eventTransferSig           = []byte(fmt.Sprintf("%s(address,address,uint256)", eventTransferName))
-	eventApprovalSig           = []byte(fmt.Sprintf("%s(address,address,uint256)", eventApprovalName))
-	eventApprovalForAllSig     = []byte(fmt.Sprintf("%s(address,address,bool)", eventApprovalForAllName))
-	eventTransferSigHash       = crypto.Keccak256Hash(eventTransferSig).Hex()
-	eventApprovalSigHash       = crypto.Keccak256Hash(eventApprovalSig).Hex()
-	eventApprovalForAllSigHash = crypto.Keccak256Hash(eventApprovalForAllSig).Hex()
+	eventTransferName                      = "Transfer"
+	eventApprovalName                      = "Approval"
+	eventApprovalForAllName                = "ApprovalForAll"
+	eventNewERC721BridgelessMintingName    = "NewERC721BridgelessMinting"
+	eventTransferSig                       = []byte(fmt.Sprintf("%s(address,address,uint256)", eventTransferName))
+	eventApprovalSig                       = []byte(fmt.Sprintf("%s(address,address,uint256)", eventApprovalName))
+	eventApprovalForAllSig                 = []byte(fmt.Sprintf("%s(address,address,bool)", eventApprovalForAllName))
+	eventNewERC721BridgelessMintingSig     = []byte(fmt.Sprintf("%s(address,string)", eventNewERC721BridgelessMintingName))
+	eventTransferSigHash                   = crypto.Keccak256Hash(eventTransferSig).Hex()
+	eventApprovalSigHash                   = crypto.Keccak256Hash(eventApprovalSig).Hex()
+	eventApprovalForAllSigHash             = crypto.Keccak256Hash(eventApprovalForAllSig).Hex()
+	eventNewERC721BridgelessMintingSigHash = crypto.Keccak256Hash(eventNewERC721BridgelessMintingSig).Hex()
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -70,27 +74,101 @@ type EventApprovalForAll struct {
 	Approved bool
 }
 
+// EventNewERC721BridgelessMinting is the ERC721 event emitted when a new Bridgeless Minting contract is deployed
+type EventNewERC721BridgelessMinting struct {
+	NewContractAddress common.Address
+	BaseURI            string
+}
+
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
+	ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
 }
 
 type scanner struct {
 	client   EthClient
-	contract common.Address
+	contract common.Address // TODO
+	storage  Storage
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
 func NewScanner(client EthClient, contract common.Address) Scanner {
+	s, err := NewFSStorage("erc721_contracts.txt")
+	if err != nil {
+		log.Fatalf("error init FSStorage: %v", err.Error())
+	}
 	return scanner{
 		client:   client,
 		contract: contract,
+		storage:  s,
 	}
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
+func (s scanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock)
+	if err != nil {
+		return fmt.Errorf("error filtering events: %w", err)
+	}
+	if len(eventLogs) == 0 {
+		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
+		return nil
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(ERC721BridgelessMinting.ERC721BridgelessMintingMetaData.ABI))
+	if err != nil {
+		return fmt.Errorf("error instantiating ABI: %w", err)
+	}
+	for i := range eventLogs {
+		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
+		if len(eventLogs[i].Topics) == 0 {
+			continue
+		}
+
+		switch eventLogs[i].Topics[0].Hex() {
+		case eventNewERC721BridgelessMintingSigHash:
+			newERC721BridgelessMinting, err := parseNewERC721BridgelessMinting(&eventLogs[i], &contractAbi)
+			if err != nil {
+				return err
+			}
+			slog.Info("received event", eventNewERC721BridgelessMintingName, newERC721BridgelessMinting)
+
+			c := ERC721BridgelessContract{
+				Address: newERC721BridgelessMinting.NewContractAddress,
+				Block:   eventLogs[i].BlockNumber,
+				BaseURI: newERC721BridgelessMinting.BaseURI,
+			}
+			if err := s.storage.Store(ctx, c); err != nil {
+				return err
+			}
+		default:
+			slog.Debug("no new bridgeless minting contracts found")
+		}
+	}
+
+	return nil
+}
+
+// ScanEvents returns the ERC721 events between fromBlock and toBlock
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
+	contracts, err := s.storage.ReadAll(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(contracts) == 0 {
+		return nil, nil
+	}
+
+	slog.Info("contracts found", "contracts", contracts)
+
+	addresses := make([]common.Address, len(contracts))
+	for _, c := range contracts {
+		addresses = append(addresses, c.Address)
+	}
+
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -99,7 +177,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 		return nil, nil
 	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(ERC721.ERC721MetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(ERC721BridgelessMinting.ERC721BridgelessMintingMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
@@ -136,11 +214,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 	return parsedEvents, nil
 }
 
-func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int) ([]types.Log, error) {
+func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
-		Addresses: []common.Address{s.contract},
+		Addresses: contracts,
 	})
 }
 
@@ -182,10 +260,20 @@ func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForA
 	return approvalForAll, nil
 }
 
+func parseNewERC721BridgelessMinting(eL *types.Log, contractAbi *abi.ABI) (EventNewERC721BridgelessMinting, error) {
+	var newERC721BridgelessMinting EventNewERC721BridgelessMinting
+	err := unpackIntoInterface(&newERC721BridgelessMinting, eventNewERC721BridgelessMintingName, contractAbi, eL)
+	if err != nil {
+		return newERC721BridgelessMinting, err
+	}
+
+	return newERC721BridgelessMinting, nil
+}
+
 func unpackIntoInterface(e Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
 	err := contractAbi.UnpackIntoInterface(e, eventName, eL.Data)
 	if err != nil {
-		return fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
+		return fmt.Errorf("error unpacking the event %s: %w", eventName, err)
 	}
 
 	return nil

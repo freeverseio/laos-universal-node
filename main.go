@@ -152,6 +152,11 @@ func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
+
+			if err := s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock))); err != nil {
+				slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
+				break
+			}
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
