@@ -1,4 +1,4 @@
-package erc721
+package erc721_test
 
 import (
 	"fmt"
@@ -6,28 +6,29 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/freeverseio/laos-universal-node/internal/rpc/erc721"
 )
 
 func TestNewCalldata(t *testing.T) {
 	tests := []struct {
 		input         string
-		expected      CallData
+		expected      erc721.CallData
 		expectedError string
 	}{
 		{
 			input:         "0x1234",
-			expected:      CallData{0x12, 0x34},
+			expected:      erc721.CallData{0x12, 0x34},
 			expectedError: "",
 		},
 		{
 			input:         "invalid",
-			expected:      CallData{},
+			expected:      erc721.CallData{},
 			expectedError: "hex string without 0x prefix",
 		},
 	}
 
 	for _, test := range tests {
-		output, err := NewCallData(test.input)
+		output, err := erc721.NewCallData(test.input)
 
 		if !slicesEqual(output, test.expected) {
 			t.Errorf("Expected: %v, got: %v", test.expected, output)
@@ -47,47 +48,47 @@ func TestNewCalldata(t *testing.T) {
 
 func TestMethod(t *testing.T) {
 	tests := []struct {
-		input    CallData
-		expected erc721method
+		input    erc721.CallData
+		expected erc721.Erc721method
 		err      error
 	}{
 		{
 			input:    hexutil.MustDecode("0x6352211e"),
-			expected: OwnerOf,
+			expected: erc721.OwnerOf,
 			err:      nil,
 		},
 		{
 			input:    hexutil.MustDecode("0x70a08231"),
-			expected: BalanceOf,
+			expected: erc721.BalanceOf,
 			err:      nil,
 		},
 		{
 			input:    hexutil.MustDecode("0xc87b56dd"),
-			expected: TokenURI,
+			expected: erc721.TokenURI,
 			err:      nil,
 		},
 		{
 			input:    hexutil.MustDecode("0x01ffc9a7"),
-			expected: SupportsInterface,
+			expected: erc721.SupportsInterface,
 			err:      nil,
 		},
 		{
 			input:    hexutil.MustDecode("0x06fdde03"),
-			expected: Name,
+			expected: erc721.Name,
 			err:      nil,
 		},
 		{
 			input:    hexutil.MustDecode("0x313ce567"),
-			expected: Decimals,
+			expected: erc721.Decimals,
 			err:      nil,
 		},
 		{
-			input:    CallData{0x00, 0x00, 0x00},
+			input:    erc721.CallData{0x00, 0x00, 0x00},
 			expected: 0,
 			err:      fmt.Errorf("invalid call data, incomplete method signature (3 bytes < 4)"),
 		},
 		{
-			input:    CallData{0x12, 0x34, 0x56, 0x78},
+			input:    erc721.CallData{0x12, 0x34, 0x56, 0x78},
 			expected: 0,
 			err:      fmt.Errorf("unallowed method: 0x12345678"),
 		},
@@ -110,7 +111,7 @@ func TestGetParam(t *testing.T) {
 	// This is a bit more complex since it requires correct ABI encoding.
 	// For the sake of example, I'll provide a simple framework.
 	tests := []struct {
-		input    CallData
+		input    erc721.CallData
 		param    string
 		expected interface{}
 		err      error
@@ -134,7 +135,7 @@ func TestGetParam(t *testing.T) {
 	}
 }
 
-func slicesEqual(a, b CallData) bool {
+func slicesEqual(a, b erc721.CallData) bool {
 	if len(a) != len(b) {
 		return false
 	}

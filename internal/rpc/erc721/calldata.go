@@ -23,12 +23,12 @@ func NewCallData(s string) (CallData, error) {
 }
 
 // erc721method represents the supported ERC721 methods.
-type erc721method int
+type Erc721method int
 
 const ShortAddressLength = 4
 
 const (
-	OwnerOf erc721method = iota
+	OwnerOf Erc721method = iota
 	BalanceOf
 	TokenURI
 	URI
@@ -39,7 +39,7 @@ const (
 	Symbol
 )
 
-var methodSigs = map[string]erc721method{
+var methodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):          OwnerOf,
 	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):        BalanceOf,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:ShortAddressLength]):         TokenURI,
@@ -51,7 +51,7 @@ var methodSigs = map[string]erc721method{
 }
 
 // Method returns the ERC721 method invoked by the calldata.
-func (b CallData) Method() (erc721method, error) {
+func (b CallData) Method() (Erc721method, error) {
 	sig, err := b.methodSignature()
 	if err != nil {
 		return 0, err
