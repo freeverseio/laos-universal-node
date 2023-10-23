@@ -57,7 +57,7 @@ func run() error {
 			return err
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
-		slog.Info("Starting RPC server", "listenAddress", addr)
+		slog.Info("starting RPC server", "listenAddress", addr)
 		return rpcServer.ListenAndServe(ctx, addr)
 	})
 
