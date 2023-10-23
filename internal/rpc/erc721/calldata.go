@@ -25,6 +25,8 @@ func NewCallData(s string) (CallData, error) {
 // erc721method represents the supported ERC721 methods.
 type erc721method int
 
+const ShortAddressLength = 4
+
 const (
 	OwnerOf erc721method = iota
 	BalanceOf
@@ -38,14 +40,14 @@ const (
 )
 
 var methodSigs = map[string]erc721method{
-	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:4]):          OwnerOf,
-	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:4]):        BalanceOf,
-	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:4]):         TokenURI,
-	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:4]): SupportsInterface,
-	hexutil.Encode(crypto.Keccak256([]byte("name()"))[:4]):                    Name,
-	hexutil.Encode(crypto.Keccak256([]byte("contractURI()"))[:4]):             ContractURI,
-	hexutil.Encode(crypto.Keccak256([]byte("decimals()"))[:4]):                Decimals,
-	hexutil.Encode(crypto.Keccak256([]byte("symbol()"))[:4]):                  Symbol,
+	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):          OwnerOf,
+	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):        BalanceOf,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:ShortAddressLength]):         TokenURI,
+	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]): SupportsInterface,
+	hexutil.Encode(crypto.Keccak256([]byte("name()"))[:ShortAddressLength]):                    Name,
+	hexutil.Encode(crypto.Keccak256([]byte("contractURI()"))[:ShortAddressLength]):             ContractURI,
+	hexutil.Encode(crypto.Keccak256([]byte("decimals()"))[:ShortAddressLength]):                Decimals,
+	hexutil.Encode(crypto.Keccak256([]byte("symbol()"))[:ShortAddressLength]):                  Symbol,
 }
 
 // Method returns the ERC721 method invoked by the calldata.
@@ -64,10 +66,10 @@ func (b CallData) Method() (erc721method, error) {
 
 // methodSignature returns the method signature of the calldata.
 func (b CallData) methodSignature() (string, error) {
-	if len(b) < 4 {
+	if len(b) < ShortAddressLength {
 		return "", fmt.Errorf("invalid call data, incomplete method signature (%d bytes < 4)", len(b))
 	}
-	return hexutil.Encode(b[:4]), nil
+	return hexutil.Encode(b[:ShortAddressLength]), nil
 }
 
 // GetParam returns the value of a specific parameter in the input arguments of the calldata.
@@ -89,9 +91,9 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	argdata := b[4:]
+	argdata := b[ShortAddressLength:]
 	if len(argdata)%32 != 0 {
-		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes (was %d)", len(argdata))
+		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
 	}
 	erc721Abi, err := abi.JSON(strings.NewReader(ERC721.ERC721MetaData.ABI))
 	if err != nil {
