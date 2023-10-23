@@ -460,3 +460,17 @@ func (mr *MockScannerMockRecorder) ScanEvents(ctx, fromBlock, toBlock any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScanEvents", reflect.TypeOf((*MockScanner)(nil).ScanEvents), ctx, fromBlock, toBlock)
 }
+
+// ScanNewBridgelessMintingEvents mocks base method.
+func (m *MockScanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScanNewBridgelessMintingEvents", ctx, fromBlock, toBlock)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ScanNewBridgelessMintingEvents indicates an expected call of ScanNewBridgelessMintingEvents.
+func (mr *MockScannerMockRecorder) ScanNewBridgelessMintingEvents(ctx, fromBlock, toBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScanNewBridgelessMintingEvents", reflect.TypeOf((*MockScanner)(nil).ScanNewBridgelessMintingEvents), ctx, fromBlock, toBlock)
+}

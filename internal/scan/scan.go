@@ -88,7 +88,7 @@ type Scanner interface {
 
 type scanner struct {
 	client   EthClient
-	contract common.Address // TODO
+	contract common.Address // TODO if not needed, remove it
 	storage  Storage
 }
 

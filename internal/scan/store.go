@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -29,15 +30,18 @@ type fsStorage struct {
 func NewFSStorage(filename string) (Storage, error) {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
-		file, err := os.Create(filename)
+		var file *os.File
+		file, err = os.Create(filepath.Clean(filename))
 		if err != nil {
 			return nil, err
 		}
-		file.Close()
+		if err = file.Close(); err != nil {
+			slog.Warn("error closing storage file", "err", err.Error())
+		}
 	}
 
-	// Change the file permissions to read and write.
-	err = os.Chmod(filename, 0750)
+	// Change the file permissions to read and write
+	err = os.Chmod(filename, 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +53,17 @@ func NewFSStorage(filename string) (Storage, error) {
 func (fs fsStorage) Store(ctx context.Context, c ERC721BridgelessContract) error {
 	buf, err := json.Marshal(c)
 	if err != nil {
-		return fmt.Errorf("error occured when marshaling ERC721BridgelessContract struct: %w", err)
+		return fmt.Errorf("error occurred when marshaling ERC721BridgelessContract struct: %w", err)
 	}
-	f, err := os.OpenFile(fs.file, os.O_WRONLY|os.O_APPEND, 0750)
+	f, err := os.OpenFile(fs.file, os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			slog.Warn("error closing storage file", "err", err.Error())
+		}
+	}()
 
 	buf = append(buf, '\n')
 	if _, err := f.Write(buf); err != nil {
@@ -71,7 +79,11 @@ func (fs fsStorage) ReadAll(ctx context.Context) ([]ERC721BridgelessContract, er
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			slog.Warn("error closing storage file", "err", err.Error())
+		}
+	}()
 
 	contracts := make([]ERC721BridgelessContract, 0)
 	var contract ERC721BridgelessContract
