@@ -26,3 +26,6 @@ releases:
       - imageTag: {{ requiredEnv "TAG" }}
       - contractAddress: {{ .Values.contractAddress }}
       - rpc: {{ .Values.rpc }}
+      - debug: {{ .Values.debug }}
+      - chainId: {{ .Values.chainId }}
+      - startingBlock: {{ quote .Values.startingBlock }}

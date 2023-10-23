@@ -1,2 +1,5 @@
 contractAddress: 0xc4d9faef49ec1e604a76ee78bc992abadaa29527
-rpc: https://polygon.meowrpc.com
+rpc: https://polygon-mumbai.gorengine.com/
+debug: true
+chainId: 80001
+startingBlock: 18288287

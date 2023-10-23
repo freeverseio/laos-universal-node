@@ -1,2 +1,5 @@
 contractAddress: 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
 rpc: https://eth.llamarpc.com
+debug: false
+chainId: 1
+startingBlock: 41375688

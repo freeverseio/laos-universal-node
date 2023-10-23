@@ -9,3 +9,6 @@ releases:
         - imageTag: {{ requiredEnv "TAG" }}
         - contractAddress: {{ .Values.name  }}
         - rpc: {{ .Values.rpc }}
+        - chainId: {{ .Values.chainId }}
+        - startingBlock: {{ quote .Values.startingBlock }}
+        - debug: {{ .Values.debug }}

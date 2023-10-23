@@ -16,7 +16,7 @@ spec:
       containers:
       - name: universalnode
         image: freeverseio/laos-universal-node:{{ .Values.imageTag }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never
         ports:
           - containerPort: 5001
             name: rpc
@@ -29,4 +29,10 @@ spec:
             cpu: "2"
         command: [ "./universalnode" ]
         args: [ -contract={{ .Values.contractAddress }},
-        -rpc={{ .Values.rpc }} ]
+                -rpc={{ .Values.rpc }},
+                -chain_id={{ .Values.chainId }},
+                {{ if hasKey .Values  "startingBlock" }}
+                -starting_block={{ .Values.startingBlock }},
+                {{ end }}
+                {{ .Values.debug | ternary "-debug" "" }}
+              ]
