@@ -12,7 +12,7 @@ import (
 	internalRpc "github.com/freeverseio/laos-universal-node/internal/rpc"
 )
 
-type HTTPServerer interface {
+type HTTPServerController interface {
 	ListenAndServe() error
 	Shutdown(context.Context) error
 	SetKeepAlivesEnabled(bool)
@@ -45,14 +45,14 @@ func (h *HTTPServer) SetHandler(handler http.Handler) {
 	h.server.Handler = handler
 }
 
-type RPCServerer interface {
+type RPCServerControler interface {
 	RegisterName(name string, receiver interface{}) error
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
 type Server struct {
-	RPCServer  RPCServerer
-	HTTPServer HTTPServerer
+	RPCServer  RPCServerControler
+	HTTPServer HTTPServerController
 }
 
 type ServerOption func(*Server) error
@@ -82,7 +82,7 @@ func WithSystemHealthService() ServerOption {
 }
 
 // WithRPCServer allows you to provide a custom RPCServerer implementation.
-func WithRpcServer(rpcServer RPCServerer) ServerOption {
+func WithRpcServer(rpcServer RPCServerControler) ServerOption {
 	return func(s *Server) error {
 		s.RPCServer = rpcServer
 		return nil
@@ -90,7 +90,7 @@ func WithRpcServer(rpcServer RPCServerer) ServerOption {
 }
 
 // WithHTTPServer allows you to provide a custom HTTPServerer implementation.
-func WithHTTPServer(httpServer HTTPServerer) ServerOption {
+func WithHTTPServer(httpServer HTTPServerController) ServerOption {
 	return func(s *Server) error {
 		s.HTTPServer = httpServer
 		return nil
