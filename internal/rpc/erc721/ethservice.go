@@ -85,3 +85,34 @@ func (b *EthService) GetCode(addr common.Address, blockNumber string) (hexutil.B
 	}
 	return hexutil.Decode(result)
 }
+
+func (b *EthService) EstimateGas(t blockchain.Transaction) (hexutil.Bytes, error) {
+	var result string
+	err := b.ethcli.Call(&result, "eth_estimateGas", t)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode(result)
+}
+
+func (b *EthService) GetTransactionCount(addr common.Address, blockNumber string) (hexutil.Uint64, error) {
+	var result string
+	err := b.ethcli.Call(&result, "eth_getTransactionCount", addr, blockNumber)
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+	count, err := hexutil.DecodeUint64(result)
+	if err != nil {
+		return hexutil.Uint64(0), err
+	}
+	return hexutil.Uint64(count), nil
+}
+
+func (b *EthService) SendRawTransaction(data string) (hexutil.Bytes, error) {
+	var result string
+	err := b.ethcli.Call(&result, "eth_sendRawTransaction", data)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode(result)
+}
