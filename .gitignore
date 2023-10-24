@@ -23,3 +23,6 @@ api/node_modules
 .vscode
 
 .trunk
+
+# local k8 config
+deployment/environments/local/*

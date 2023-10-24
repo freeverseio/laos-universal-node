@@ -7,3 +7,7 @@ releases:
       values:
         - name: {{ .Values.name }}
         - imageTag: {{ requiredEnv "TAG" }}
+        - contractAddress: {{ .Values.name  }}
+        - rpc: {{ .Values.rpc }}
+        - startingBlock: {{ quote .Values.startingBlock }}
+        - debug: {{ .Values.debug }}
