@@ -15,16 +15,15 @@ import (
 )
 
 const (
-	transferEventHash      = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-	approveEventHash       = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
-	approveForAllEventHash = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+	transferEventHash                   = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	approveEventHash                    = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+	approveForAllEventHash              = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+	newERC721BridgelessMintingEventHash = "0x821a490a0b4f9fa6744efb226f24ce4c3917ff2fca72c1750947d75a99254610"
 )
 
 func TestScanEvents(t *testing.T) {
 	t.Run("it returns when there are no events", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -37,12 +36,12 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		eventLogs := []types.Log{}
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -57,9 +56,7 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it should parse Transfer events", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -72,7 +69,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -86,7 +83,7 @@ func TestScanEvents(t *testing.T) {
 		}
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -103,9 +100,7 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it should parse Approval events", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -118,7 +113,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -133,7 +128,7 @@ func TestScanEvents(t *testing.T) {
 		}
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -150,9 +145,7 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it should parse ApprovalForAll events", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -164,7 +157,7 @@ func TestScanEvents(t *testing.T) {
 				BaseURI: "johndoe/collection",
 			},
 		}
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -178,7 +171,7 @@ func TestScanEvents(t *testing.T) {
 		}
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -195,9 +188,7 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -210,7 +201,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -258,7 +249,7 @@ func TestScanEvents(t *testing.T) {
 		}
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -274,9 +265,7 @@ func TestScanEvents(t *testing.T) {
 		}
 	})
 	t.Run("it raises an error when call to blockchain fails", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		climock := mock.NewMockEthClient(ctrl)
-		storage := mock.NewMockStorage(ctrl)
+		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
@@ -289,10 +278,10 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(climock, address, storage)
+		s := scan.NewScanner(cli, address, storage)
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		climock.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
@@ -303,4 +292,84 @@ func TestScanEvents(t *testing.T) {
 			t.Fatal("error expected, got nil")
 		}
 	})
+}
+
+func TestScanNewBridgelessMintingEvents(t *testing.T) {
+	t.Parallel()
+	cli, storage := getMocks(t)
+	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
+	fromBlock := big.NewInt(0)
+	toBlock := big.NewInt(100)
+	s := scan.NewScanner(cli, address, storage)
+	contract := scan.ERC721BridgelessContract{
+		Address: address,
+		Block:   fromBlock.Uint64(),
+		BaseURI: "evochain1/collectionId/",
+	}
+
+	tests := []struct {
+		name                 string
+		events               []types.Log
+		storageExpectedTimes int
+	}{
+		{
+			name: "find and store one contract",
+			events: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(newERC721BridgelessMintingEventHash),
+					},
+					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
+				},
+			},
+			storageExpectedTimes: 1,
+		},
+		{
+			name: "other event types found",
+			events: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			storageExpectedTimes: 0,
+		},
+		{
+			name: "anonymous event found",
+			events: []types.Log{
+				{
+					Topics: []common.Hash{},
+					Data:   common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"),
+				},
+			},
+			storageExpectedTimes: 0,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			storage.EXPECT().Store(context.Background(), contract).Return(nil).Times(tt.storageExpectedTimes)
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+			}).Return(tt.events, nil).Times(1)
+
+			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			if err != nil {
+				t.Fatalf("got error %v when no error was expected", err)
+			}
+		})
+	}
+}
+
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockStorage) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	return mock.NewMockEthClient(ctrl), mock.NewMockStorage(ctrl)
 }
