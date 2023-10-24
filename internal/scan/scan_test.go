@@ -294,6 +294,65 @@ func TestScanEvents(t *testing.T) {
 	})
 }
 
+func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
+	t.Parallel()
+	cli, storage := getMocks(t)
+	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
+	fromBlock := big.NewInt(0)
+	toBlock := big.NewInt(100)
+	s := scan.NewScanner(cli, address, storage)
+	contract := scan.ERC721BridgelessContract{
+		Address: address,
+		Block:   fromBlock.Uint64(),
+		BaseURI: "evochain1/collectionId/",
+	}
+
+	tests := []struct {
+		name                 string
+		filterLogsError      error
+		events               []types.Log
+		storageExpectedTimes int
+	}{
+		{
+			name: "error storing contracts",
+			events: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(newERC721BridgelessMintingEventHash),
+					},
+					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
+				},
+			},
+			storageExpectedTimes: 1,
+			filterLogsError:      nil,
+		},
+		{
+			name:                 "error filtering logs",
+			events:               nil,
+			storageExpectedTimes: 0,
+			filterLogsError:      fmt.Errorf("error filtering logs"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			storage.EXPECT().Store(context.Background(), contract).
+				Return(fmt.Errorf("error storing contracts")).
+				Times(tt.storageExpectedTimes)
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+			}).Return(tt.events, tt.filterLogsError).Times(1)
+
+			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			if err == nil {
+				t.Fatalf("got no error when error %v was expected", tt.name)
+			}
+		})
+	}
+}
+
 func TestScanNewBridgelessMintingEvents(t *testing.T) {
 	t.Parallel()
 	cli, storage := getMocks(t)
@@ -347,6 +406,11 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 					Data:   common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"),
 				},
 			},
+			storageExpectedTimes: 0,
+		},
+		{
+			name:                 "no events found",
+			events:               []types.Log{},
 			storageExpectedTimes: 0,
 		},
 	}
