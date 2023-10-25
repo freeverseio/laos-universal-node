@@ -2,16 +2,12 @@ package api
 
 import (
 	"bytes"
-	"compress/gzip"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 )
 
 func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
-	// Set the Content-Type header to application/json
-	w.Header().Set("Content-Type", "application/json")
 
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
@@ -26,14 +22,14 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}() // Check error on Close
 
-	// Prepare the request to the Ethereum node
+	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.RpcUrl, io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Forward headers (optional)
+	// Forward headers the request
 	for name, values := range r.Header {
 		for _, value := range values {
 			proxyReq.Header.Set(name, value)
@@ -46,6 +42,13 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return
 	}
+	// Forward headers to the response
+	for name, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Set(name, value)
+		}
+	}
+
 	defer func() {
 		errClose := resp.Body.Close()
 		if errClose != nil {
@@ -60,41 +63,10 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isGzipped(responseBody) {
-		r2, errReader := gzip.NewReader(bytes.NewReader(responseBody)) // Removed unnecessary conversion
-		if errReader != nil {
-			fmt.Println("Failed to create GZIP reader:", errReader)
-			return
-		}
-		defer func() {
-			errClose := r2.Close()
-			if errClose != nil {
-				slog.Error("Error closing response body", "error", errClose)
-			}
-		}() // Check error on Close
-
-		// Read and decompress the data
-		decompressedData, errRead := io.ReadAll(r2)
-		if errRead != nil {
-			slog.Error("Failed to read/decompress GZIP data:", "error", errRead)
-			return
-		}
-		slog.Debug("responseBody", "responseBody", string(decompressedData))
-		_, err = w.Write(decompressedData) // Check error on Write
-		if err != nil {
-			slog.Error("Error writing response body", "error", err)
-		}
-	} else {
-		slog.Debug("responseBody", "responseBody", string(responseBody))
-		_, err = w.Write(responseBody) // Check error on Write
-		if err != nil {
-			slog.Error("Error writing response body", "error", err)
-		}
+	slog.Debug("responseBody", "responseBody", string(responseBody))
+	_, err = w.Write(responseBody) // Check error on Write
+	if err != nil {
+		slog.Error("Error writing response body", "error", err)
 	}
-}
 
-// IsGzipped checks if data is GZIP compressed.
-func isGzipped(data []byte) bool {
-	// GZIP magic number is 0x1f8b
-	return len(data) > 1 && data[0] == 0x1f && data[1] == 0x8b
 }

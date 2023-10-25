@@ -42,14 +42,6 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
 		},
 		{
-			name:           "successful request with gzip response",
-			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}`,
-			mockResponse:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
-			responseGzip:   true,
-			expectedStatus: http.StatusOK,
-			expectedBody:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
-		},
-		{
 			name: "successful eth_call request with parrams",
 			requestBody: `{
         "jsonrpc": "2.0",
