@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
@@ -74,8 +73,8 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
-		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress), storage)
-		return runScan(ctx, *c, client, s)
+		s := scan.NewScanner(client, storage, c.Contracts...)
+		return runScan(ctx, c, client, s)
 	})
 
 	// Create an HTTP handler for RPC
@@ -129,14 +128,15 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
 	var err error
-	if c.StartingBlock == 0 {
-		c.StartingBlock, err = getL1LatestBlock(ctx, client)
+	startingBlock := c.StartingBlock
+	if startingBlock == 0 {
+		startingBlock, err = getL1LatestBlock(ctx, client)
 		if err != nil {
 			return fmt.Errorf("error retrieving the latest block: %w", err)
 		}
-		slog.Debug("latest block found", "latest_block", c.StartingBlock)
+		slog.Debug("latest block found", "latest_block", startingBlock)
 	}
 	for {
 		select {
@@ -149,24 +149,26 @@ func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan
 				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
 			}
-			lastBlock := calculateLastBlock(c.StartingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
-			if lastBlock < c.StartingBlock {
+			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
+			if lastBlock < startingBlock {
 				slog.Debug("last calculated block is behind starting block, waiting...",
-					"last_block", lastBlock, "starting_block", c.StartingBlock)
+					"last_block", lastBlock, "starting_block", startingBlock)
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
 
-			if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock))); err != nil {
-				slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
-				break
+			if len(c.Contracts) == 0 /* TODO if len(c.Contracts) == 0 || (len(c.Contracts) > len(storage.ReadAll()) */ {
+				if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
+					slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
+					break
+				}
 			}
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
-			c.StartingBlock = lastBlock + 1
+			startingBlock = lastBlock + 1
 		}
 	}
 }

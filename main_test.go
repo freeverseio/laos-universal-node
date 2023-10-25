@@ -65,7 +65,7 @@ func TestRunScanOk(t *testing.T) {
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 
-			err := runScan(ctx, tt.c, client, scanner)
+			err := runScan(ctx, &tt.c, client, scanner)
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -102,7 +102,7 @@ func TestRunScanTwice(t *testing.T) {
 		Return(nil, nil).
 		Times(1)
 
-	err := runScan(ctx, c, client, scanner)
+	err := runScan(ctx, &c, client, scanner)
 	if err != nil {
 		t.Fatalf(`got error "%v" when no error was expeceted`, err)
 	}
@@ -123,7 +123,7 @@ func TestRunScanError(t *testing.T) {
 		Return(uint64(0), expectedErr).
 		Times(1)
 
-	err := runScan(ctx, c, client, scanner)
+	err := runScan(ctx, &c, client, scanner)
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expeceted`, expectedErr)
 	}

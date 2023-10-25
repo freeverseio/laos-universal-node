@@ -36,7 +36,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		eventLogs := []types.Log{}
 
@@ -69,7 +69,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -113,7 +113,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -157,7 +157,7 @@ func TestScanEvents(t *testing.T) {
 				BaseURI: "johndoe/collection",
 			},
 		}
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -201,7 +201,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		eventLogs := []types.Log{
 			{
@@ -278,7 +278,7 @@ func TestScanEvents(t *testing.T) {
 			},
 		}
 
-		s := scan.NewScanner(cli, address, storage)
+		s := scan.NewScanner(cli, storage)
 
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
@@ -296,11 +296,9 @@ func TestScanEvents(t *testing.T) {
 
 func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 	t.Parallel()
-	cli, storage := getMocks(t)
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	s := scan.NewScanner(cli, address, storage)
 	contract := scan.ERC721BridgelessContract{
 		Address: address,
 		Block:   fromBlock.Uint64(),
@@ -337,6 +335,9 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			cli, storage := getMocks(t)
+			s := scan.NewScanner(cli, storage)
+
 			storage.EXPECT().Store(context.Background(), contract).
 				Return(fmt.Errorf("error storing contracts")).
 				Times(tt.storageExpectedTimes)
@@ -355,11 +356,9 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 
 func TestScanNewBridgelessMintingEvents(t *testing.T) {
 	t.Parallel()
-	cli, storage := getMocks(t)
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	s := scan.NewScanner(cli, address, storage)
 	contract := scan.ERC721BridgelessContract{
 		Address: address,
 		Block:   fromBlock.Uint64(),
@@ -418,6 +417,9 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			cli, storage := getMocks(t)
+			s := scan.NewScanner(cli, storage)
+
 			storage.EXPECT().Store(context.Background(), contract).Return(nil).Times(tt.storageExpectedTimes)
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,

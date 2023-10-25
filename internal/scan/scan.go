@@ -86,22 +86,26 @@ type Scanner interface {
 }
 
 type scanner struct {
-	client   EthClient
-	contract common.Address // TODO if not needed, remove it
-	storage  Storage
+	client    EthClient
+	contracts []common.Address
+	storage   Storage
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, contract common.Address, s Storage) Scanner {
-	return scanner{
-		client:   client,
-		contract: contract,
-		storage:  s,
+func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
+	scan := scanner{
+		client:  client,
+		storage: s,
 	}
+	for _, c := range contracts {
+		scan.contracts = append(scan.contracts, common.HexToAddress(c))
+	}
+	return scan
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
+	// TODO must pass list of addresses to filterEventLogs if user has provided them as input flag (read config.Contracts)
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock)
 	if err != nil {
 		return fmt.Errorf("error filtering events: %w", err)
@@ -153,7 +157,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 	}
 
 	if len(contracts) == 0 {
-		slog.Debug("no contracts found")
+		slog.Debug("no contracts found", "from_block", fromBlock, "to_block", toBlock)
 		return nil, nil
 	}
 
