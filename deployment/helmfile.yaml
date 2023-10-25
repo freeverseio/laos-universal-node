@@ -24,7 +24,4 @@ releases:
       - name: universalnode
       - namespace: laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
-      - contractAddress: {{ .Values.contractAddress }}
-      - rpc: {{ .Values.rpc }}
-      - debug: {{ .Values.debug }}
-      - startingBlock: {{ quote .Values.startingBlock }}
+      - {{ toYaml .Values | nindent 8 }}
