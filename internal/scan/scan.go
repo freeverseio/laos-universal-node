@@ -105,8 +105,7 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
-	// TODO must pass list of addresses to filterEventLogs if user has provided them as input flag (read config.Contracts)
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock)
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return fmt.Errorf("error filtering events: %w", err)
 	}

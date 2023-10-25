@@ -14,7 +14,7 @@ import (
 
 type ERC721BridgelessContract struct {
 	Address common.Address `json:"address"`
-	Block   uint64         `json:"block"`
+	Block   uint64         `json:"block"` // TODO how to use this when scanning new events?
 	BaseURI string         `json:"base_uri"`
 }
 

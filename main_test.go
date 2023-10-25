@@ -53,7 +53,7 @@ func TestRunScanOk(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner := getMocks(t)
+			client, scanner, storage := getMocks(t)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
@@ -65,7 +65,7 @@ func TestRunScanOk(t *testing.T) {
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 
-			err := runScan(ctx, &tt.c, client, scanner)
+			err := runScan(ctx, &tt.c, client, scanner, storage)
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -84,7 +84,7 @@ func TestRunScanTwice(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner := getMocks(t)
+	client, scanner, storage := getMocks(t)
 
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
@@ -102,7 +102,7 @@ func TestRunScanTwice(t *testing.T) {
 		Return(nil, nil).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner)
+	err := runScan(ctx, &c, client, scanner, storage)
 	if err != nil {
 		t.Fatalf(`got error "%v" when no error was expeceted`, err)
 	}
@@ -116,14 +116,14 @@ func TestRunScanError(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner := getMocks(t)
+	client, scanner, storage := getMocks(t)
 
 	expectedErr := errors.New("block number error")
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(0), expectedErr).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner)
+	err := runScan(ctx, &c, client, scanner, storage)
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expeceted`, expectedErr)
 	}
@@ -133,8 +133,8 @@ func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mock.MockStorage) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl)
+	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl), mock.NewMockStorage(ctrl)
 }

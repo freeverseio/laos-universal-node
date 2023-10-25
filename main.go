@@ -74,7 +74,7 @@ func run() error {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
 		s := scan.NewScanner(client, storage, c.Contracts...)
-		return runScan(ctx, c, client, s)
+		return runScan(ctx, c, client, s, storage)
 	})
 
 	// Create an HTTP handler for RPC
@@ -128,7 +128,7 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
 	var err error
 	startingBlock := c.StartingBlock
 	if startingBlock == 0 {
@@ -157,12 +157,18 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			if len(c.Contracts) == 0 /* TODO if len(c.Contracts) == 0 || (len(c.Contracts) > len(storage.ReadAll()) */ {
+			triggerDiscovery, err := triggerDiscovery(ctx, c, storage)
+			if err != nil {
+				slog.Error("error occurred", "err", err)
+				break
+			}
+			if triggerDiscovery {
 				if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
 					slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
 					break
 				}
 			}
+
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
@@ -171,6 +177,23 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 			startingBlock = lastBlock + 1
 		}
 	}
+}
+
+// TODO test this part
+func triggerDiscovery(ctx context.Context, c *config.Config, storage scan.Storage) (bool, error) {
+	if len(c.Contracts) == 0 {
+		return true, nil
+	}
+	storageContracts, err := storage.ReadAll(ctx)
+	if err != nil {
+		return false, fmt.Errorf("error reading contracts from storage: %w", err)
+	}
+	// TODO do you have to scan flag-provided contracts AND DB-stored contracts? Or only flag-provided contracts?
+	// TODO do you have to check if the addresses are the same instead of just checking the slice length?
+	if len(storageContracts) == len(c.Contracts) {
+		return false, nil
+	}
+	return true, nil
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
