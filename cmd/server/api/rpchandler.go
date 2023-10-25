@@ -8,7 +8,6 @@ import (
 )
 
 func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
-
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -68,5 +67,4 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error writing response body", "error", err)
 	}
-
 }
