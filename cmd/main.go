@@ -188,8 +188,15 @@ func triggerDiscovery(ctx context.Context, c *config.Config, storage scan.Storag
 	if err != nil {
 		return false, fmt.Errorf("error reading contracts from storage: %w", err)
 	}
-	// TODO do you have to scan flag-provided contracts AND DB-stored contracts? Or only flag-provided contracts?
-	// TODO do you have to check if the addresses are the same instead of just checking the slice length?
+	/*
+	 * When a user provides a list of contracts via flag, we have to discover and
+	 * scan those contracts only. For this reason, when we have to determine whether we have
+	 * to discover infos about those contracts or not, we will compare if those user-provided contracts
+	 * exist in the list of stored contracts (i.e. infos about those contracts, like starting block,
+	 * have already been found).
+	 * For now, as we don't have a database yet, we only compare that the number of user-provided
+	 * contracts matches with the number of stored contracts.
+	 */
 	if len(storageContracts) == len(c.Contracts) {
 		return false, nil
 	}

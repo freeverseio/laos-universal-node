@@ -28,16 +28,13 @@ type fsStorage struct {
 }
 
 func NewFSStorage(filename string) (Storage, error) {
-	_, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		var file *os.File
-		file, err = os.Create(filepath.Clean(filename))
-		if err != nil {
-			return nil, err
-		}
-		if err = file.Close(); err != nil {
-			slog.Warn("error closing storage file", "err", err.Error())
-		}
+	var file *os.File
+	file, err := os.Create(filepath.Clean(filename))
+	if err != nil {
+		return nil, err
+	}
+	if err = file.Close(); err != nil {
+		slog.Warn("error closing storage file", "err", err.Error())
 	}
 
 	// Change the file permissions to read and write
