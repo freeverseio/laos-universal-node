@@ -16,8 +16,8 @@ type ERC721BridgelessContract struct {
 	Address common.Address `json:"address"`
 	// this will be renamed "currentBlock" and stored in the DB with the related contract
 	// this way the scan can continue scanning that contract from that block
-	Block   uint64         `json:"block"`
-	BaseURI string         `json:"base_uri"`
+	Block   uint64 `json:"block"`
+	BaseURI string `json:"base_uri"`
 }
 
 type Storage interface {
