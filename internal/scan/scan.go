@@ -105,6 +105,13 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
+	triggerDiscovery, err := s.triggerDiscovery(ctx)
+	if err != nil {
+		return err
+	}
+	if !triggerDiscovery {
+		return nil
+	}
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return fmt.Errorf("error filtering events: %w", err)
@@ -146,6 +153,29 @@ func (s scanner) ScanNewBridgelessMintingEvents(ctx context.Context, fromBlock, 
 	}
 
 	return nil
+}
+
+func (s scanner) triggerDiscovery(ctx context.Context) (bool, error) {
+	if len(s.contracts) == 0 {
+		return true, nil
+	}
+	storageContracts, err := s.storage.ReadAll(ctx)
+	if err != nil {
+		return false, fmt.Errorf("error reading contracts from storage: %w", err)
+	}
+	/*
+	 * When a user provides a list of contracts via flag, we have to discover and
+	 * scan those contracts only. For this reason, when we have to determine whether we have
+	 * to discover infos about those contracts or not, we will compare if those user-provided contracts
+	 * exist in the list of stored contracts (i.e. infos about those contracts, like starting block,
+	 * have already been found).
+	 * For now, as we don't have a database yet, we only compare that the number of user-provided
+	 * contracts matches with the number of stored contracts.
+	 */
+	if len(storageContracts) == len(s.contracts) {
+		return false, nil
+	}
+	return true, nil
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock

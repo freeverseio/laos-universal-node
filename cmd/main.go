@@ -74,7 +74,7 @@ func run() error {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
 		s := scan.NewScanner(client, storage, c.Contracts...)
-		return runScan(ctx, c, client, s, storage)
+		return runScan(ctx, c, client, s)
 	})
 
 	// Create an HTTP handler for RPC
@@ -128,7 +128,7 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
 	var err error
 	startingBlock := c.StartingBlock
 	if startingBlock == 0 {
@@ -157,16 +157,9 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			triggerDiscovery, err := triggerDiscovery(ctx, c, storage)
-			if err != nil {
-				slog.Error("error occurred", "err", err)
+			if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
+				slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
 				break
-			}
-			if triggerDiscovery {
-				if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
-					slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
-					break
-				}
 			}
 
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
@@ -177,30 +170,6 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 			startingBlock = lastBlock + 1
 		}
 	}
-}
-
-// TODO test this part
-func triggerDiscovery(ctx context.Context, c *config.Config, storage scan.Storage) (bool, error) {
-	if len(c.Contracts) == 0 {
-		return true, nil
-	}
-	storageContracts, err := storage.ReadAll(ctx)
-	if err != nil {
-		return false, fmt.Errorf("error reading contracts from storage: %w", err)
-	}
-	/*
-	 * When a user provides a list of contracts via flag, we have to discover and
-	 * scan those contracts only. For this reason, when we have to determine whether we have
-	 * to discover infos about those contracts or not, we will compare if those user-provided contracts
-	 * exist in the list of stored contracts (i.e. infos about those contracts, like starting block,
-	 * have already been found).
-	 * For now, as we don't have a database yet, we only compare that the number of user-provided
-	 * contracts matches with the number of stored contracts.
-	 */
-	if len(storageContracts) == len(c.Contracts) {
-		return false, nil
-	}
-	return true, nil
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
