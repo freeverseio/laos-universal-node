@@ -27,3 +27,5 @@ api/node_modules
 # erc721BridgelessMinting contracts storage 
 erc721_contracts.txt
 
+# asdf versions file https://asdf-vm.com/
+.tool-versions
