@@ -28,3 +28,10 @@ spec:
             memory: "2Gi"
             cpu: "2"
         command: [ "./universalnode" ]
+        args: [ -contract={{ .Values.contractAddress }},
+                -rpc={{ .Values.rpc }},
+                {{ if hasKey .Values  "startingBlock" }}
+                -starting_block={{ .Values.startingBlock }},
+                {{ end }}
+                {{ .Values.debug | ternary "-debug" "" }}
+              ]

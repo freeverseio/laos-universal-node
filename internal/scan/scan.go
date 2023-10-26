@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/freeverseio/laos-universal-node/internal/ERC721BridgelessMinting"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/ERC721BridgelessMinting"
 )
 
 var (

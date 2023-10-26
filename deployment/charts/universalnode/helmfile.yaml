@@ -7,3 +7,4 @@ releases:
       values:
         - name: {{ .Values.name }}
         - imageTag: {{ requiredEnv "TAG" }}
+        - {{ toYaml .Values | nindent 8 }}

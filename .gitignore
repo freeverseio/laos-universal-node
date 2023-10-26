@@ -29,3 +29,9 @@ erc721_contracts.txt
 
 # asdf versions file https://asdf-vm.com/
 .tool-versions
+
+# OS X specific files
+DS_Store
+
+# local k8 config
+deployment/environments/local/*

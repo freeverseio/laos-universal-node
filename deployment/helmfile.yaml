@@ -4,6 +4,16 @@ repositories:
     - name: jetstack
       url: https://charts.jetstack.io
 
+environments:
+  default:
+    values:
+    - ./environments/dev/values.yaml
+  local:
+    values:
+    - ./environments/local/values.yaml
+  development:
+    values:
+    - ./environments/dev/values.yaml
 
 releases:
   - name: universalnode
@@ -14,3 +24,4 @@ releases:
       - name: universalnode
       - namespace: laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
+      - {{ toYaml .Values | nindent 8 }}
