@@ -14,12 +14,7 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-	defer func() {
-		errClose := r.Body.Close()
-		if errClose != nil {
-			slog.Error("Error closing response body", "error", errClose)
-		}
-	}() // Check error on Close
+	defer closeBodyReader(r.Body)
 
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.RpcUrl, io.NopCloser(bytes.NewReader(body)))
@@ -48,12 +43,7 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	defer func() {
-		errClose := resp.Body.Close()
-		if errClose != nil {
-			slog.Error("Error closing response body", "error", errClose)
-		}
-	}() // Check error on Close
+	defer closeBodyReader(resp.Body)
 
 	// Forward the response back to the original caller
 	responseBody, err := io.ReadAll(resp.Body)
@@ -66,5 +56,12 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write(responseBody) // Check error on Write
 	if err != nil {
 		slog.Error("Error writing response body", "error", err)
+	}
+}
+
+func closeBodyReader(body io.ReadCloser) {
+	err := body.Close()
+	if err != nil {
+		slog.Error("Error closing response body", "error", err)
 	}
 }
