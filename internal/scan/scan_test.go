@@ -292,6 +292,38 @@ func TestScanEvents(t *testing.T) {
 			t.Fatal("error expected, got nil")
 		}
 	})
+
+	t.Run("it raises an error when storage fails reading contracts", func(t *testing.T) {
+		cli, storage := getMocks(t)
+		fromBlock := big.NewInt(0)
+		toBlock := big.NewInt(100)
+		s := scan.NewScanner(cli, storage)
+
+		storage.EXPECT().ReadAll(context.Background()).
+			Return(nil, fmt.Errorf("error reading from storage")).
+			Times(1)
+
+		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+		if err == nil {
+			t.Fatal("error expected, got nil")
+		}
+	})
+
+	t.Run("it does not scan when contracts are not found", func(t *testing.T) {
+		cli, storage := getMocks(t)
+
+		fromBlock := big.NewInt(0)
+		toBlock := big.NewInt(100)
+
+		s := scan.NewScanner(cli, storage)
+
+		storage.EXPECT().ReadAll(context.Background()).Return(nil, nil).Times(1)
+
+		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("got error %s when scanning events while no error was expected", err.Error())
+		}
+	})
 }
 
 func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
