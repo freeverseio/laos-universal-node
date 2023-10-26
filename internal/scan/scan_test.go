@@ -306,10 +306,12 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                 string
-		filterLogsError      error
-		events               []types.Log
-		storageExpectedTimes int
+		readAllError            error
+		filterLogsError         error
+		name                    string
+		events                  []types.Log
+		storageExpectedTimes    int
+		filterLogsExpectedTimes int
 	}{
 		{
 			name: "error storing contracts",
@@ -321,14 +323,24 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
 				},
 			},
-			storageExpectedTimes: 1,
-			filterLogsError:      nil,
+			storageExpectedTimes:    1,
+			filterLogsExpectedTimes: 1,
+			filterLogsError:         nil,
 		},
 		{
-			name:                 "error filtering logs",
-			events:               nil,
-			storageExpectedTimes: 0,
-			filterLogsError:      fmt.Errorf("error filtering logs"),
+			name:                    "error filtering logs",
+			events:                  nil,
+			storageExpectedTimes:    0,
+			filterLogsError:         fmt.Errorf("error filtering logs"),
+			filterLogsExpectedTimes: 1,
+		},
+		{
+			name:                    "discovery fails because reading from storage fails",
+			events:                  nil,
+			storageExpectedTimes:    0,
+			filterLogsExpectedTimes: 0,
+			filterLogsError:         nil,
+			readAllError:            fmt.Errorf("error while reading contracts from storage"),
 		},
 	}
 	for _, tt := range tests {
@@ -336,15 +348,19 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cli, storage := getMocks(t)
-			s := scan.NewScanner(cli, storage)
+			s := scan.NewScanner(cli, storage, contract.Address.String())
 
+			storage.EXPECT().ReadAll(context.Background()).
+				Return(nil, tt.readAllError).
+				Times(1)
 			storage.EXPECT().Store(context.Background(), contract).
 				Return(fmt.Errorf("error storing contracts")).
 				Times(tt.storageExpectedTimes)
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
-			}).Return(tt.events, tt.filterLogsError).Times(1)
+				Addresses: []common.Address{address},
+			}).Return(tt.events, tt.filterLogsError).Times(tt.filterLogsExpectedTimes)
 
 			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
 			if err == nil {
@@ -434,8 +450,77 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 	}
 }
 
+func TestScanNewBridgelessMintingEventsDiscovery(t *testing.T) {
+	t.Parallel()
+	fromBlock := big.NewInt(0)
+	toBlock := big.NewInt(100)
+	userDefinedContracts := []string{
+		"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A",
+		"0x59b6c3b079a2af72ece16065c85b95ac2405459b",
+	}
+	tests := []struct {
+		name                    string
+		storedContracts         []scan.ERC721BridgelessContract
+		filterLogsExpectedTimes int
+	}{
+		{
+			name:                    "discovery returns false",
+			filterLogsExpectedTimes: 0,
+			storedContracts: []scan.ERC721BridgelessContract{
+				{
+					Address: common.HexToAddress(userDefinedContracts[0]),
+					Block:   fromBlock.Uint64(),
+					BaseURI: "evochain1/collectionId/",
+				},
+				{
+					Address: common.HexToAddress(userDefinedContracts[1]),
+					Block:   fromBlock.Uint64(),
+					BaseURI: "evochain2/collectionId/",
+				},
+			},
+		},
+		{
+			name:                    "discovery returns true",
+			filterLogsExpectedTimes: 1,
+			storedContracts: []scan.ERC721BridgelessContract{
+				{
+					Address: common.HexToAddress(userDefinedContracts[0]),
+					Block:   fromBlock.Uint64(),
+					BaseURI: "evochain1/collectionId/",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cli, storage := getMocks(t)
+			s := scan.NewScanner(cli, storage, userDefinedContracts...)
+			storage.EXPECT().ReadAll(context.Background()).Return(tt.storedContracts, nil).Times(1)
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+				Addresses: getAddressesFromStrings(userDefinedContracts),
+			}).Return(nil, nil).Times(tt.filterLogsExpectedTimes)
+			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			if err != nil {
+				t.Fatalf("got error %v when no error was expected", err)
+			}
+		})
+	}
+}
+
 func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockStorage) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockStorage(ctrl)
+}
+
+func getAddressesFromStrings(hexAddresses []string) []common.Address {
+	var addresses []common.Address
+	for _, h := range hexAddresses {
+		addresses = append(addresses, common.HexToAddress(h))
+	}
+	return addresses
 }
