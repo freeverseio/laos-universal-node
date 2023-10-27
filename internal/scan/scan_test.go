@@ -21,173 +21,137 @@ const (
 	newERC721BridgelessMintingEventHash = "0x821a490a0b4f9fa6744efb226f24ce4c3917ff2fca72c1750947d75a99254610"
 )
 
+func TestParseEvents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		fromBlock *big.Int
+		toBlock   *big.Int
+		address   common.Address
+		contracts []scan.ERC721BridgelessContract
+		eventLogs []types.Log
+	}{
+		{
+			name:      "it should parse Transfer events",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []scan.ERC721BridgelessContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					Block:   big.NewInt(100).Uint64(),
+					BaseURI: "johndoe/collection",
+				},
+			},
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+			},
+		},
+		{
+			name:      "it should parse Approval events",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []scan.ERC721BridgelessContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					Block:   big.NewInt(100).Uint64(),
+					BaseURI: "johndoe/collection",
+				},
+			},
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+		},
+		{
+			name:      "it should parse ApprovalForAll events",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []scan.ERC721BridgelessContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					Block:   big.NewInt(100).Uint64(),
+					BaseURI: "johndoe/collection",
+				},
+			},
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cli, storage := getMocks(t)
+
+			s := scan.NewScanner(cli, storage)
+
+			storage.EXPECT().ReadAll(context.Background()).Return(tt.contracts, nil).Times(1)
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: tt.fromBlock,
+				ToBlock:   tt.toBlock,
+				Addresses: []common.Address{tt.address},
+			}).Return(tt.eventLogs, nil)
+
+			events, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock)
+			if err != nil {
+				t.Fatalf("error occurred when scanning events %v", err.Error())
+			}
+
+			switch events[0].(type) {
+			case scan.EventTransfer:
+				_, ok := events[0].(scan.EventTransfer)
+				if !ok {
+					t.Fatal("error parsing event to EventTransfer type")
+				}
+			case scan.EventApproval:
+				_, ok := events[0].(scan.EventApproval)
+				if !ok {
+					t.Fatal("error parsing event to EventApproval type")
+				}
+			case scan.EventApprovalForAll:
+				_, ok := events[0].(scan.EventApprovalForAll)
+				if !ok {
+					t.Fatal("error parsing event to EventApprovalForAll type")
+				}
+			default:
+				t.Fatal("unknown event")
+			}
+		})
+	}
+}
+
 func TestScanEvents(t *testing.T) {
-	t.Run("it returns when there are no events", func(t *testing.T) {
-		cli, storage := getMocks(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
-			{
-				Address: address,
-				Block:   fromBlock.Uint64(),
-				BaseURI: "johndoe/collection",
-			},
-		}
-
-		s := scan.NewScanner(cli, storage)
-
-		eventLogs := []types.Log{}
-
-		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err != nil {
-			t.Fatalf("nil error expected, got %v", err)
-		}
-		if events != nil {
-			t.Fatalf("nil events expected, got %v", events)
-		}
-	})
-	t.Run("it should parse Transfer events", func(t *testing.T) {
-		cli, storage := getMocks(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
-			{
-				Address: address,
-				Block:   fromBlock.Uint64(),
-				BaseURI: "johndoe/collection",
-			},
-		}
-
-		s := scan.NewScanner(cli, storage)
-
-		eventLogs := []types.Log{
-			{
-				Topics: []common.Hash{
-					common.HexToHash(transferEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-		}
-
-		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err != nil {
-			t.Fatalf("error occurred when scanning events %v", err.Error())
-		}
-
-		_, ok := events[0].(scan.EventTransfer)
-		if !ok {
-			t.Fatal("error parsing event to EventTransfer type")
-		}
-	})
-	t.Run("it should parse Approval events", func(t *testing.T) {
-		cli, storage := getMocks(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
-			{
-				Address: address,
-				Block:   fromBlock.Uint64(),
-				BaseURI: "johndoe/collection",
-			},
-		}
-
-		s := scan.NewScanner(cli, storage)
-
-		eventLogs := []types.Log{
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-		}
-
-		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err != nil {
-			t.Fatalf("error occurred when scanning events %v", err.Error())
-		}
-
-		_, ok := events[0].(scan.EventApproval)
-		if !ok {
-			t.Fatal("error parsing event to EventApproval type")
-		}
-	})
-	t.Run("it should parse ApprovalForAll events", func(t *testing.T) {
-		cli, storage := getMocks(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
-			{
-				Address: address,
-				Block:   fromBlock.Uint64(),
-				BaseURI: "johndoe/collection",
-			},
-		}
-		s := scan.NewScanner(cli, storage)
-
-		eventLogs := []types.Log{
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveForAllEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-		}
-
-		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err != nil {
-			t.Fatalf("error occurred when scanning events %v", err.Error())
-		}
-
-		_, ok := events[0].(scan.EventApprovalForAll)
-		if !ok {
-			t.Fatal("error parsing event to EventApprovalForAll type")
-		}
-	})
 	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
+		t.Parallel()
+
 		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
@@ -264,7 +228,10 @@ func TestScanEvents(t *testing.T) {
 			t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
 		}
 	})
-	t.Run("it raises an error when call to blockchain fails", func(t *testing.T) {
+
+	t.Run("it returns when there are no events", func(t *testing.T) {
+		t.Parallel()
+
 		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
@@ -280,36 +247,27 @@ func TestScanEvents(t *testing.T) {
 
 		s := scan.NewScanner(cli, storage)
 
+		eventLogs := []types.Log{}
+
 		storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
 		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
-		}).Return(nil, fmt.Errorf("error filtering events"))
+		}).Return(eventLogs, nil)
 
-		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err == nil {
-			t.Fatal("error expected, got nil")
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+		if err != nil {
+			t.Fatalf("nil error expected, got %v", err)
 		}
-	})
-
-	t.Run("it raises an error when storage fails reading contracts", func(t *testing.T) {
-		cli, storage := getMocks(t)
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		s := scan.NewScanner(cli, storage)
-
-		storage.EXPECT().ReadAll(context.Background()).
-			Return(nil, fmt.Errorf("error reading from storage")).
-			Times(1)
-
-		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
-		if err == nil {
-			t.Fatal("error expected, got nil")
+		if events != nil {
+			t.Fatalf("nil events expected, got %v", events)
 		}
 	})
 
 	t.Run("it does not scan when contracts are not found", func(t *testing.T) {
+		t.Parallel()
+
 		cli, storage := getMocks(t)
 
 		fromBlock := big.NewInt(0)
@@ -322,6 +280,57 @@ func TestScanEvents(t *testing.T) {
 		_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 		if err != nil {
 			t.Fatalf("got error %s when scanning events while no error was expected", err.Error())
+		}
+	})
+	t.Run("scan raises error", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name  string
+			error error
+		}{
+			{
+				name:  "it raises an error when call to blockchain fails",
+				error: fmt.Errorf("error filtering events"),
+			},
+			{
+				name:  "it raises an error when storage fails reading contracts",
+				error: fmt.Errorf("error reading from storage"),
+			},
+		}
+
+		for _, tt := range tests {
+
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+
+				cli, storage := getMocks(t)
+
+				fromBlock := big.NewInt(0)
+				toBlock := big.NewInt(100)
+				address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+				contracts := []scan.ERC721BridgelessContract{
+					{
+						Address: address,
+						Block:   fromBlock.Uint64(),
+						BaseURI: "johndoe/collection",
+					},
+				}
+
+				s := scan.NewScanner(cli, storage)
+
+				storage.EXPECT().ReadAll(context.Background()).Return(contracts, nil).Times(1)
+				cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+					FromBlock: fromBlock,
+					ToBlock:   toBlock,
+					Addresses: []common.Address{address},
+				}).Return(nil, tt.error)
+
+				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
+				if err == nil {
+					t.Fatal("error expected, got nil")
+				}
+			})
 		}
 	})
 }
