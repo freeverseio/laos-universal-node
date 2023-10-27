@@ -125,7 +125,7 @@ func TestParseEvents(t *testing.T) {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
 
-			switch events[0].(type) {
+			switch eventType := events[0].(type) {
 			case scan.EventTransfer:
 				_, ok := events[0].(scan.EventTransfer)
 				if !ok {
@@ -142,13 +142,14 @@ func TestParseEvents(t *testing.T) {
 					t.Fatal("error parsing event to EventApprovalForAll type")
 				}
 			default:
-				t.Fatal("unknown event")
+				t.Fatalf("unknown event: %v", eventType)
 			}
 		})
 	}
 }
 
 func TestScanEvents(t *testing.T) {
+	t.Parallel()
 	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
 		t.Parallel()
 
@@ -300,10 +301,8 @@ func TestScanEvents(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-
 			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
-
 				cli, storage := getMocks(t)
 
 				fromBlock := big.NewInt(0)
