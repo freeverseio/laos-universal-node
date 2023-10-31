@@ -13,8 +13,11 @@ import (
 )
 
 func TestListenAndServe(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Cleanup(func() {
+		ctrl.Finish()
+	})
 
 	mockHTTPServer := mock.NewMockHTTPServerController(ctrl)
 	mockHTTPServer.EXPECT().SetAddr("localhost:8080")
@@ -38,8 +41,11 @@ func TestListenAndServe(t *testing.T) {
 }
 
 func TestListenAndServeWithCancel(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Cleanup(func() {
+		ctrl.Finish()
+	})
 
 	mockHTTPServer := mock.NewMockHTTPServerController(ctrl)
 	mockHTTPServer.EXPECT().SetAddr(":9999")
@@ -79,8 +85,11 @@ func TestListenAndServeWithCancel(t *testing.T) {
 }
 
 func TestListenAndServeWithError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Cleanup(func() {
+		ctrl.Finish()
+	})
 
 	mockHTTPServer := mock.NewMockHTTPServerController(ctrl)
 	mockHTTPServer.EXPECT().SetAddr(":9999")

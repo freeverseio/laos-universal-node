@@ -9,8 +9,11 @@ import (
 )
 
 func TestHandler(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Cleanup(func() {
+		ctrl.Finish()
+	})
 
 	mockHttpClient := mock.NewMockHttpClientInterface(ctrl)
 	rpcUrl := "https://polygon-mumbai.test.com/"
