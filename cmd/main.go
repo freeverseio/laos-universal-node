@@ -49,11 +49,10 @@ func run() error {
 	group.Go(func() error {
 		rpcServer, err := server.NewServer()
 		if err != nil {
-			slog.Error("failed to create RPC server: %v", err)
-			return err
+			return fmt.Errorf("failed to create RPC server: %w", err)
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
-		slog.Info("starting RPC server", "listenAddress", addr)
+		slog.Info("starting RPC server", "listen_address", addr)
 		return rpcServer.ListenAndServe(ctx, c.Rpc, addr)
 	})
 
