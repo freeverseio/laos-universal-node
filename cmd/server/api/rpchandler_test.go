@@ -28,13 +28,14 @@ func TestPostRpcHandler(t *testing.T) {
 	)
 
 	tests := []struct {
-		name           string
-		requestBody    string
-		mockResponse   string
-		responseGzip   bool
-		mockError      error
-		expectedStatus int
-		expectedBody   string
+		name            string
+		requestBody     string
+		requestHeaders  map[string]string
+		expectedHeaders map[string]string
+		mockResponse    string
+		mockError       error
+		expectedStatus  int
+		expectedBody    string
 	}{
 		{
 			name:           "successful request",
@@ -44,7 +45,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
 		},
 		{
-			name: "successful eth_call request with params",
+			name: "successful eth_call request with params and headers",
 			requestBody: `{
         "jsonrpc": "2.0",
         "method": "eth_call",
@@ -54,9 +55,11 @@ func TestPostRpcHandler(t *testing.T) {
         }, "latest"],
         "id": 1
     }`,
-			mockResponse:   `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
-			expectedStatus: http.StatusOK,
-			expectedBody:   `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
+			requestHeaders:  map[string]string{"X-Custom-Header": "custom_value"},
+			expectedHeaders: map[string]string{"X-Custom-Header": "custom_value"},
+			mockResponse:    `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
 		},
 		{
 			name:           "non successful request",
@@ -86,6 +89,13 @@ func TestPostRpcHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
+			if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
+				// Setting headers in the request
+				for key, value := range tt.requestHeaders {
+					request.Header.Set(key, value)
+				}
+			}
+
 			recorder := httptest.NewRecorder()
 
 			if tt.mockError != nil {
@@ -94,8 +104,21 @@ func TestPostRpcHandler(t *testing.T) {
 				mockResponse := &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(tt.mockResponse)),
+					Header:     http.Header{"Content-Type": []string{"application/json"}},
 				}
-				mockHttpClient.EXPECT().Do(gomock.Any()).Return(mockResponse, nil).Times(1)
+				mockHttpClient.EXPECT().Do(gomock.Any()).Do(func(arg interface{}) {
+					req, ok := arg.(*http.Request)
+					if !ok {
+						t.Fatalf("expected *http.Request, got %T", arg)
+					}
+					if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
+						customHeaderValue := req.Header.Get("X-Custom-Header")
+						if customHeaderValue != tt.expectedHeaders["X-Custom-Header"] {
+							t.Fatalf("expected header %v, got %v", tt.expectedHeaders["X-Custom-Header"], customHeaderValue)
+						}
+					}
+				}).Return(mockResponse, nil).Times(1)
+
 			}
 
 			handler.PostRPCHandler(recorder, request)
