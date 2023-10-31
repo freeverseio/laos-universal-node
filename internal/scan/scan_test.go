@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	transferEventHash                   = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-	approveEventHash                    = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
-	approveForAllEventHash              = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
-	newERC721BridgelessMintingEventHash = "0x821a490a0b4f9fa6744efb226f24ce4c3917ff2fca72c1750947d75a99254610"
+	transferEventHash           = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	approveEventHash            = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+	approveForAllEventHash      = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+	newERC721UniversalEventHash = "0x821a490a0b4f9fa6744efb226f24ce4c3917ff2fca72c1750947d75a99254610"
 )
 
 func TestParseEvents(t *testing.T) {
@@ -29,7 +29,7 @@ func TestParseEvents(t *testing.T) {
 		fromBlock *big.Int
 		toBlock   *big.Int
 		address   common.Address
-		contracts []scan.ERC721BridgelessContract
+		contracts []scan.ERC721UniversalContract
 		eventLogs []types.Log
 	}{
 		{
@@ -37,7 +37,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721BridgelessContract{
+			contracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -60,7 +60,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721BridgelessContract{
+			contracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -84,7 +84,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721BridgelessContract{
+			contracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -158,7 +158,7 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
+		contracts := []scan.ERC721UniversalContract{
 			{
 				Address: address,
 				Block:   fromBlock.Uint64(),
@@ -238,7 +238,7 @@ func TestScanEvents(t *testing.T) {
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []scan.ERC721BridgelessContract{
+		contracts := []scan.ERC721UniversalContract{
 			{
 				Address: address,
 				Block:   fromBlock.Uint64(),
@@ -308,7 +308,7 @@ func TestScanEvents(t *testing.T) {
 				fromBlock := big.NewInt(0)
 				toBlock := big.NewInt(100)
 				address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-				contracts := []scan.ERC721BridgelessContract{
+				contracts := []scan.ERC721UniversalContract{
 					{
 						Address: address,
 						Block:   fromBlock.Uint64(),
@@ -334,12 +334,12 @@ func TestScanEvents(t *testing.T) {
 	})
 }
 
-func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
+func TestScanNewUniversalEventsErr(t *testing.T) {
 	t.Parallel()
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	contract := scan.ERC721BridgelessContract{
+	contract := scan.ERC721UniversalContract{
 		Address: address,
 		Block:   fromBlock.Uint64(),
 		BaseURI: "evochain1/collectionId/",
@@ -358,7 +358,7 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 			events: []types.Log{
 				{
 					Topics: []common.Hash{
-						common.HexToHash(newERC721BridgelessMintingEventHash),
+						common.HexToHash(newERC721UniversalEventHash),
 					},
 					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
 				},
@@ -402,20 +402,20 @@ func TestScanNewBridgelessMintingEventsErr(t *testing.T) {
 				Addresses: []common.Address{address},
 			}).Return(tt.events, tt.filterLogsError).Times(tt.filterLogsExpectedTimes)
 
-			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err == nil {
-				t.Fatalf("got no error when error %v was expected", tt.name)
+				t.Fatalf("got no error, %v expected", tt.name)
 			}
 		})
 	}
 }
 
-func TestScanNewBridgelessMintingEvents(t *testing.T) {
+func TestScanNewUniversalEvents(t *testing.T) {
 	t.Parallel()
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	contract := scan.ERC721BridgelessContract{
+	contract := scan.ERC721UniversalContract{
 		Address: address,
 		Block:   fromBlock.Uint64(),
 		BaseURI: "evochain1/collectionId/",
@@ -431,7 +431,7 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 			events: []types.Log{
 				{
 					Topics: []common.Hash{
-						common.HexToHash(newERC721BridgelessMintingEventHash),
+						common.HexToHash(newERC721UniversalEventHash),
 					},
 					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
 				},
@@ -482,7 +482,7 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 				ToBlock:   toBlock,
 			}).Return(tt.events, nil).Times(1)
 
-			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err != nil {
 				t.Fatalf("got error %v when no error was expected", err)
 			}
@@ -490,7 +490,7 @@ func TestScanNewBridgelessMintingEvents(t *testing.T) {
 	}
 }
 
-func TestScanNewBridgelessMintingEventsDiscovery(t *testing.T) {
+func TestScanNewUniversalEventsDiscovery(t *testing.T) {
 	t.Parallel()
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
@@ -500,13 +500,13 @@ func TestScanNewBridgelessMintingEventsDiscovery(t *testing.T) {
 	}
 	tests := []struct {
 		name                    string
-		storedContracts         []scan.ERC721BridgelessContract
+		storedContracts         []scan.ERC721UniversalContract
 		filterLogsExpectedTimes int
 	}{
 		{
 			name:                    "discovery returns false",
 			filterLogsExpectedTimes: 0,
-			storedContracts: []scan.ERC721BridgelessContract{
+			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress(userDefinedContracts[0]),
 					Block:   fromBlock.Uint64(),
@@ -522,7 +522,7 @@ func TestScanNewBridgelessMintingEventsDiscovery(t *testing.T) {
 		{
 			name:                    "discovery returns true",
 			filterLogsExpectedTimes: 1,
-			storedContracts: []scan.ERC721BridgelessContract{
+			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress(userDefinedContracts[0]),
 					Block:   fromBlock.Uint64(),
@@ -543,7 +543,7 @@ func TestScanNewBridgelessMintingEventsDiscovery(t *testing.T) {
 				ToBlock:   toBlock,
 				Addresses: getAddressesFromStrings(userDefinedContracts),
 			}).Return(nil, nil).Times(tt.filterLogsExpectedTimes)
-			err := s.ScanNewBridgelessMintingEvents(context.Background(), fromBlock, toBlock)
+			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err != nil {
 				t.Fatalf("got error %v when no error was expected", err)
 			}

@@ -40,10 +40,10 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // ReadAll mocks base method.
-func (m *MockStorage) ReadAll(ctx context.Context) ([]scan.ERC721BridgelessContract, error) {
+func (m *MockStorage) ReadAll(ctx context.Context) ([]scan.ERC721UniversalContract, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadAll", ctx)
-	ret0, _ := ret[0].([]scan.ERC721BridgelessContract)
+	ret0, _ := ret[0].([]scan.ERC721UniversalContract)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -55,7 +55,7 @@ func (mr *MockStorageMockRecorder) ReadAll(ctx any) *gomock.Call {
 }
 
 // Store mocks base method.
-func (m *MockStorage) Store(ctx context.Context, c scan.ERC721BridgelessContract) error {
+func (m *MockStorage) Store(ctx context.Context, c scan.ERC721UniversalContract) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", ctx, c)
 	ret0, _ := ret[0].(error)

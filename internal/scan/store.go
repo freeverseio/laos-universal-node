@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type ERC721BridgelessContract struct {
+type ERC721UniversalContract struct {
 	Address common.Address `json:"address"`
 	// this will be renamed "currentBlock" and stored in the DB with the related contract
 	// this way the scan can continue scanning that contract from that block
@@ -21,8 +21,8 @@ type ERC721BridgelessContract struct {
 }
 
 type Storage interface {
-	Store(ctx context.Context, c ERC721BridgelessContract) error
-	ReadAll(ctx context.Context) ([]ERC721BridgelessContract, error)
+	Store(ctx context.Context, c ERC721UniversalContract) error
+	ReadAll(ctx context.Context) ([]ERC721UniversalContract, error)
 }
 
 type fsStorage struct {
@@ -48,11 +48,11 @@ func NewFSStorage(filename string) (Storage, error) {
 	return fsStorage{file: filename}, nil
 }
 
-// Store adds an ERC721BridgelessContract struct in JSON format to the storage file
-func (fs fsStorage) Store(ctx context.Context, c ERC721BridgelessContract) error {
+// Store adds an ERC721UniversalContract struct in JSON format to the storage file
+func (fs fsStorage) Store(ctx context.Context, c ERC721UniversalContract) error {
 	buf, err := json.Marshal(c)
 	if err != nil {
-		return fmt.Errorf("error occurred when marshaling ERC721BridgelessContract struct: %w", err)
+		return fmt.Errorf("error occurred when marshaling ERC721UniversalContract struct: %w", err)
 	}
 	f, err := os.OpenFile(fs.file, os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
@@ -73,7 +73,7 @@ func (fs fsStorage) Store(ctx context.Context, c ERC721BridgelessContract) error
 }
 
 // ReadAll implements FSStorage.
-func (fs fsStorage) ReadAll(ctx context.Context) ([]ERC721BridgelessContract, error) {
+func (fs fsStorage) ReadAll(ctx context.Context) ([]ERC721UniversalContract, error) {
 	f, err := os.Open(fs.file)
 	if err != nil {
 		return nil, err
@@ -84,8 +84,8 @@ func (fs fsStorage) ReadAll(ctx context.Context) ([]ERC721BridgelessContract, er
 		}
 	}()
 
-	contracts := make([]ERC721BridgelessContract, 0)
-	var contract ERC721BridgelessContract
+	contracts := make([]ERC721UniversalContract, 0)
+	var contract ERC721UniversalContract
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

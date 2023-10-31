@@ -157,8 +157,8 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			if err = s.ScanNewBridgelessMintingEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
-				slog.Error("error occurred while discovering new bridgeless minting events", "err", err.Error())
+			if err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
+				slog.Error("error occurred while discovering new universal events", "err", err.Error())
 				break
 			}
 
