@@ -106,7 +106,6 @@ func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string) error {
 	}()
 
 	if err := s.HTTPServer.ListenAndServe(); err != http.ErrServerClosed {
-		slog.Error("HTTP server ListenAndServe: %w", err)
 		// Error starting or closing listener:
 		return fmt.Errorf("server ListenAndServe: %w", err)
 	}
