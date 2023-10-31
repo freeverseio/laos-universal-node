@@ -6,17 +6,17 @@ import (
 )
 
 // Define an interface for HTTP client operations
-type HttpClientInterface interface {
+type HTTPClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
 // Create a wrapper for the net/http client
-type HttpClientWrapper struct {
-	Client *http.Client
+type HTTPClientWrapper struct {
+	client *http.Client
 }
 
-func (h *HttpClientWrapper) Do(req *http.Request) (*http.Response, error) {
-	return h.Client.Do(req)
+func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
+	return h.client.Do(req)
 }
 
 type ApiHandlerInterface interface {
@@ -25,12 +25,12 @@ type ApiHandlerInterface interface {
 
 type ApiHandler struct {
 	RpcUrl     string
-	HttpClient HttpClientInterface // Inject the HTTP client interface here
+	HttpClient HTTPClientInterface // Inject the HTTP client interface here
 }
 
 type ApiHandlerOption func(*ApiHandler)
 
-func WithHttpClient(client HttpClientInterface) ApiHandlerOption {
+func WithHttpClient(client HTTPClientInterface) ApiHandlerOption {
 	return func(h *ApiHandler) {
 		h.HttpClient = client
 	}
@@ -39,8 +39,8 @@ func WithHttpClient(client HttpClientInterface) ApiHandlerOption {
 func NewApiHandler(rpcUrl string, opts ...ApiHandlerOption) *ApiHandler {
 	handler := &ApiHandler{
 		RpcUrl: rpcUrl,
-		HttpClient: &HttpClientWrapper{
-			Client: &http.Client{
+		HttpClient: &HTTPClientWrapper{
+			client: &http.Client{
 				Timeout: 10 * time.Second,
 			},
 		}, // Default HttpClient
