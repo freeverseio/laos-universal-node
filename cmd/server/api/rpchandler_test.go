@@ -118,7 +118,6 @@ func TestPostRpcHandler(t *testing.T) {
 						}
 					}
 				}).Return(mockResponse, nil).Times(1)
-
 			}
 
 			handler.PostRPCHandler(recorder, request)
