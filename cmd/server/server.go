@@ -101,7 +101,7 @@ func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string) error {
 		s.HTTPServer.SetKeepAlivesEnabled(false)
 		if err := s.HTTPServer.Shutdown(ctx); err != nil {
 			// Error from closing listeners, or context timeout:
-			slog.Error("HTTP server Shutdown: %w", err)
+			slog.Error("HTTP server Shutdown", "err", err)
 		}
 	}()
 
