@@ -350,34 +350,17 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 		filterLogsError         error
 		name                    string
 		events                  []types.Log
-		storageExpectedTimes    int
 		filterLogsExpectedTimes int
 	}{
 		{
-			name: "error storing contracts",
-			events: []types.Log{
-				{
-					Topics: []common.Hash{
-						common.HexToHash(newERC721UniversalEventHash),
-					},
-					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
-				},
-			},
-			storageExpectedTimes:    1,
-			filterLogsExpectedTimes: 1,
-			filterLogsError:         nil,
-		},
-		{
 			name:                    "error filtering logs",
 			events:                  nil,
-			storageExpectedTimes:    0,
 			filterLogsError:         fmt.Errorf("error filtering logs"),
 			filterLogsExpectedTimes: 1,
 		},
 		{
 			name:                    "discovery fails because reading from storage fails",
 			events:                  nil,
-			storageExpectedTimes:    0,
 			filterLogsExpectedTimes: 0,
 			filterLogsError:         nil,
 			readAllError:            fmt.Errorf("error while reading contracts from storage"),
@@ -393,16 +376,13 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 			storage.EXPECT().ReadAll(context.Background()).
 				Return(nil, tt.readAllError).
 				Times(1)
-			storage.EXPECT().Store(context.Background(), contract).
-				Return(fmt.Errorf("error storing contracts")).
-				Times(tt.storageExpectedTimes)
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
 				Addresses: []common.Address{address},
 			}).Return(tt.events, tt.filterLogsError).Times(tt.filterLogsExpectedTimes)
 
-			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
+			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err == nil {
 				t.Fatalf("got no error, %v expected", tt.name)
 			}
@@ -412,19 +392,13 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 
 func TestScanNewUniversalEvents(t *testing.T) {
 	t.Parallel()
-	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	contract := scan.ERC721UniversalContract{
-		Address: address,
-		Block:   fromBlock.Uint64(),
-		BaseURI: "evochain1/collectionId/",
-	}
 
 	tests := []struct {
-		name                 string
-		events               []types.Log
-		storageExpectedTimes int
+		name                    string
+		events                  []types.Log
+		expectedContractsParsed int
 	}{
 		{
 			name: "find and store one contract",
@@ -436,7 +410,7 @@ func TestScanNewUniversalEvents(t *testing.T) {
 					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
 				},
 			},
-			storageExpectedTimes: 1,
+			expectedContractsParsed: 1,
 		},
 		{
 			name: "other event types found",
@@ -451,7 +425,7 @@ func TestScanNewUniversalEvents(t *testing.T) {
 					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 				},
 			},
-			storageExpectedTimes: 0,
+			expectedContractsParsed: 0,
 		},
 		{
 			name: "anonymous event found",
@@ -461,12 +435,12 @@ func TestScanNewUniversalEvents(t *testing.T) {
 					Data:   common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"),
 				},
 			},
-			storageExpectedTimes: 0,
+			expectedContractsParsed: 0,
 		},
 		{
-			name:                 "no events found",
-			events:               []types.Log{},
-			storageExpectedTimes: 0,
+			name:                    "no events found",
+			events:                  []types.Log{},
+			expectedContractsParsed: 0,
 		},
 	}
 	for _, tt := range tests {
@@ -476,15 +450,17 @@ func TestScanNewUniversalEvents(t *testing.T) {
 			cli, storage := getMocks(t)
 			s := scan.NewScanner(cli, storage)
 
-			storage.EXPECT().Store(context.Background(), contract).Return(nil).Times(tt.storageExpectedTimes)
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
 			}).Return(tt.events, nil).Times(1)
 
-			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
+			contracts, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err != nil {
 				t.Fatalf("got error %v when no error was expected", err)
+			}
+			if len(contracts) != tt.expectedContractsParsed {
+				t.Fatalf("got %d contracts, %d expected", len(contracts), tt.expectedContractsParsed)
 			}
 		})
 	}
@@ -543,9 +519,9 @@ func TestScanNewUniversalEventsDiscovery(t *testing.T) {
 				ToBlock:   toBlock,
 				Addresses: getAddressesFromStrings(userDefinedContracts),
 			}).Return(nil, nil).Times(tt.filterLogsExpectedTimes)
-			err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
+			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err != nil {
-				t.Fatalf("got error %v when no error was expected", err)
+				t.Fatalf("got error %v, expected nil", err)
 			}
 		})
 	}
