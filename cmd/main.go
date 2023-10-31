@@ -47,7 +47,7 @@ func run() error {
 	})
 
 	group.Go(func() error {
-		rpcServer, err := server.NewServer()
+		rpcServer, err := server.New()
 		if err != nil {
 			return fmt.Errorf("failed to create RPC server: %w", err)
 		}

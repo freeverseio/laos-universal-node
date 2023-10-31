@@ -23,7 +23,7 @@ func TestListenAndServe(t *testing.T) {
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
 
-	s, err := server.NewServer(server.WithHTTPServer(mockHTTPServer))
+	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestListenAndServeWithCancel(t *testing.T) {
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
 
-	s, err := server.NewServer(server.WithHTTPServer(mockHTTPServer))
+	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestListenAndServeWithError(t *testing.T) {
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
 
-	s, err := server.NewServer(server.WithHTTPServer(mockHTTPServer))
+	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -58,7 +58,7 @@ func WithHTTPServer(httpServer HTTPServerController) ServerOption {
 	}
 }
 
-func NewServer(opts ...ServerOption) (*Server, error) {
+func New(opts ...ServerOption) (*Server, error) {
 	server := &Server{
 		httpServer: &HTTPServer{
 			server: &http.Server{
