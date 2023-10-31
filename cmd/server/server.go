@@ -45,7 +45,7 @@ func (h *HTTPServer) SetHandler(handler http.Handler) {
 }
 
 type Server struct {
-	HTTPServer HTTPServerController
+	httpServer HTTPServerController
 }
 
 type ServerOption func(*Server) error
@@ -53,14 +53,14 @@ type ServerOption func(*Server) error
 // WithHTTPServer allows you to provide a custom HTTPServerer implementation.
 func WithHTTPServer(httpServer HTTPServerController) ServerOption {
 	return func(s *Server) error {
-		s.HTTPServer = httpServer
+		s.httpServer = httpServer
 		return nil
 	}
 }
 
 func NewServer(opts ...ServerOption) (*Server, error) {
 	server := &Server{
-		HTTPServer: &HTTPServer{
+		httpServer: &HTTPServer{
 			server: &http.Server{
 				ReadHeaderTimeout: 20 * time.Second,
 				WriteTimeout:      20 * time.Second,
@@ -81,11 +81,11 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 // ListenAndServe starts the RPC server to listen and serve incoming requests on the specified address.
 // It also handles graceful shutdown on receiving a context cancellation signal.
 func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string) error {
-	s.HTTPServer.SetAddr(addr)
+	s.httpServer.SetAddr(addr)
 
 	handler := api.NewApiHandler(rpcUrl)
 	router := mux.NewRouter()
-	s.HTTPServer.SetHandler(api.NewRouter(handler, router))
+	s.httpServer.SetHandler(api.NewRouter(handler, router))
 	slog.Info("server listening", "address", addr)
 
 	go func() {
@@ -95,14 +95,14 @@ func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 
-		s.HTTPServer.SetKeepAlivesEnabled(false)
-		if err := s.HTTPServer.Shutdown(ctx); err != nil {
+		s.httpServer.SetKeepAlivesEnabled(false)
+		if err := s.httpServer.Shutdown(ctx); err != nil {
 			// Error from closing listeners, or context timeout:
 			slog.Error("HTTP server Shutdown", "err", err)
 		}
 	}()
 
-	if err := s.HTTPServer.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		return fmt.Errorf("server ListenAndServe: %w", err)
 	}
