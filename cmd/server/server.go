@@ -85,7 +85,7 @@ func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string) error {
 
 	handler := api.NewApiHandler(rpcUrl)
 	router := mux.NewRouter()
-	s.httpServer.SetHandler(api.NewRouter(handler, router))
+	s.httpServer.SetHandler(api.Routes(handler, router))
 	slog.Info("server listening", "address", addr)
 
 	go func() {

@@ -11,7 +11,7 @@ type Router interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-func NewRouter(h ApiHandlerInterface, r Router) Router {
+func Routes(h ApiHandlerInterface, r Router) Router {
 	r.HandleFunc("/", h.PostRPCHandler).Methods("POST")
 	return r
 }
