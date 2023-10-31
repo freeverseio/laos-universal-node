@@ -44,7 +44,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
 		},
 		{
-			name: "successful eth_call request with parrams",
+			name: "successful eth_call request with params",
 			requestBody: `{
         "jsonrpc": "2.0",
         "method": "eth_call",
@@ -98,7 +98,7 @@ func TestPostRpcHandler(t *testing.T) {
 				mockHttpClient.EXPECT().Do(gomock.Any()).Return(mockResponse, nil).Times(1)
 			}
 
-			handler.PostRpcHandler(recorder, request)
+			handler.PostRPCHandler(recorder, request)
 
 			response := recorder.Result()
 			body, _ := io.ReadAll(response.Body)

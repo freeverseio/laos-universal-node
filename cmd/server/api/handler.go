@@ -20,7 +20,7 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 }
 
 type ApiHandlerInterface interface {
-	PostRpcHandler(w http.ResponseWriter, r *http.Request)
+	PostRPCHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type ApiHandler struct {

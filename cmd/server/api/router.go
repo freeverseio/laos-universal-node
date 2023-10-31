@@ -12,6 +12,6 @@ type Router interface {
 }
 
 func NewRouter(h ApiHandlerInterface, r Router) Router {
-	r.HandleFunc("/", h.PostRpcHandler).Methods("POST")
+	r.HandleFunc("/", h.PostRPCHandler).Methods("POST")
 	return r
 }
