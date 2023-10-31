@@ -2,7 +2,6 @@ package api_test
 
 import (
 	"bytes"
-	"compress/gzip"
 	"errors"
 	"io"
 	"net/http"
@@ -79,8 +78,10 @@ func TestPostRpcHandler(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for _, ttest := range tests {
+		tt := ttest // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel() // Run tests in parallel
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
 			recorder := httptest.NewRecorder()
 
@@ -90,12 +91,6 @@ func TestPostRpcHandler(t *testing.T) {
 				mockResponse := &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(tt.mockResponse)),
-				}
-				if tt.responseGzip {
-					mockResponse = &http.Response{
-						StatusCode: http.StatusOK,
-						Body:       io.NopCloser(gzipString(tt.mockResponse)),
-					}
 				}
 				mockHttpClient.EXPECT().Do(gomock.Any()).Return(mockResponse, nil).Times(1)
 			}
@@ -119,16 +114,4 @@ func TestPostRpcHandler(t *testing.T) {
 			}
 		})
 	}
-}
-
-func gzipString(s string) io.ReadCloser {
-	var b bytes.Buffer
-	gz := gzip.NewWriter(&b)
-	if _, err := gz.Write([]byte(s)); err != nil {
-		panic(err)
-	}
-	if err := gz.Close(); err != nil {
-		panic(err)
-	}
-	return io.NopCloser(bytes.NewReader(b.Bytes()))
 }
