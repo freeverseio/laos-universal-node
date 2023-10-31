@@ -327,7 +327,7 @@ func TestScanEvents(t *testing.T) {
 
 				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock)
 				if err == nil {
-					t.Fatal("error expected, got nil")
+					t.Fatalf("got nil error, expected %v", tt.error.Error())
 				}
 			})
 		}

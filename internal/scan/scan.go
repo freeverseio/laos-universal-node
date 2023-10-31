@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	erc721universal "github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 )
 
 var (
@@ -21,14 +21,10 @@ var (
 	eventApprovalName              = "Approval"
 	eventApprovalForAllName        = "ApprovalForAll"
 	eventNewERC721Universal        = "NewERC721Universal"
-	eventTransferSig               = []byte(fmt.Sprintf("%s(address,address,uint256)", eventTransferName))
-	eventApprovalSig               = []byte(fmt.Sprintf("%s(address,address,uint256)", eventApprovalName))
-	eventApprovalForAllSig         = []byte(fmt.Sprintf("%s(address,address,bool)", eventApprovalForAllName))
-	eventNewERC721UniversalSig     = []byte(fmt.Sprintf("%s(address,string)", eventNewERC721Universal))
-	eventTransferSigHash           = crypto.Keccak256Hash(eventTransferSig).Hex()
-	eventApprovalSigHash           = crypto.Keccak256Hash(eventApprovalSig).Hex()
-	eventApprovalForAllSigHash     = crypto.Keccak256Hash(eventApprovalForAllSig).Hex()
-	eventNewERC721UniversalSigHash = crypto.Keccak256Hash(eventNewERC721UniversalSig).Hex()
+	eventTransferSigHash           = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
+	eventApprovalSigHash           = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
+	eventApprovalForAllSigHash     = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
+	eventNewERC721UniversalSigHash = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -79,6 +75,12 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
+func generateEventSignatureHash(event string, params ...string) string {
+	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
+
+	return crypto.Keccak256Hash(eventSig).Hex()
+}
+
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
 	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) error
@@ -105,26 +107,29 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
-	triggerDiscovery, err := s.triggerDiscovery(ctx)
+	ok, err := s.shouldScanNewUniversalEvents(ctx)
 	if err != nil {
 		return err
 	}
-	if !triggerDiscovery {
+	if !ok {
 		return nil
 	}
+
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return fmt.Errorf("error filtering events: %w", err)
 	}
+
 	if len(eventLogs) == 0 {
 		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
 		return nil
 	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(erc721universal.Erc721universalMetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
 		return fmt.Errorf("error instantiating ABI: %w", err)
 	}
+
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) == 0 {
@@ -155,7 +160,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 	return nil
 }
 
-func (s scanner) triggerDiscovery(ctx context.Context) (bool, error) {
+func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
 	if len(s.contracts) == 0 {
 		return true, nil
 	}
@@ -204,7 +209,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 		return nil, nil
 	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(erc721universal.Erc721universalMetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
