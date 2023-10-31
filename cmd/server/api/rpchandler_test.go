@@ -105,15 +105,15 @@ func TestPostRpcHandler(t *testing.T) {
 			defer func() {
 				errClose := response.Body.Close()
 				if errClose != nil {
-					t.Errorf("Error closing response body: %v", errClose)
+					t.Fatalf("Error closing response body: %v", errClose)
 				}
 			}()
 
 			if response.StatusCode != tt.expectedStatus {
-				t.Errorf("expected status %v, got %v", tt.expectedStatus, response.StatusCode)
+				t.Fatalf("expected status %v, got %v", tt.expectedStatus, response.StatusCode)
 			}
 			if string(body) != tt.expectedBody {
-				t.Errorf("expected body %v, got %v", tt.expectedBody, string(body))
+				t.Fatalf("expected body %v, got %v", tt.expectedBody, string(body))
 			}
 		})
 	}
