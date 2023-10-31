@@ -19,33 +19,33 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 	return h.client.Do(req)
 }
 
-type ApiHandlerInterface interface {
+type HandlerInterface interface {
 	PostRPCHandler(w http.ResponseWriter, r *http.Request)
 }
 
-type ApiHandler struct {
+type Handler struct {
 	rpcUrl     string
 	httpClient HTTPClientInterface // Inject the HTTP client interface here
 }
 
-func (h *ApiHandler) GetRpcUrl() string {
+func (h *Handler) GetRpcUrl() string {
 	return h.rpcUrl
 }
 
-func (h *ApiHandler) GetHttpClient() HTTPClientInterface {
+func (h *Handler) GetHttpClient() HTTPClientInterface {
 	return h.httpClient
 }
 
-type ApiHandlerOption func(*ApiHandler)
+type HandlerOption func(*Handler)
 
-func WithHttpClient(client HTTPClientInterface) ApiHandlerOption {
-	return func(h *ApiHandler) {
+func WithHttpClient(client HTTPClientInterface) HandlerOption {
+	return func(h *Handler) {
 		h.httpClient = client
 	}
 }
 
-func NewApiHandler(rpcUrl string, opts ...ApiHandlerOption) *ApiHandler {
-	handler := &ApiHandler{
+func NewHandler(rpcUrl string, opts ...HandlerOption) *Handler {
+	handler := &Handler{
 		rpcUrl: rpcUrl,
 		httpClient: &HTTPClientWrapper{
 			client: &http.Client{

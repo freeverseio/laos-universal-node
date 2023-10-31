@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (h *ApiHandler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
