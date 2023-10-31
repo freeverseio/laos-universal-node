@@ -18,7 +18,7 @@ const (
 	transferEventHash           = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 	approveEventHash            = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
 	approveForAllEventHash      = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
-	newERC721UniversalEventHash = "0x821a490a0b4f9fa6744efb226f24ce4c3917ff2fca72c1750947d75a99254610"
+	newERC721UniversalEventHash = "0x74b81bc88402765a52dad72d3d893684f472a679558f3641500e0ee14924a10a"
 )
 
 func TestParseEvents(t *testing.T) {
