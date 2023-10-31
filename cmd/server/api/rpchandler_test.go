@@ -75,7 +75,6 @@ func TestPostRpcHandler(t *testing.T) {
 	}
 
 	for _, ttest := range tests {
-
 		tt := ttest // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -110,12 +109,12 @@ func TestPostRpcHandler(t *testing.T) {
 				mockHttpClient.EXPECT().Do(gomock.Any()).Do(func(arg interface{}) {
 					req, ok := arg.(*http.Request)
 					if !ok {
-						t.Fatalf("expected *http.Request, got %T", arg)
+						t.Fatalf("got %T, expected *http.Request", arg)
 					}
 					if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
 						customHeaderValue := req.Header.Get("X-Custom-Header")
 						if customHeaderValue != tt.expectedHeaders["X-Custom-Header"] {
-							t.Fatalf("expected header %v, got %v", tt.expectedHeaders["X-Custom-Header"], customHeaderValue)
+							t.Fatalf("got %v, expected header %v, ", customHeaderValue, tt.expectedHeaders["X-Custom-Header"])
 						}
 					}
 				}).Return(mockResponse, nil).Times(1)
@@ -128,15 +127,15 @@ func TestPostRpcHandler(t *testing.T) {
 			defer func() {
 				errClose := response.Body.Close()
 				if errClose != nil {
-					t.Fatalf("Error closing response body: %v", errClose)
+					t.Fatalf("got: %v, expected: no error", errClose)
 				}
 			}()
 
 			if response.StatusCode != tt.expectedStatus {
-				t.Fatalf("expected status %v, got %v", tt.expectedStatus, response.StatusCode)
+				t.Fatalf("got %v, expected status %v", response.StatusCode, tt.expectedStatus)
 			}
 			if string(body) != tt.expectedBody {
-				t.Fatalf("expected body %v, got %v", tt.expectedBody, string(body))
+				t.Fatalf("got %v, expected body %v", string(body), tt.expectedBody)
 			}
 		})
 	}
