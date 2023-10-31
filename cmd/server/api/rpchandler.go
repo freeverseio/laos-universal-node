@@ -22,7 +22,7 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 	}() // Check error on Close
 
 	// Prepare the request to the BC node
-	proxyReq, err := http.NewRequest(r.Method, h.RpcUrl, io.NopCloser(bytes.NewReader(body)))
+	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -36,7 +36,7 @@ func (h *ApiHandler) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the request to the Ethereum node
-	resp, err := h.HttpClient.Do(proxyReq)
+	resp, err := h.GetHttpClient().Do(proxyReq)
 	if err != nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return

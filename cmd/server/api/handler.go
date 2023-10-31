@@ -24,22 +24,30 @@ type ApiHandlerInterface interface {
 }
 
 type ApiHandler struct {
-	RpcUrl     string
-	HttpClient HTTPClientInterface // Inject the HTTP client interface here
+	rpcUrl     string
+	httpClient HTTPClientInterface // Inject the HTTP client interface here
+}
+
+func (h *ApiHandler) GetRpcUrl() string {
+	return h.rpcUrl
+}
+
+func (h *ApiHandler) GetHttpClient() HTTPClientInterface {
+	return h.httpClient
 }
 
 type ApiHandlerOption func(*ApiHandler)
 
 func WithHttpClient(client HTTPClientInterface) ApiHandlerOption {
 	return func(h *ApiHandler) {
-		h.HttpClient = client
+		h.httpClient = client
 	}
 }
 
 func NewApiHandler(rpcUrl string, opts ...ApiHandlerOption) *ApiHandler {
 	handler := &ApiHandler{
-		RpcUrl: rpcUrl,
-		HttpClient: &HTTPClientWrapper{
+		rpcUrl: rpcUrl,
+		httpClient: &HTTPClientWrapper{
 			client: &http.Client{
 				Timeout: 10 * time.Second,
 			},
