@@ -91,7 +91,7 @@ func TestListenAndServeWithError(t *testing.T) {
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -99,6 +99,6 @@ func TestListenAndServeWithError(t *testing.T) {
 
 	err = s.ListenAndServe(ctx, "rpcUrl", ":9999")
 	if err == nil {
-		t.Fatalf("expected error, got nil")
+		t.Fatalf("got nil, expected error")
 	}
 }
