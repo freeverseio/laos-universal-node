@@ -25,7 +25,7 @@ func TestListenAndServe(t *testing.T) {
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -33,7 +33,7 @@ func TestListenAndServe(t *testing.T) {
 
 	err = s.ListenAndServe(ctx, "rpcUrl", "localhost:8080")
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
 }
 
@@ -50,7 +50,7 @@ func TestListenAndServeWithCancel(t *testing.T) {
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
 
 	// Use a channel to communicate when ListenAndServe exits
