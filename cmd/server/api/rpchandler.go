@@ -17,14 +17,14 @@ func (h *ApiHandler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		errClose := r.Body.Close()
 		if errClose != nil {
-			slog.Error("Error closing response body", "error", errClose)
+			slog.Error("error closing response body", "err", errClose)
 		}
 	}() // Check error on Close
 
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *ApiHandler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		errClose := resp.Body.Close()
 		if errClose != nil {
-			slog.Error("Error closing response body", "error", errClose)
+			slog.Error("error closing response body", "err", errClose)
 		}
 	}() // Check error on Close
 
@@ -65,6 +65,6 @@ func (h *ApiHandler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("responseBody", "responseBody", string(responseBody))
 	_, err = w.Write(responseBody) // Check error on Write
 	if err != nil {
-		slog.Error("Error writing response body", "error", err)
+		slog.Error("error writing response body", "err", err)
 	}
 }
