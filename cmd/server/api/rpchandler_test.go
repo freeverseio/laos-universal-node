@@ -15,8 +15,11 @@ import (
 )
 
 func TestPostRpcHandler(t *testing.T) {
+	t.Parallel() // Run tests in parallel
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Cleanup(func() {
+		ctrl.Finish()
+	})
 
 	mockHttpClient := mock.NewMockHttpClientInterface(ctrl)
 	handler := api.NewApiHandler(
