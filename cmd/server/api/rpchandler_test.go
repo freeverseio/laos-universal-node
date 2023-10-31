@@ -15,11 +15,8 @@ import (
 )
 
 func TestPostRpcHandler(t *testing.T) {
-	t.Parallel() // Run tests in parallel
 	ctrl := gomock.NewController(t)
-	t.Cleanup(func() {
-		ctrl.Finish()
-	})
+	defer ctrl.Finish()
 
 	mockHttpClient := mock.NewMockHttpClientInterface(ctrl)
 	handler := api.NewApiHandler(
@@ -87,7 +84,6 @@ func TestPostRpcHandler(t *testing.T) {
 	for _, ttest := range tests {
 		tt := ttest // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel() // Run tests in parallel
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
 			if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
 				// Setting headers in the request
