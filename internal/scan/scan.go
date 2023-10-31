@@ -83,7 +83,7 @@ func generateEventSignatureHash(event string, params ...string) string {
 
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
-	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) error
+	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
 }
 
@@ -106,30 +106,32 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) error {
+func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
+	// TODO this logic will be extracted form this function in a future iteration
 	ok, err := s.shouldScanNewUniversalEvents(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
-		return fmt.Errorf("error filtering events: %w", err)
+		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
 
 	if len(eventLogs) == 0 {
 		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
-		return nil
+		return nil, nil
 	}
 
 	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
-		return fmt.Errorf("error instantiating ABI: %w", err)
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
+	contracts := make([]ERC721UniversalContract, 0)
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) == 0 {
@@ -140,7 +142,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		case eventNewERC721UniversalSigHash:
 			newERC721Universal, err := parseNewERC721Universal(&eventLogs[i], &contractAbi)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
 
@@ -149,15 +151,14 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 				Block:   eventLogs[i].BlockNumber,
 				BaseURI: newERC721Universal.BaseURI,
 			}
-			if err := s.storage.Store(ctx, c); err != nil {
-				return err
-			}
+			contracts = append(contracts, c)
+
 		default:
 			slog.Debug("no new universal contracts found")
 		}
 	}
 
-	return nil
+	return contracts, nil
 }
 
 func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
@@ -185,6 +186,7 @@ func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error)
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
+	// TODO this logic will be extracted form this function in a future iteration
 	contracts, err := s.storage.ReadAll(context.Background())
 	if err != nil {
 		return nil, err

@@ -74,7 +74,7 @@ func run() error {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
 		s := scan.NewScanner(client, storage, c.Contracts...)
-		return runScan(ctx, c, client, s)
+		return runScan(ctx, c, client, s, storage)
 	})
 
 	// Create an HTTP handler for RPC
@@ -128,7 +128,7 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
 	var err error
 	startingBlock := c.StartingBlock
 	if startingBlock == 0 {
@@ -157,11 +157,21 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			if err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))); err != nil {
+			universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			if err != nil {
 				slog.Error("error occurred while discovering new universal events", "err", err.Error())
 				break
 			}
 
+			// This will be replaced by a batch write to the DB
+			for i := 0; i < len(universalContracts); i++ {
+				if err := storage.Store(ctx, universalContracts[i]); err != nil {
+					slog.Error("error occurred while storing universal contract", "err", err.Error())
+					break
+				}
+			}
+
+			// TODO ReadAll should be performed here
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
