@@ -107,7 +107,7 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
-	// TODO this logic will be extracted form this function in a future iteration
+	// TODO this logic will be extracted from this function in a future iteration
 	ok, err := s.shouldScanNewUniversalEvents(ctx)
 	if err != nil {
 		return nil, err
