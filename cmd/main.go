@@ -165,13 +165,13 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 
 			// This will be replaced by a batch write to the DB
 			for i := 0; i < len(universalContracts); i++ {
-				if err := storage.Store(ctx, universalContracts[i]); err != nil {
+				if err = storage.Store(ctx, universalContracts[i]); err != nil {
 					slog.Error("error occurred while storing universal contract", "err", err.Error())
 					break
 				}
 			}
 
-			// TODO ReadAll should be performed here
+			// TODO when the DB is in use, storage.ReadAll will run here and not inside ScanEvents
 			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
