@@ -13,19 +13,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	ERC721 "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/erc721"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 )
 
 var (
-	eventTransferName          = "Transfer"
-	eventApprovalName          = "Approval"
-	eventApprovalForAllName    = "ApprovalForAll"
-	eventTransferSig           = []byte(fmt.Sprintf("%s(address,address,uint256)", eventTransferName))
-	eventApprovalSig           = []byte(fmt.Sprintf("%s(address,address,uint256)", eventApprovalName))
-	eventApprovalForAllSig     = []byte(fmt.Sprintf("%s(address,address,bool)", eventApprovalForAllName))
-	eventTransferSigHash       = crypto.Keccak256Hash(eventTransferSig).Hex()
-	eventApprovalSigHash       = crypto.Keccak256Hash(eventApprovalSig).Hex()
-	eventApprovalForAllSigHash = crypto.Keccak256Hash(eventApprovalForAllSig).Hex()
+	eventTransferName              = "Transfer"
+	eventApprovalName              = "Approval"
+	eventApprovalForAllName        = "ApprovalForAll"
+	eventNewERC721Universal        = "NewERC721Universal"
+	eventTransferSigHash           = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
+	eventApprovalSigHash           = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
+	eventApprovalForAllSigHash     = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
+	eventNewERC721UniversalSigHash = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -70,27 +69,140 @@ type EventApprovalForAll struct {
 	Approved bool
 }
 
+// EventNewERC721Universal is the ERC721 event emitted when a new Universal contract is deployed
+type EventNewERC721Universal struct {
+	NewContractAddress common.Address
+	BaseURI            string
+}
+
+func generateEventSignatureHash(event string, params ...string) string {
+	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
+
+	return crypto.Keccak256Hash(eventSig).Hex()
+}
+
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
+	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
 }
 
 type scanner struct {
-	client   EthClient
-	contract common.Address
+	client    EthClient
+	contracts []common.Address
+	storage   Storage
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, contract common.Address) Scanner {
-	return scanner{
-		client:   client,
-		contract: contract,
+func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
+	scan := scanner{
+		client:  client,
+		storage: s,
 	}
+	for _, c := range contracts {
+		scan.contracts = append(scan.contracts, common.HexToAddress(c))
+	}
+	return scan
+}
+
+// ScanEvents returns the ERC721 events between fromBlock and toBlock
+func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
+	// TODO this logic will be extracted from this function in a future iteration
+	ok, err := s.shouldScanNewUniversalEvents(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
+	if err != nil {
+		return nil, fmt.Errorf("error filtering events: %w", err)
+	}
+
+	if len(eventLogs) == 0 {
+		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
+		return nil, nil
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
+	if err != nil {
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
+	}
+
+	contracts := make([]ERC721UniversalContract, 0)
+	for i := range eventLogs {
+		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
+		if len(eventLogs[i].Topics) == 0 {
+			continue
+		}
+
+		switch eventLogs[i].Topics[0].Hex() {
+		case eventNewERC721UniversalSigHash:
+			newERC721Universal, err := parseNewERC721Universal(&eventLogs[i], &contractAbi)
+			if err != nil {
+				return nil, err
+			}
+			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
+
+			c := ERC721UniversalContract{
+				Address: newERC721Universal.NewContractAddress,
+				Block:   eventLogs[i].BlockNumber,
+				BaseURI: newERC721Universal.BaseURI,
+			}
+			contracts = append(contracts, c)
+
+		default:
+			slog.Debug("no new universal contracts found")
+		}
+	}
+
+	return contracts, nil
+}
+
+func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
+	if len(s.contracts) == 0 {
+		return true, nil
+	}
+	storageContracts, err := s.storage.ReadAll(ctx)
+	if err != nil {
+		return false, fmt.Errorf("error reading contracts from storage: %w", err)
+	}
+	/*
+	 * When a user provides a list of contracts via flag, we have to discover and
+	 * scan those contracts only. For this reason, when we have to determine whether we have
+	 * to discover infos about those contracts or not, we will compare if those user-provided contracts
+	 * exist in the list of stored contracts (i.e. infos about those contracts, like starting block,
+	 * have already been found).
+	 * For now, as we don't have a database yet, we only compare that the number of user-provided
+	 * contracts matches with the number of stored contracts.
+	 */
+	if len(storageContracts) == len(s.contracts) {
+		return false, nil
+	}
+	return true, nil
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock)
+	// TODO this logic will be extracted form this function in a future iteration
+	contracts, err := s.storage.ReadAll(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(contracts) == 0 {
+		slog.Debug("no contracts found", "from_block", fromBlock, "to_block", toBlock)
+		return nil, nil
+	}
+
+	addresses := make([]common.Address, 0)
+	for _, c := range contracts {
+		addresses = append(addresses, c.Address)
+	}
+
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -99,7 +211,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 		return nil, nil
 	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(ERC721.ERC721MetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
@@ -136,11 +248,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 	return parsedEvents, nil
 }
 
-func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int) ([]types.Log, error) {
+func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
-		Addresses: []common.Address{s.contract},
+		Addresses: contracts,
 	})
 }
 
@@ -182,10 +294,20 @@ func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForA
 	return approvalForAll, nil
 }
 
+func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC721Universal, error) {
+	var newERC721Universal EventNewERC721Universal
+	err := unpackIntoInterface(&newERC721Universal, eventNewERC721Universal, contractAbi, eL)
+	if err != nil {
+		return newERC721Universal, err
+	}
+
+	return newERC721Universal, nil
+}
+
 func unpackIntoInterface(e Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
 	err := contractAbi.UnpackIntoInterface(e, eventName, eL.Data)
 	if err != nil {
-		return fmt.Errorf("error unpacking the event %s: %w", eventTransferName, err)
+		return fmt.Errorf("error unpacking the event %s: %w", eventName, err)
 	}
 
 	return nil

@@ -3,25 +3,26 @@ package config
 import (
 	"flag"
 	"log/slog"
+	"strings"
 	"time"
 )
 
 type Config struct {
-	WaitingTime     time.Duration
-	StartingBlock   uint64
-	ContractAddress string
-	Rpc             string
-	BlocksMargin    uint
-	BlocksRange     uint
-	Port            uint
-	Debug           bool
+	WaitingTime   time.Duration
+	StartingBlock uint64
+	Contracts     []string
+	Rpc           string
+	BlocksMargin  uint
+	BlocksRange   uint
+	Port          uint
+	Debug         bool
 }
 
 func Load() *Config {
 	// 0xBC4... is the Bored Ape ERC721 Ethereum contract
 	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
-	blocksMargin := flag.Uint("blocks_margin", 70, "Number of blocks to assume finality")
-	contractAddress := flag.String("contract", "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", "Web3 address of the smart contract")
+	blocksMargin := flag.Uint("blocks_margin", 0, "Number of blocks to assume finality")
+	contracts := flag.String("contracts", "", "Comma-separated list of the web3 addresses of the smart contracts to scan")
 	debug := flag.Bool("debug", false, "Set logs to debug level")
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	port := flag.Uint("port", 5001, "HTTP port to use for the universal node server")
@@ -31,21 +32,24 @@ func Load() *Config {
 	flag.Parse()
 
 	c := &Config{
-		BlocksMargin:    *blocksMargin,
-		BlocksRange:     *blocksRange,
-		ContractAddress: *contractAddress,
-		Debug:           *debug,
-		Rpc:             *rpc,
-		StartingBlock:   *startingBlock,
-		WaitingTime:     *waitingTime,
-		Port:            *port,
+		BlocksMargin:  *blocksMargin,
+		BlocksRange:   *blocksRange,
+		Debug:         *debug,
+		Rpc:           *rpc,
+		StartingBlock: *startingBlock,
+		WaitingTime:   *waitingTime,
+		Port:          *port,
+	}
+
+	if *contracts != "" {
+		c.Contracts = strings.Split(*contracts, ",")
 	}
 
 	return c
 }
 
 func (c *Config) LogFields() {
-	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "contract", c.ContractAddress,
+	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "contracts", c.Contracts,
 		"starting_block", c.StartingBlock, "blocks_margin", c.BlocksMargin, "blocks_range", c.BlocksRange,
 		"debug", c.Debug, "wait", c.WaitingTime, "port", c.Port))
 }

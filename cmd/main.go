@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
@@ -42,8 +41,12 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		s := scan.NewScanner(client, common.HexToAddress(c.ContractAddress))
-		return runScan(ctx, *c, client, s)
+		storage, err := scan.NewFSStorage("erc721_contracts.txt")
+		if err != nil {
+			return fmt.Errorf("error initializing storage: %w", err)
+		}
+		s := scan.NewScanner(client, storage, c.Contracts...)
+		return runScan(ctx, c, client, s, storage)
 	})
 
 	group.Go(func() error {
@@ -62,14 +65,15 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan.Scanner) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
 	var err error
-	if c.StartingBlock == 0 {
-		c.StartingBlock, err = getL1LatestBlock(ctx, client)
+	startingBlock := c.StartingBlock
+	if startingBlock == 0 {
+		startingBlock, err = getL1LatestBlock(ctx, client)
 		if err != nil {
 			return fmt.Errorf("error retrieving the latest block: %w", err)
 		}
-		slog.Debug("latest block found", "latest_block", c.StartingBlock)
+		slog.Debug("latest block found", "latest_block", startingBlock)
 	}
 	for {
 		select {
@@ -82,19 +86,35 @@ func runScan(ctx context.Context, c config.Config, client scan.EthClient, s scan
 				slog.Error("error retrieving the latest block", "err", err.Error())
 				break
 			}
-			lastBlock := calculateLastBlock(c.StartingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
-			if lastBlock < c.StartingBlock {
+			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
+			if lastBlock < startingBlock {
 				slog.Debug("last calculated block is behind starting block, waiting...",
-					"last_block", lastBlock, "starting_block", c.StartingBlock)
+					"last_block", lastBlock, "starting_block", startingBlock)
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(lastBlock)))
+
+			universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			if err != nil {
+				slog.Error("error occurred while discovering new universal events", "err", err.Error())
+				break
+			}
+
+			// This will be replaced by a batch write to the DB
+			for i := 0; i < len(universalContracts); i++ {
+				if err = storage.Store(ctx, universalContracts[i]); err != nil {
+					slog.Error("error occurred while storing universal contract", "err", err.Error())
+					break
+				}
+			}
+
+			// TODO when the DB is in use, storage.ReadAll will run here and not inside ScanEvents
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
-			c.StartingBlock = lastBlock + 1
+			startingBlock = lastBlock + 1
 		}
 	}
 }

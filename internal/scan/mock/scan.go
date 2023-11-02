@@ -460,3 +460,18 @@ func (mr *MockScannerMockRecorder) ScanEvents(ctx, fromBlock, toBlock any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScanEvents", reflect.TypeOf((*MockScanner)(nil).ScanEvents), ctx, fromBlock, toBlock)
 }
+
+// ScanNewUniversalEvents mocks base method.
+func (m *MockScanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]scan.ERC721UniversalContract, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScanNewUniversalEvents", ctx, fromBlock, toBlock)
+	ret0, _ := ret[0].([]scan.ERC721UniversalContract)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ScanNewUniversalEvents indicates an expected call of ScanNewUniversalEvents.
+func (mr *MockScannerMockRecorder) ScanNewUniversalEvents(ctx, fromBlock, toBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScanNewUniversalEvents", reflect.TypeOf((*MockScanner)(nil).ScanNewUniversalEvents), ctx, fromBlock, toBlock)
+}
