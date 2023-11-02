@@ -4,3 +4,5 @@ debug: true
 startingBlock: "41924130"
 blocksMargin: 70
 blocksRange: 2
+startingBlock: "41375688"s
+host: unode.gorengine.com
