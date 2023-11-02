@@ -17,10 +17,11 @@ spec:
   rules:
   - host: {{ .Values.host }}
     http:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ .Values.name }}-rpc
-            port:
-              number: 80
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.name }}-rpc
+                port:
+                  number: 80
