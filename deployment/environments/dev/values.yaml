@@ -1,8 +1,17 @@
-contracts: 0xD0b57307a4B9e0147F389ab99547E1530D323be0
-rpc: https://polygon-mumbai-bor.publicnode.com
-debug: true
-startingBlock: "41924130"
-blocksMargin: 70
-blocksRange: 2
-startingBlock: "41375688"
 host: unode.gorengine.com
+
+networks:
+  - name: mumbai
+    contracts: 0xD0b57307a4B9e0147F389ab99547E1530D323be0
+    rpc: https://polygon-mumbai.gorengine.com/
+    debug: true
+    startingBlock: "41924130"
+    blocksMargin: 70
+    blocksRange: 2
+  - name: eth-mainnet
+    contracts: 0xD0b57307a4B9e0147F389ab99547E1530D323be0
+    rpc: https://eth.llamarpc.com
+    debug: true
+    startingBlock: "18288287"
+    blocksMargin: 70
+    blocksRange: 2

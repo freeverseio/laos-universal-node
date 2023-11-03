@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: livingassetsscan-ingress
+  name: {{ .Values.name }}-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
@@ -18,7 +18,7 @@ spec:
   - host: {{ .Values.host }}
     http:
         paths:
-          - path: /
+          - path: /{{ .Values.path }}/
             pathType: Prefix
             backend:
               service:
