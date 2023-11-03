@@ -22,9 +22,7 @@ releases:
     chart: ./charts/universalnode
     createNamespace: false
     values:
-      - path: {{ .name }}
       - imageTag: {{ requiredEnv "TAG" }}
-      - host: {{ $.Values.host }}
       - {{ toYaml . | nindent 8 }}
       - name: universalnode-{{ .name }}
 {{ end }}
