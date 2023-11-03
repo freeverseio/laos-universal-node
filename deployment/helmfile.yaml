@@ -23,6 +23,7 @@ releases:
     createNamespace: false
     values:
       - imageTag: {{ requiredEnv "TAG" }}
+      - path: {{ .name }}
       - {{ toYaml . | nindent 8 }}
       - name: universalnode-{{ .name }}
 {{ end }}
