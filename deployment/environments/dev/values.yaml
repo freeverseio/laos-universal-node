@@ -1,10 +1,18 @@
 networks:
-  - name: mumbai
+  - name: polygon-mumbai
     contracts: 0xD0b57307a4B9e0147F389ab99547E1530D323be0
     rpc: https://polygon-mumbai-bor.publicnode.com
-    host: unode.gorengine.com
+    host: polygon-mumbai.unode.gorengine.com
     debug: true
     startingBlock: "41924130"
     blocksMargin: 70
     blocksRange: 2
+  - name: polygon-mainnet
+      contracts: 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
+      rpc: https://eth.llamarpc.com
+      host: polygon-mainnet.unode.gorengine.com
+      debug: true
+      startingBlock: "41375688"
+      blocksMargin: 70
+      blocksRange: 2
 
