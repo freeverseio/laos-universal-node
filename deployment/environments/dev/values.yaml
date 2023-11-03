@@ -8,11 +8,11 @@ networks:
     blocksMargin: 70
     blocksRange: 2
   - name: polygon-mainnet
-      contracts: 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
-      rpc: https://eth.llamarpc.com
-      host: polygon-mainnet.unode.gorengine.com
-      debug: true
-      startingBlock: "41375688"
-      blocksMargin: 70
-      blocksRange: 2
+    contracts: 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D
+    rpc: https://eth.llamarpc.com
+    host: polygon-mainnet.unode.gorengine.com
+    debug: true
+    startingBlock: "41375688"
+    blocksMargin: 70
+    blocksRange: 2
 
