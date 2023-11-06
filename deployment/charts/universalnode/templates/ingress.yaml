@@ -13,7 +13,7 @@ spec:
   tls:
   - hosts:
     - {{ .Values.host }}
-    secretName: universalnode-tls
+    secretName: {{ .Values.name }}-tls
   rules:
   - host: {{ .Values.host }}
     http:
