@@ -52,7 +52,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		// },
 		{
 			name:               "Good request with eth_call method",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000","to":"0xc4d9faef49ec1e604a76ee78bc992abadaa29527"},"id":1}`,
+			body:               `{"jsonrpc":"2.0","method":"eth_call","params":{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},"id":1}`,
 			contentType:        "application/json",
 			method:             "POST",
 			expectedStatusCode: http.StatusOK,
@@ -88,7 +88,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			w := httptest.NewRecorder()
 			storageMock.EXPECT().ReadAll(context.Background()).Return(tc.storedContracts, nil).Times(1)
 			// Create the middleware and serve using the test handlers
-			middleware := api.PostRpcRequestMiddleware(standardHandler, erc721Handler, nil)
+			middleware := api.PostRpcRequestMiddleware(standardHandler, erc721Handler, storageMock)
 			middleware.ServeHTTP(w, req)
 
 			// Check the status code and body
