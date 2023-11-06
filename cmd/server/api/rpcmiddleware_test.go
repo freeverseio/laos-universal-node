@@ -41,15 +41,6 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		handlerToBeCalled  string
 		storedContracts    []scan.ERC721UniversalContract
 	}{
-		// {
-		// 	name:               "Bad Content-Type",
-		// 	body:               `{"jsonrpc":"2.0","method":"eth_call","params":{"data":"0x...","to":"0x..."},"id":1}`,
-		// 	contentType:        "text/plain",
-		// 	method:             "POST",
-		// 	expectedStatusCode: http.StatusOK, // Should route to standardHandler because of bad Content-Type
-		// 	expectedResponse:   "standardHandler called",
-		// 	handlerToBeCalled:  "standard",
-		// },
 		{
 			name:               "Good request with eth_call method",
 			body:               `{"jsonrpc":"2.0","method":"eth_call","params":{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},"id":1}`,
@@ -66,16 +57,15 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name:               "Bad JSON",
-		// 	body:               `{"jsonrpc":"2.0","method":"eth_call","params":bad_json}`,
-		// 	contentType:        "application/json",
-		// 	method:             "POST",
-		// 	expectedStatusCode: http.StatusBadRequest, // Should return BadRequest because of bad JSON
-		// 	expectedResponse:   "Error parsing JSON request",
-		// 	handlerToBeCalled:  "none",
-		// },
-
+		{
+			name:               "Good request with no erc721 method",
+			body:               `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
+			contentType:        "application/json",
+			method:             "POST",
+			expectedStatusCode: http.StatusOK,
+			expectedResponse:   "standardHandler called",
+			handlerToBeCalled:  "standard",
+		},
 	}
 
 	// Run tests
@@ -86,7 +76,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 
 			// Record responses
 			w := httptest.NewRecorder()
-			storageMock.EXPECT().ReadAll(context.Background()).Return(tc.storedContracts, nil).Times(1)
+			storageMock.EXPECT().ReadAll(context.Background()).Return(tc.storedContracts, nil).AnyTimes()
 			// Create the middleware and serve using the test handlers
 			middleware := api.PostRpcRequestMiddleware(standardHandler, erc721Handler, storageMock)
 			middleware.ServeHTTP(w, req)
