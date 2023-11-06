@@ -10,4 +10,4 @@ spec:
   ports:
   - name: rpc
     port: 80
-    targetPort: 5001
+    targetPort: rpc
