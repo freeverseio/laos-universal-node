@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
@@ -27,7 +26,7 @@ type ParamsRPCRequest struct {
 }
 
 // Adjust the middleware to handle different JSON-RPC methods
-func PostRpcRequestMiddleware(standardHandler http.Handler, erc721Handler http.Handler, st scan.Storage) http.Handler {
+func PostRpcRequestMiddleware(standardHandler, erc721Handler http.Handler, st scan.Storage) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" && r.Header.Get("Content-Type") == "application/json" {
 			body, err := io.ReadAll(r.Body)
@@ -87,11 +86,11 @@ func checkContractInList(contractAddress string, st scan.Storage) (bool, error) 
 	return false, nil
 }
 
-func checkingMethodFromCallData(data string) (bool, error) {
-	erc721.NewCallData(data)
+// func checkingMethodFromCallData(data string) (bool, error) {
+// 	erc721.NewCallData(data)
 
-	return true, nil
-}
+// 	return true, nil
+// }
 
 func middleware(h HandlerInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -103,7 +102,11 @@ func middleware(h HandlerInterface) func(http.Handler) http.Handler {
 					return
 				}
 
-				r.Body.Close()                               // Must close the original body
+				errCloser := r.Body.Close() // Must close the original body
+				if errCloser != nil {       // Check for errors closing the body
+					http.Error(w, "Error closing request body", http.StatusInternalServerError)
+					return
+				}
 				r.Body = io.NopCloser(bytes.NewBuffer(body)) // Create a new body with the same data
 
 				var req JSONRPCRequest

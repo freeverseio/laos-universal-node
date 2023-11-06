@@ -23,11 +23,17 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 	// Create a test handler that will be wrapped by the middleware
 	standardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("standardHandler called"))
+		_, err := w.Write([]byte("standardHandler called"))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 	erc721Handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("erc721Handler called"))
+		_, err := w.Write([]byte("erc721Handler called"))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	// Define test cases
@@ -83,15 +89,25 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 
 			// Check the status code and body
 			resp := w.Result()
-			defer resp.Body.Close()
+
+			defer func() {
+				errClose := resp.Body.Close()
+				if errClose != nil {
+					t.Fatalf("got: %v, expected: no error", errClose)
+				}
+			}()
+
 			if resp.StatusCode != tc.expectedStatusCode {
-				t.Errorf("Expected status code %d, got %d", tc.expectedStatusCode, resp.StatusCode)
+				t.Errorf("got %d, Expected status code %d", resp.StatusCode, tc.expectedStatusCode)
 			}
 
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err := buf.ReadFrom(resp.Body)
+			if err != nil {
+				t.Errorf("got %v, expected no error", err)
+			}
 			if !strings.Contains(buf.String(), tc.expectedResponse) {
-				t.Errorf("Expected response to contain %q, got %q", tc.expectedResponse, buf.String())
+				t.Errorf("got %q, Expected response to contain %q", buf.String(), tc.expectedResponse)
 			}
 		})
 	}
