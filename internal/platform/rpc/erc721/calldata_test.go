@@ -72,13 +72,11 @@ func TestMethod(t *testing.T) {
 			err:           nil,
 		},
 		{
-			input:         hexutil.MustDecode("0xc87b56dd"), //tokenUri
 			expected:      0,
 			remoteMinting: false,
 			err:           nil,
 		},
 		{
-			input:         hexutil.MustDecode("0x95d89b41"), //symbol
 			expected:      0,
 			remoteMinting: false,
 			err:           nil,

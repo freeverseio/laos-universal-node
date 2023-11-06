@@ -44,7 +44,7 @@ func PostRpcRequestMiddleware(standardHandler, erc721UniversalMintingHandler htt
 		r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body
 
 		var req JSONRPCRequest
-		if err := json.Unmarshal(body, &req); err != nil {
+		if errParsing := json.Unmarshal(body, &req); errParsing != nil {
 			http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
 			return
 		}
@@ -55,7 +55,7 @@ func PostRpcRequestMiddleware(standardHandler, erc721UniversalMintingHandler htt
 		}
 
 		var params ParamsRPCRequest
-		if err := json.Unmarshal(req.Params[0], &params); err != nil {
+		if errParsingParams := json.Unmarshal(req.Params[0], &params); errParsingParams != nil {
 			slog.Error("error parsing params", "err", err)
 			return
 		}

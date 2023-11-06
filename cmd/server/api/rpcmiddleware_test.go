@@ -16,7 +16,6 @@ import (
 )
 
 func TestPostRpcRequestMiddleware(t *testing.T) {
-
 	// Create a test handler that will be wrapped by the middleware
 	standardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

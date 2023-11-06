@@ -13,7 +13,7 @@ import (
 // TestUniversalMintingRPCHandler checks if the handler returns the correct error response and status code.
 func TestUniversalMintingRPCHandler(t *testing.T) {
 	// Create a request to pass to our handler.
-	req, err := http.NewRequest("POST", "/somepath", nil) // Use the appropriate method and path for your application
+	req, err := http.NewRequest("POST", "/somepath", http.NoBody) // Use the appropriate method and path for your application
 	if err != nil {
 		t.Fatal(err)
 	}
