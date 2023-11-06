@@ -27,7 +27,7 @@ func TestCheckContractInList(t *testing.T) {
 			},
 		}, nil).Times(2)
 
-		b, err := checkContractInList("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", storageMock)
+		b, err := isContractInList("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", storageMock)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}
@@ -35,7 +35,7 @@ func TestCheckContractInList(t *testing.T) {
 			t.Fatalf("got %v, expected true", b)
 		}
 
-		b, err = checkContractInList("0x36CB70039FE1bd36b4659858d4c4D0cBcafd743A", storageMock)
+		b, err = isContractInList("0x36CB70039FE1bd36b4659858d4c4D0cBcafd743A", storageMock)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}

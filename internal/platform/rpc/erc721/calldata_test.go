@@ -48,60 +48,72 @@ func TestNewCalldata(t *testing.T) {
 
 func TestMethod(t *testing.T) {
 	tests := []struct {
-		input    erc721.CallData
-		expected erc721.Erc721method
-		err      error
+		input         erc721.CallData
+		expected      erc721.Erc721method
+		remoteMinting bool
+		err           error
 	}{
 		{
-			input:    hexutil.MustDecode("0x6352211e"),
-			expected: erc721.OwnerOf,
-			err:      nil,
+			input:         hexutil.MustDecode("0x6352211e"),
+			expected:      erc721.OwnerOf,
+			remoteMinting: true,
+			err:           nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x70a08231"),
-			expected: erc721.BalanceOf,
-			err:      nil,
+			input:         hexutil.MustDecode("0x70a08231"),
+			expected:      erc721.BalanceOf,
+			remoteMinting: true,
+			err:           nil,
 		},
 		{
-			input:    hexutil.MustDecode("0xc87b56dd"),
-			expected: erc721.TokenURI,
-			err:      nil,
+			input:         hexutil.MustDecode("0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28"),
+			expected:      erc721.BalanceOf,
+			remoteMinting: true,
+			err:           nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x01ffc9a7"),
-			expected: erc721.SupportsInterface,
-			err:      nil,
+			input:         hexutil.MustDecode("0xc87b56dd"), //tokenUri
+			expected:      0,
+			remoteMinting: false,
+			err:           nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x06fdde03"),
-			expected: erc721.Name,
-			err:      nil,
+			input:         hexutil.MustDecode("0x95d89b41"), //symbol
+			expected:      0,
+			remoteMinting: false,
+			err:           nil,
 		},
 		{
-			input:    hexutil.MustDecode("0x313ce567"),
-			expected: erc721.Decimals,
-			err:      nil,
+			input:         hexutil.MustDecode("0x01ffc9a7"),
+			expected:      erc721.SupportsInterface,
+			remoteMinting: true,
+			err:           nil,
 		},
 		{
-			input:    erc721.CallData{0x00, 0x00, 0x00},
-			expected: 0,
-			err:      fmt.Errorf("invalid call data, incomplete method signature (3 bytes < 4)"),
+			input:         erc721.CallData{0x00, 0x00, 0x00},
+			expected:      0,
+			remoteMinting: false,
+			err:           fmt.Errorf("invalid call data, incomplete method signature (3 bytes < 4)"),
 		},
 		{
-			input:    erc721.CallData{0x12, 0x34, 0x56, 0x78},
-			expected: 0,
-			err:      fmt.Errorf("unallowed method: 0x12345678"),
+			input:         erc721.CallData{0x12, 0x34, 0x56, 0x78},
+			expected:      0,
+			remoteMinting: false,
+			err:           nil,
 		},
 	}
 
 	for _, test := range tests {
-		output, err := test.input.Method()
+		output, exists, err := test.input.UniversalMintingMethod()
 		if output != test.expected {
-			t.Errorf("Expected: %v, got: %v", test.expected, output)
+			t.Errorf("got: %v, Expected: %v", output, test.expected)
+		}
+		if exists != test.remoteMinting {
+			t.Errorf("got: %v, Expected: %v", exists, test.remoteMinting)
 		}
 		if err == nil && test.err != nil {
 			if err.Error() != test.err.Error() {
-				t.Errorf("Expected error: %v, got: %v", test.err, err)
+				t.Errorf("got: %v, Expected error: %v, ", err, test.err)
 			}
 		}
 	}

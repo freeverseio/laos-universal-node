@@ -21,6 +21,7 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 
 type HandlerInterface interface {
 	PostRPCProxyHandler(w http.ResponseWriter, r *http.Request)
+	UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request)
 	SetJsonRPCRequest(req JSONRPCRequest)
 }
 

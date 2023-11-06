@@ -16,9 +16,6 @@ import (
 )
 
 func TestPostRpcRequestMiddleware(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	storageMock := mock.NewMockStorage(ctrl)
 
 	// Create a test handler that will be wrapped by the middleware
 	standardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,13 +45,62 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		storedContracts    []scan.ERC721UniversalContract
 	}{
 		{
+			name:               "Bad request with GET method",
+			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:        "application/json",
+			method:             "GET",
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResponse:   "No JSON RPC call\n",
+			handlerToBeCalled:  "none",
+		},
+		{
 			name:               "Good request with eth_call method",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},"id":1}`,
+			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
 			contentType:        "application/json",
 			method:             "POST",
 			expectedStatusCode: http.StatusOK,
 			expectedResponse:   "erc721Handler called",
 			handlerToBeCalled:  "erc721",
+			storedContracts: []scan.ERC721UniversalContract{
+				{
+					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+					Block:   uint64(0),
+					BaseURI: "evochain1/collectionId/",
+				},
+			},
+		},
+		{
+			name: "Good request with eth_call method",
+			body: `{
+		    "jsonrpc": "2.0",
+		    "method": "eth_call",
+		    "params": [{
+		        "to": "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A",
+		        "data": "0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28"
+		    }, "latest"],
+		    "id": 1
+		}`,
+			contentType:        "application/json",
+			method:             "POST",
+			expectedStatusCode: http.StatusOK,
+			expectedResponse:   "erc721Handler called",
+			handlerToBeCalled:  "erc721",
+			storedContracts: []scan.ERC721UniversalContract{
+				{
+					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+					Block:   uint64(0),
+					BaseURI: "evochain1/collectionId/",
+				},
+			},
+		},
+		{
+			name:               "Good request with eth_call method but no remote minting method",
+			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:        "application/json",
+			method:             "POST",
+			expectedStatusCode: http.StatusOK,
+			expectedResponse:   "standardHandler called",
+			handlerToBeCalled:  "standard",
 			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
@@ -77,6 +123,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 	// Run tests
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			storageMock := mock.NewMockStorage(ctrl)
+
 			req := httptest.NewRequest(tc.method, "/rpc", strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", tc.contentType)
 

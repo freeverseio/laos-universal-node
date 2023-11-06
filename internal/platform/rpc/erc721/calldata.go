@@ -30,38 +30,33 @@ const ShortAddressLength = 4
 const (
 	OwnerOf Erc721method = iota
 	BalanceOf
-	TokenURI
-	URI
+	TotalSupply
+	TokenOfOwnerByIndex
+	TokenByIndex
 	SupportsInterface
-	Name
-	ContractURI
-	Decimals
-	Symbol
 )
 
-var methodSigs = map[string]Erc721method{
-	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):          OwnerOf,
-	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):        BalanceOf,
-	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:ShortAddressLength]):         TokenURI,
-	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]): SupportsInterface,
-	hexutil.Encode(crypto.Keccak256([]byte("name()"))[:ShortAddressLength]):                    Name,
-	hexutil.Encode(crypto.Keccak256([]byte("contractURI()"))[:ShortAddressLength]):             ContractURI,
-	hexutil.Encode(crypto.Keccak256([]byte("decimals()"))[:ShortAddressLength]):                Decimals,
-	hexutil.Encode(crypto.Keccak256([]byte("symbol()"))[:ShortAddressLength]):                  Symbol,
+var remoteMintingMethodSigs = map[string]Erc721method{
+	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):                      OwnerOf,
+	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):                    BalanceOf,
+	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                         TotalSupply,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address, uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                 TokenByIndex,
+	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]):             SupportsInterface,
 }
 
 // Method returns the ERC721 method invoked by the calldata.
-func (b CallData) Method() (Erc721method, error) {
+func (b CallData) UniversalMintingMethod() (Erc721method, bool, error) {
 	sig, err := b.methodSignature()
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
-	if method, exists := methodSigs[sig]; exists {
-		return method, nil
+	if method, exists := remoteMintingMethodSigs[sig]; exists {
+		return method, exists, nil
 	}
 
-	return 0, fmt.Errorf("unallowed method: %s", sig)
+	return 0, false, nil
 }
 
 // methodSignature returns the method signature of the calldata.

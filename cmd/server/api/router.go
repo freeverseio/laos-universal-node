@@ -12,13 +12,12 @@ type Router interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-func Routes(h HandlerInterface, r Router, st scan.Storage) Router {
+func Routes(h HandlerInterface, r Router, storage scan.Storage) Router {
 	router := r.(*mux.Router)
 	rpcProxyHandler := http.HandlerFunc(h.PostRPCProxyHandler)
-	erc721Handler := http.HandlerFunc(h.PostRPCProxyHandler)
+	erc721UniversalMintingHandler := http.HandlerFunc(h.UniversalMintingRPCHandler)
 
 	// Pass both handlers to the middleware and let it decide based on the JSON-RPC method
-	router.Handle("/", PostRpcRequestMiddleware(rpcProxyHandler, erc721Handler, st)).Methods("POST")
-	router.Use(middleware(h))
+	router.Handle("/", PostRpcRequestMiddleware(rpcProxyHandler, erc721UniversalMintingHandler, storage)).Methods("POST")
 	return router
 }
