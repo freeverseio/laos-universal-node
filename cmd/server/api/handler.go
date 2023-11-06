@@ -20,12 +20,14 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 }
 
 type HandlerInterface interface {
-	PostRPCHandler(w http.ResponseWriter, r *http.Request)
+	PostRPCProxyHandler(w http.ResponseWriter, r *http.Request)
+	SetJsonRPCRequest(req JSONRPCRequest)
 }
 
 type Handler struct {
-	rpcUrl     string
-	httpClient HTTPClientInterface // Inject the HTTP client interface here
+	rpcUrl         string
+	httpClient     HTTPClientInterface // Inject the HTTP client interface here
+	jsonRPCRequest JSONRPCRequest
 }
 
 func (h *Handler) GetRpcUrl() string {
@@ -34,6 +36,14 @@ func (h *Handler) GetRpcUrl() string {
 
 func (h *Handler) GetHttpClient() HTTPClientInterface {
 	return h.httpClient
+}
+
+func (h *Handler) SetJsonRPCRequest(req JSONRPCRequest) {
+	h.jsonRPCRequest = req
+}
+
+func (h *Handler) GetJsonRPCRequest() JSONRPCRequest {
+	return h.jsonRPCRequest
 }
 
 type HandlerOption func(*Handler)

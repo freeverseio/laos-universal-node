@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (h *Handler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -24,16 +24,12 @@ func (h *Handler) PostRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
-		http.Error(w, "internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	// Forward headers the request
-	for name, values := range r.Header {
-		for _, value := range values {
-			proxyReq.Header.Set(name, value)
-		}
-	}
+	proxyReq.Header = r.Header
 
 	// Send the request to the Ethereum node
 	resp, err := h.GetHttpClient().Do(proxyReq)

@@ -36,15 +36,17 @@ func run() error {
 
 	group, ctx := errgroup.WithContext(ctx)
 
+	storage, err := scan.NewFSStorage("erc721_contracts.txt")
+	if err != nil {
+		return fmt.Errorf("error initializing storage: %w", err)
+	}
+
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		storage, err := scan.NewFSStorage("erc721_contracts.txt")
-		if err != nil {
-			return fmt.Errorf("error initializing storage: %w", err)
-		}
+
 		s := scan.NewScanner(client, storage, c.Contracts...)
 		return runScan(ctx, c, client, s, storage)
 	})
@@ -56,7 +58,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, storage)
 	})
 
 	if err := group.Wait(); err != nil {

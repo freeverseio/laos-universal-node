@@ -120,7 +120,7 @@ func TestPostRpcHandler(t *testing.T) {
 				}).Return(mockResponse, nil).Times(1)
 			}
 
-			handler.PostRPCHandler(recorder, request)
+			handler.PostRPCProxyHandler(recorder, request)
 
 			response := recorder.Result()
 			body, _ := io.ReadAll(response.Body)
