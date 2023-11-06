@@ -16,12 +16,13 @@ environments:
     - ./environments/dev/values.yaml
 
 releases:
-  - name: universalnode
+{{ range .Values.networks }}
+  - name: universalnode-{{ .name }}
     namespace: laos-bigbang
     chart: ./charts/universalnode
     createNamespace: false
     values:
-      - name: universalnode
-      - namespace: laos-bigbang
       - imageTag: {{ requiredEnv "TAG" }}
-      - {{ toYaml .Values | nindent 8 }}
+      - {{ toYaml . | nindent 8 }}
+      - name: universalnode-{{ .name }}
+{{ end }}

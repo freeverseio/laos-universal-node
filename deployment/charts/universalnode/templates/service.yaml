@@ -9,5 +9,5 @@ spec:
     app.kubernetes.io/app: {{ .Values.name }}
   ports:
   - name: rpc
-    port: 5001
+    port: 80
     targetPort: rpc

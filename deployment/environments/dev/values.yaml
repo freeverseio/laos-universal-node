@@ -1,6 +1,15 @@
-contracts: 0xD0b57307a4B9e0147F389ab99547E1530D323be0
-rpc: https://polygon-mumbai-bor.publicnode.com
-debug: true
-startingBlock: "41924130"
-blocksMargin: 70
-blocksRange: 2
+networks:
+  - name: polygon-mumbai
+    rpc: https://rpc-mumbai.maticvigil.com/
+    host: polygon-mumbai.unode.gorengine.com
+    debug: true
+    startingBlock: "0"
+    blocksMargin: 70
+    blocksRange: 2
+  - name: polygon-mainnet
+    rpc: https://rpc-mainnet.maticvigil.com/
+    host: polygon-mainnet.unode.gorengine.com
+    debug: true
+    startingBlock: "0"
+    blocksMargin: 70
+    blocksRange: 2
