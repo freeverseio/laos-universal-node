@@ -12,44 +12,41 @@ const (
 	ErrorId                     = 1
 )
 
-func (h *Handler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
-	// Set the header to application/json for the response
-	w.Header().Set("Content-Type", "application/json")
+type JSONRPCErrorResponse struct {
+	JSONRPC string `json:"jsonrpc"`
+	ID      int    `json:"id"`
+	Error   struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
 
-	// Define the error structure as per the JSON-RPC 2.0 specification
-	errorResponse := struct {
-		JSONRPC string `json:"jsonrpc"`
-		ID      int    `json:"id"`
-		Error   struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}{
+// sendJSONRPCError sends a JSON RPC error response with the given message and code.
+func sendJSONRPCError(w http.ResponseWriter, code int, message string) {
+	errorResponse := JSONRPCErrorResponse{
 		JSONRPC: "2.0",
 		ID:      ErrorId,
 		Error: struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
 		}{
-			Code:    ErrorInvalidRequest,
-			Message: ErrUniversalMintingNotReady,
+			Code:    code,
+			Message: message,
 		},
 	}
 
-	// Set the HTTP status code
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-
-	// Marshal the error structure to JSON
 	errorJSON, err := json.Marshal(errorResponse)
 	if err != nil {
-		// Send an internal server error if marshaling fails
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
-	// Write the JSON error message to the response writer
-	_, writeErr := w.Write(errorJSON)
-	if writeErr != nil {
+	if _, writeErr := w.Write(errorJSON); writeErr != nil {
 		slog.Error("error writing response", "err", writeErr)
 	}
+}
+
+func (h *Handler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
+	sendJSONRPCError(w, ErrorInvalidRequest, ErrUniversalMintingNotReady)
 }
