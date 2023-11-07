@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -46,6 +47,7 @@ func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid b
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		reportError(w, "Error reading request body", http.StatusBadRequest)
+		slog.Error("error reading request body", "err", err)
 		return false, nil
 	}
 	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
@@ -57,6 +59,7 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, s
 	var req JSONRPCRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		reportError(w, "Error parsing JSON request", http.StatusBadRequest)
+		slog.Error("error parsing JSON request", "err", err)
 		return
 	}
 	if req.JSONRPC != "2.0" {
@@ -72,7 +75,6 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, s
 	}
 }
 
-// handleEthCallMethod processes an eth_call method request.
 func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
@@ -80,14 +82,34 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequ
 		return
 	}
 
-	if remoteMinting, _ := isUniversalMintingMethod(params.Data); remoteMinting {
-		if isInContractList, _ := isContractInList(params.To, st); isInContractList {
-			erc721Handler.ServeHTTP(w, r)
-			return
-		}
+	// Check for universal minting method.
+	remoteMinting, err := isUniversalMintingMethod(params.Data)
+	if err != nil {
+		reportError(w, "Error checking for universal minting method: "+err.Error(), http.StatusBadRequest)
+		return
 	}
-	// Fall back to standard handler if not a remote minting method or not in the contract list.
-	standardHandler.ServeHTTP(w, r)
+
+	// If not related to remote minting, delegate to standard handler.
+	if !remoteMinting {
+		standardHandler.ServeHTTP(w, r)
+		return
+	}
+
+	// Check if contract is in the list.
+	isInContractList, err := isContractInList(params.To, st)
+	if err != nil {
+		reportError(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// If contract is in the list, use the specific handler for ERC721 universal minting.
+	if isInContractList {
+		erc721Handler.ServeHTTP(w, r)
+		return
+	} else {
+		standardHandler.ServeHTTP(w, r)
+		return
+	}
 }
 
 // reportError is a utility function for reporting errors through HTTP.
