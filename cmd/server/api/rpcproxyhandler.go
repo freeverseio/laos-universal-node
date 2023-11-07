@@ -11,7 +11,7 @@ func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, ErrMsgBadRequest, http.StatusBadRequest)
 		return
 	}
 	defer func() {
@@ -24,7 +24,7 @@ func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, ErrMsgInternalError, http.StatusInternalServerError)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Send the request to the Ethereum node
 	resp, err := h.GetHttpClient().Do(proxyReq)
 	if err != nil {
-		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+		http.Error(w, ErrMsgBadGateway, http.StatusBadGateway)
 		return
 	}
 	// Forward headers to the response
@@ -54,11 +54,10 @@ func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Forward the response back to the original caller
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, ErrMsgInternalError, http.StatusInternalServerError)
 		return
 	}
 
-	slog.Debug("responseBody", "responseBody", string(responseBody))
 	_, err = w.Write(responseBody) // Check error on Write
 	if err != nil {
 		slog.Error("error writing response body", "err", err)

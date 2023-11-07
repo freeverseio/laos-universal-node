@@ -52,8 +52,8 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 				Code    int    `json:"code"`
 				Message string `json:"message"`
 			}{
-				Code:    api.ErrorInvalidRequest,
-				Message: api.ErrUniversalMintingNotReady,
+				Code:    api.ErrorCodeInvalidRequest,
+				Message: api.ErrMsgUniversalMintingNotReady,
 			},
 		}
 		expectedJSON, _ := json.Marshal(expected)

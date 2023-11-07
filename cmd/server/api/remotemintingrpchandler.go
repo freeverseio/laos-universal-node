@@ -6,12 +6,6 @@ import (
 	"net/http"
 )
 
-const (
-	ErrUniversalMintingNotReady = "universal minting not supported yet"
-	ErrorInvalidRequest         = -32600 // Invalid Request
-	ErrorId                     = 1
-)
-
 type JSONRPCErrorResponse struct {
 	JSONRPC string `json:"jsonrpc"`
 	ID      int    `json:"id"`
@@ -48,5 +42,5 @@ func sendJSONRPCError(w http.ResponseWriter, code int, message string) {
 }
 
 func (h *Handler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
-	sendJSONRPCError(w, ErrorInvalidRequest, ErrUniversalMintingNotReady)
+	sendJSONRPCError(w, ErrorCodeInvalidRequest, ErrMsgUniversalMintingNotReady)
 }
