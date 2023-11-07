@@ -48,6 +48,12 @@ func PostRpcRequestMiddleware(standardHandler, erc721UniversalMintingHandler htt
 			http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
 			return
 		}
+
+		if req.JSONRPC != "2.0" {
+			http.Error(w, "Invalid JSON-RPC version", http.StatusBadRequest)
+			return
+		}
+
 		// if it's not an eth_call (non erc721), just pass it through
 		if req.Method != "eth_call" {
 			standardHandler.ServeHTTP(w, r)
@@ -92,7 +98,7 @@ func isContractInList(contractAddress string, st scan.Storage) (bool, error) {
 	}
 
 	for _, contract := range list {
-		addr := contract.Address.Hex() // Assuming .Hex() returns a string in hexadecimal format
+		addr := contract.Address.Hex() // convert to string
 		if strings.EqualFold(addr, contractAddress) {
 			return true, nil
 		}
