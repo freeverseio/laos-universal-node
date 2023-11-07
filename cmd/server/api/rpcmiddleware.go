@@ -66,7 +66,7 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, s
 
 	switch req.Method {
 	case "eth_call":
-		handleEthCallMethod(w, r, req, erc721Handler, standardHandler, st)
+		handleEthCallMethod(w, r, req, standardHandler, erc721Handler, st)
 	default:
 		standardHandler.ServeHTTP(w, r)
 	}
