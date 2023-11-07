@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -28,67 +27,72 @@ type ParamsRPCRequest struct {
 	Value string `json:"value,omitempty"`
 }
 
-// Adjust the middleware to handle different JSON-RPC methods
-func PostRpcRequestMiddleware(standardHandler, erc721UniversalMintingHandler http.Handler, st scan.Storage) http.Handler {
+func PostRpcRequestMiddleware(standardHandler, erc721Handler http.Handler, st scan.Storage) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" || r.Header.Get("Content-Type") != "application/json" {
-			http.Error(w, "No JSON RPC call", http.StatusBadRequest)
-			return
-		}
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Error reading request body", http.StatusBadRequest)
-			return
-		}
-		r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body
-
-		var req JSONRPCRequest
-		if errParsing := json.Unmarshal(body, &req); errParsing != nil {
-			http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
-			return
-		}
-
-		if req.JSONRPC != "2.0" {
-			http.Error(w, "Invalid JSON-RPC version", http.StatusBadRequest)
-			return
-		}
-
-		// if it's not an eth_call (non erc721), just pass it through
-		if req.Method != "eth_call" {
-			standardHandler.ServeHTTP(w, r)
-			return
-		}
-
-		var params ParamsRPCRequest
-		if errParsingParams := json.Unmarshal(req.Params[0], &params); errParsingParams != nil {
-			slog.Error("error parsing params", "err", err)
-			return
-		}
-
-		remoteMinting, err := isUniversalMintingMethod(params.Data)
-		if err != nil {
-			http.Error(w, "Error checking remote minting method", http.StatusBadRequest)
-			return
-		}
-
-		if !remoteMinting {
-			standardHandler.ServeHTTP(w, r)
-			return
-		}
-
-		isInContractList, err := isContractInList(params.To, st)
-		if err != nil {
-			http.Error(w, "Error checking contract in list", http.StatusBadRequest)
-			return
-		}
-
-		if isInContractList {
-			erc721UniversalMintingHandler.ServeHTTP(w, r)
-		} else {
-			standardHandler.ServeHTTP(w, r)
+		// Check for a valid JSON-RPC POST request
+		if valid, body := validateJSONRPCPostRequest(w, r); valid {
+			handleJSONRPCRequest(w, r, body, standardHandler, erc721Handler, st)
 		}
 	})
+}
+
+// validateJSONRPCPostRequest checks if the request is a valid JSON-RPC POST request and reads the body.
+func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (bool, []byte) {
+	if r.Method != "POST" || r.Header.Get("Content-Type") != "application/json" {
+		reportError(w, "No JSON RPC call or invalid Content-Type", http.StatusBadRequest)
+		return false, nil
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		reportError(w, "Error reading request body", http.StatusBadRequest)
+		return false, nil
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
+	return true, body
+}
+
+// handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
+func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+	var req JSONRPCRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		reportError(w, "Error parsing JSON request", http.StatusBadRequest)
+		return
+	}
+	if req.JSONRPC != "2.0" {
+		http.Error(w, "Invalid JSON-RPC version", http.StatusBadRequest)
+		return
+	}
+
+	switch req.Method {
+	case "eth_call":
+		handleEthCallMethod(w, r, req, erc721Handler, standardHandler, st)
+	default:
+		standardHandler.ServeHTTP(w, r)
+	}
+}
+
+// handleEthCallMethod processes an eth_call method request.
+func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+	var params ParamsRPCRequest
+	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
+		reportError(w, "Error parsing params or missing params", http.StatusBadRequest)
+		return
+	}
+
+	if remoteMinting, _ := isUniversalMintingMethod(params.Data); remoteMinting {
+		if isInContractList, _ := isContractInList(params.To, st); isInContractList {
+			erc721Handler.ServeHTTP(w, r)
+			return
+		}
+	}
+	// Fall back to standard handler if not a remote minting method or not in the contract list.
+	standardHandler.ServeHTTP(w, r)
+}
+
+// reportError is a utility function for reporting errors through HTTP.
+func reportError(w http.ResponseWriter, message string, statusCode int) {
+	http.Error(w, message, statusCode)
 }
 
 func isContractInList(contractAddress string, st scan.Storage) (bool, error) {
@@ -96,7 +100,6 @@ func isContractInList(contractAddress string, st scan.Storage) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	for _, contract := range list {
 		addr := contract.Address.Hex() // convert to string
 		if strings.EqualFold(addr, contractAddress) {
@@ -115,6 +118,5 @@ func isUniversalMintingMethod(data string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	return exists, nil
 }

@@ -116,7 +116,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			contentType:        "application/json",
 			method:             "GET",
 			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   "No JSON RPC call\n",
+			expectedResponse:   "No JSON RPC call or invalid Content-Type\n",
 			handlerToBeCalled:  "none",
 		},
 		{
