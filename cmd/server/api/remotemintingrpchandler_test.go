@@ -14,6 +14,7 @@ import (
 func TestUniversalMintingRPCHandler(t *testing.T) {
 	t.Parallel() // Run tests in parallel
 	t.Run("Should return the correct error response and status code", func(t *testing.T) {
+		t.Parallel()
 		// Create a request to pass to our handler.
 		req, err := http.NewRequest("POST", "/path", http.NoBody) // Use the appropriate method and path for your application
 		if err != nil {
@@ -61,5 +62,4 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 			t.Errorf("handler returned unexpected body: got %v expected %v", rr.Body.String(), string(expectedJSON))
 		}
 	})
-
 }

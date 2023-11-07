@@ -45,7 +45,6 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		handlerToBeCalled  string
 		storedContracts    []scan.ERC721UniversalContract
 	}{
-
 		{
 			name:               "Good request with eth_call method",
 			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
