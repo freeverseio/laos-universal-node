@@ -28,24 +28,24 @@ type Erc721method int
 const ShortAddressLength = 4
 
 const (
-	OwnerOf Erc721method = iota
+	NotSupported Erc721method = iota
+	OwnerOf
 	BalanceOf
 	TotalSupply
 	TokenOfOwnerByIndex
 	TokenByIndex
-	SupportsInterface
 )
 
+// remoteMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
 var remoteMintingMethodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):                      OwnerOf,
 	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):                    BalanceOf,
 	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                         TotalSupply,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address, uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                 TokenByIndex,
-	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]):             SupportsInterface,
 }
 
-// Method returns the ERC721 method invoked by the calldata.
+// Method returns if the calldata is a supported remote minting ERC721 method and the method.
 func (b CallData) UniversalMintingMethod() (Erc721method, bool, error) {
 	sig, err := b.methodSignature()
 	if err != nil {

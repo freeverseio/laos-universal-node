@@ -77,25 +77,20 @@ func TestMethod(t *testing.T) {
 			err:           nil,
 		},
 		{
-			expected:      0,
+			input:         hexutil.MustDecode("0x01ffc9a7"), //SupportsInterface
+			expected:      erc721.NotSupported,
 			remoteMinting: false,
 			err:           nil,
 		},
 		{
-			input:         hexutil.MustDecode("0x01ffc9a7"),
-			expected:      erc721.SupportsInterface,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
 			input:         erc721.CallData{0x00, 0x00, 0x00},
-			expected:      0,
+			expected:      erc721.NotSupported,
 			remoteMinting: false,
 			err:           fmt.Errorf("invalid call data, incomplete method signature (3 bytes < 4)"),
 		},
 		{
 			input:         erc721.CallData{0x12, 0x34, 0x56, 0x78},
-			expected:      0,
+			expected:      erc721.NotSupported,
 			remoteMinting: false,
 			err:           nil,
 		},
