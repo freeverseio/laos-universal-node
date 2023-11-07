@@ -17,14 +17,20 @@ import (
 )
 
 var (
-	eventTransferName              = "Transfer"
-	eventApprovalName              = "Approval"
-	eventApprovalForAllName        = "ApprovalForAll"
-	eventNewERC721Universal        = "NewERC721Universal"
-	eventTransferSigHash           = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
-	eventApprovalSigHash           = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
-	eventApprovalForAllSigHash     = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
-	eventNewERC721UniversalSigHash = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
+	eventTransferName                  = "Transfer"
+	eventApprovalName                  = "Approval"
+	eventApprovalForAllName            = "ApprovalForAll"
+	eventNewERC721Universal            = "NewERC721Universal"
+	eventNewCollection                 = "NewCollection"
+	eventMintedWithExternalURI         = "MintedWithExternalURI"
+	eventEvolvedWithExternalURI        = "EvolvedWithExternalURI"
+	eventTransferSigHash               = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
+	eventApprovalSigHash               = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
+	eventApprovalForAllSigHash         = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
+	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
+	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
+	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
+	eventEvolvedWithExternalURISgiHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -75,6 +81,28 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
+// EventNewCollecion is the LaosEvolution event emitted when a new collection is created
+type EventNewCollecion struct {
+	CollectionId uint64
+	Owner        common.Address
+}
+
+// EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
+type EventMintedWithExternalURI struct {
+	CollectionId uint64
+	Slot         *big.Int
+	To           common.Address
+	TokenURI     string
+	TokenId      *big.Int
+}
+
+// EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
+type EventEvolvedWithExternalURI struct {
+	CollectionId uint64
+	TokenId      *big.Int
+	TokenURI     string
+}
+
 func generateEventSignatureHash(event string, params ...string) string {
 	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
 
@@ -85,6 +113,7 @@ func generateEventSignatureHash(event string, params ...string) string {
 type Scanner interface {
 	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
+	ScanEvochainEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error)
 }
 
 type scanner struct {
@@ -159,6 +188,66 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 	}
 
 	return contracts, nil
+}
+
+// ScanEvochainEvents returns the LaosEvolution events between fromBlock and toBlock
+func (s scanner) ScanEvochainEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
+	if err != nil {
+		return nil, fmt.Errorf("error filtering events: %w", err)
+	}
+
+	if len(eventLogs) == 0 {
+		slog.Debug("no evochain events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
+		return nil, nil
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
+	if err != nil {
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
+	}
+
+	var parsedEvents []Event
+	for i := range eventLogs {
+		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
+		if len(eventLogs[i].Topics) == 0 {
+			continue
+		}
+
+		switch eventLogs[i].Topics[0].Hex() {
+		case eventNewCollectionSigHash:
+			ev, err := parseNewCollection(&eventLogs[i], &contractAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventNewCollection, ev)
+
+		case eventMintedWithExternalURISigHash:
+			ev, err := parseMintedWithExternalURI(&eventLogs[i], &contractAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventMintedWithExternalURI, ev)
+
+		case eventEvolvedWithExternalURISgiHash:
+			ev, err := parseEvolvedWithExternalURI(&eventLogs[i], &contractAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventEvolvedWithExternalURI, ev)
+
+		default:
+			slog.Debug("unknown evolution chain event")
+		}
+	}
+
+	return parsedEvents, nil
 }
 
 func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
@@ -302,6 +391,36 @@ func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC72
 	}
 
 	return newERC721Universal, nil
+}
+
+func parseNewCollection(eL *types.Log, contractAbi *abi.ABI) (EventNewCollecion, error) {
+	var newCollection EventNewCollecion
+	err := unpackIntoInterface(&newCollection, eventNewCollection, contractAbi, eL)
+	if err != nil {
+		return newCollection, err
+	}
+
+	return newCollection, nil
+}
+
+func parseEvolvedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventEvolvedWithExternalURI, error) {
+	var evolveWithExternalURI EventEvolvedWithExternalURI
+	err := unpackIntoInterface(&evolveWithExternalURI, eventEvolvedWithExternalURI, contractAbi, eL)
+	if err != nil {
+		return evolveWithExternalURI, err
+	}
+
+	return evolveWithExternalURI, nil
+}
+
+func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventMintedWithExternalURI, error) {
+	var mintWithExternalURI EventMintedWithExternalURI
+	err := unpackIntoInterface(&mintWithExternalURI, eventMintedWithExternalURI, contractAbi, eL)
+	if err != nil {
+		return mintWithExternalURI, err
+	}
+
+	return mintWithExternalURI, nil
 }
 
 func unpackIntoInterface(e Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
