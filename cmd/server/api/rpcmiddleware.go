@@ -37,7 +37,7 @@ func PostRpcRequestMiddleware(standardHandler, erc721Handler http.Handler, st sc
 }
 
 // validateJSONRPCPostRequest checks if the request is a valid JSON-RPC POST request and reads the body.
-func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (bool, []byte) {
+func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid bool, body []byte) {
 	if r.Method != "POST" || r.Header.Get("Content-Type") != "application/json" {
 		reportError(w, "No JSON RPC call or invalid Content-Type", http.StatusBadRequest)
 		return false, nil
