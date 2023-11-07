@@ -17,7 +17,7 @@ func Routes(h HandlerInterface, r Router, storage scan.Storage) Router {
 	rpcProxyHandler := http.HandlerFunc(h.PostRPCProxyHandler)
 	erc721UniversalMintingHandler := http.HandlerFunc(h.UniversalMintingRPCHandler)
 
-	// Pass both handlers to the middleware and let it decide based on the JSON-RPC method
+	// Pass both handlers to the middleware and let it decide based on the JSON-RPC method and the contract address
 	router.Handle("/", PostRpcRequestMiddleware(rpcProxyHandler, erc721UniversalMintingHandler, storage)).Methods("POST")
 	return router
 }
