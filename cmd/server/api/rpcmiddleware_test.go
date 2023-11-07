@@ -16,6 +16,8 @@ import (
 )
 
 func TestPostRpcRequestMiddleware(t *testing.T) {
+	t.Parallel() // Run tests in parallel
+
 	// Create a test handler that will be wrapped by the middleware
 	standardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -120,11 +122,15 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 	}
 
 	// Run tests
-	for _, tc := range tests {
+	for _, ttest := range tests {
+		tc := ttest // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
 			storageMock := mock.NewMockStorage(ctrl)
-
+			t.Cleanup(func() {
+				ctrl.Finish()
+			})
 			req := httptest.NewRequest(tc.method, "/rpc", strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", tc.contentType)
 
