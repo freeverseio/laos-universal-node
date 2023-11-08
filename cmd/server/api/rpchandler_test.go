@@ -82,7 +82,7 @@ func TestPostRpcHandler(t *testing.T) {
 			t.Cleanup(func() {
 				ctrl.Finish()
 			})
-			mockHttpClient := mock.NewMockHttpClientInterface(ctrl)
+			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 			handler := api.NewHandler(
 				"https://polygon-mumbai.g.alchemy.com/",
 				api.WithHttpClient(mockHttpClient),

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	newStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -20,6 +21,8 @@ func TestRunScanOk(t *testing.T) {
 		name             string
 		blockNumberTimes int
 		scanEventsTimes  int
+		txCommitTimes    int
+		txDiscardTimes   int
 	}{
 		{
 			c: config.Config{
@@ -32,6 +35,8 @@ func TestRunScanOk(t *testing.T) {
 			name:             "scan events one time",
 			blockNumberTimes: 2,
 			scanEventsTimes:  1,
+			txCommitTimes:    1,
+			txDiscardTimes:   1,
 		},
 		{
 			c: config.Config{
@@ -44,6 +49,8 @@ func TestRunScanOk(t *testing.T) {
 			name:             "scan events zero times",
 			blockNumberTimes: 1,
 			scanEventsTimes:  0,
+			txCommitTimes:    0,
+			txDiscardTimes:   0,
 		},
 	}
 	for _, tt := range tests {
@@ -53,7 +60,7 @@ func TestRunScanOk(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage := getMocks(t)
+			client, scanner, storage, tx := getMocks(t)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
@@ -64,6 +71,14 @@ func TestRunScanOk(t *testing.T) {
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
+			tx.EXPECT().Commit().
+				Return(nil).
+				Times(tt.txCommitTimes)
+			tx.EXPECT().Discard().
+				Times(tt.txDiscardTimes)
+			storage.EXPECT().NewTransaction().
+				Return(tx).
+				Times(tt.txCommitTimes)
 
 			err := runScan(ctx, &tt.c, client, scanner, storage)
 			if err != nil {
@@ -84,7 +99,7 @@ func TestRunScanTwice(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner, storage := getMocks(t)
+	client, scanner, storage, tx := getMocks(t)
 
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
@@ -101,6 +116,14 @@ func TestRunScanTwice(t *testing.T) {
 	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101)).
 		Return(nil, nil).
 		Times(1)
+	tx.EXPECT().Commit().
+		Return(nil).
+		Times(2)
+	tx.EXPECT().Discard().
+		Times(2)
+	storage.EXPECT().NewTransaction().
+		Return(tx).
+		Times(2)
 
 	err := runScan(ctx, &c, client, scanner, storage)
 	if err != nil {
@@ -116,7 +139,7 @@ func TestRunScanError(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner, storage := getMocks(t)
+	client, scanner, storage, _ := getMocks(t)
 
 	expectedErr := errors.New("block number error")
 	client.EXPECT().BlockNumber(ctx).
@@ -133,8 +156,9 @@ func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mock.MockStorage) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *newStorage.MockStorage, *newStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl), mock.NewMockStorage((ctrl))
+	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
+		newStorage.NewMockStorage(ctrl), newStorage.NewMockTx(ctrl)
 }

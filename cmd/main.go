@@ -10,9 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
 )
@@ -31,6 +34,12 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
+	db, err := badger.Open(badger.DefaultOptions(c.Path))
+	if err != nil {
+		return err
+	}
+	storageService := storage.New(db)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
@@ -41,12 +50,12 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		storage, err := scan.NewFSStorage("erc721_contracts.txt")
+		scanStorage, err := scan.NewFSStorage("erc721_contracts.txt")
 		if err != nil {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
-		s := scan.NewScanner(client, storage, c.Contracts...)
-		return runScan(ctx, c, client, s, storage)
+		s := scan.NewScanner(client, scanStorage, c.Contracts...)
+		return runScan(ctx, c, client, s, storageService)
 	})
 
 	group.Go(func() error {
@@ -65,7 +74,7 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storageService storage.Storage) error {
 	var err error
 	startingBlock := c.StartingBlock
 	if startingBlock == 0 {
@@ -100,12 +109,28 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			// This will be replaced by a batch write to the DB
-			for i := 0; i < len(universalContracts); i++ {
-				if err = storage.Store(ctx, universalContracts[i]); err != nil {
-					slog.Error("error occurred while storing universal contract", "err", err.Error())
-					break
+			if err = func() error {
+				tx := storageService.NewTransaction()
+				defer tx.Discard()
+				for i := 0; i < len(universalContracts); i++ {
+					var value []byte
+					value, err = model.MarshalERC721UniversalContract(universalContracts[i].BaseURI, universalContracts[i].Block)
+					if err != nil {
+						return err
+					}
+					err = tx.Set(universalContracts[i].Address[:], value)
+					if err != nil {
+						return err
+					}
 				}
+				err = tx.Commit()
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				slog.Error("error occurred while storing universal contract", "err", err.Error())
+				break
 			}
 
 			// TODO when the DB is in use, storage.ReadAll will run here and not inside ScanEvents
