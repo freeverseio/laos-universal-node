@@ -12,6 +12,7 @@ type Config struct {
 	StartingBlock uint64
 	Contracts     []string
 	Rpc           string
+	Path          string
 	BlocksMargin  uint
 	BlocksRange   uint
 	Port          uint
@@ -28,6 +29,7 @@ func Load() *Config {
 	port := flag.Uint("port", 5001, "HTTP port to use for the universal node server")
 	startingBlock := flag.Uint64("starting_block", 18288287, "Initial block where the scanning process should start from")
 	waitingTime := flag.Duration("wait", 5*time.Second, "Waiting time between scans when scanning reaches the last block")
+	path := flag.String("db_path", "~/.universalnode", "Path to the DB folder")
 
 	flag.Parse()
 
@@ -39,6 +41,7 @@ func Load() *Config {
 		StartingBlock: *startingBlock,
 		WaitingTime:   *waitingTime,
 		Port:          *port,
+		Path:          *path,
 	}
 
 	if *contracts != "" {
@@ -51,5 +54,5 @@ func Load() *Config {
 func (c *Config) LogFields() {
 	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "contracts", c.Contracts,
 		"starting_block", c.StartingBlock, "blocks_margin", c.BlocksMargin, "blocks_range", c.BlocksRange,
-		"debug", c.Debug, "wait", c.WaitingTime, "port", c.Port))
+		"debug", c.Debug, "wait", c.WaitingTime, "port", c.Port, "db_path", c.Path))
 }
