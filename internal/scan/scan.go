@@ -31,6 +31,9 @@ var (
 	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
 	eventEvolvedWithExternalURISgiHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
+	EventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
+	EventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
+	EventEvolvedWithExternalURISgiHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -111,33 +114,29 @@ func generateEventSignatureHash(event string, params ...string) string {
 
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
-	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
-	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
-	ScanEvochainEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error)
+	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts ...common.Address) ([]ERC721UniversalContract, error)
+	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts ...common.Address) ([]Event, error)
 }
 
 type scanner struct {
-	client    EthClient
-	contracts []common.Address
-	storage   Storage
+	client  EthClient
+	storage Storage
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
+func NewScanner(client EthClient, s Storage) Scanner {
 	scan := scanner{
 		client:  client,
 		storage: s,
 	}
-	for _, c := range contracts {
-		scan.contracts = append(scan.contracts, common.HexToAddress(c))
-	}
+
 	return scan
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
+func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts ...common.Address) ([]ERC721UniversalContract, error) {
 	// TODO this logic will be extracted from this function in a future iteration
-	ok, err := s.shouldScanNewUniversalEvents(ctx)
+	ok, err := s.shouldScanNewUniversalEvents(ctx, contracts...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +144,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		return nil, nil
 	}
 
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -160,7 +159,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
-	contracts := make([]ERC721UniversalContract, 0)
+	uc := make([]ERC721UniversalContract, 0)
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) == 0 {
@@ -180,78 +179,18 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 				Block:   eventLogs[i].BlockNumber,
 				BaseURI: newERC721Universal.BaseURI,
 			}
-			contracts = append(contracts, c)
+			uc = append(uc, c)
 
 		default:
 			slog.Debug("no new universal contracts found")
 		}
 	}
 
-	return contracts, nil
+	return uc, nil
 }
 
-// ScanEvochainEvents returns the LaosEvolution events between fromBlock and toBlock
-func (s scanner) ScanEvochainEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
-	if err != nil {
-		return nil, fmt.Errorf("error filtering events: %w", err)
-	}
-
-	if len(eventLogs) == 0 {
-		slog.Debug("no evochain events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
-		return nil, nil
-	}
-
-	contractAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
-	if err != nil {
-		return nil, fmt.Errorf("error instantiating ABI: %w", err)
-	}
-
-	var parsedEvents []Event
-	for i := range eventLogs {
-		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
-		if len(eventLogs[i].Topics) == 0 {
-			continue
-		}
-
-		switch eventLogs[i].Topics[0].Hex() {
-		case eventNewCollectionSigHash:
-			ev, err := parseNewCollection(&eventLogs[i], &contractAbi)
-			if err != nil {
-				return nil, err
-			}
-
-			parsedEvents = append(parsedEvents, ev)
-			slog.Info("received event", eventNewCollection, ev)
-
-		case eventMintedWithExternalURISigHash:
-			ev, err := parseMintedWithExternalURI(&eventLogs[i], &contractAbi)
-			if err != nil {
-				return nil, err
-			}
-
-			parsedEvents = append(parsedEvents, ev)
-			slog.Info("received event", eventMintedWithExternalURI, ev)
-
-		case eventEvolvedWithExternalURISgiHash:
-			ev, err := parseEvolvedWithExternalURI(&eventLogs[i], &contractAbi)
-			if err != nil {
-				return nil, err
-			}
-
-			parsedEvents = append(parsedEvents, ev)
-			slog.Info("received event", eventEvolvedWithExternalURI, ev)
-
-		default:
-			slog.Debug("unknown evolution chain event")
-		}
-	}
-
-	return parsedEvents, nil
-}
-
-func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
-	if len(s.contracts) == 0 {
+func (s scanner) shouldScanNewUniversalEvents(ctx context.Context, contracts ...common.Address) (bool, error) {
+	if len(contracts) == 0 {
 		return true, nil
 	}
 	storageContracts, err := s.storage.ReadAll(ctx)
@@ -267,31 +206,15 @@ func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error)
 	 * For now, as we don't have a database yet, we only compare that the number of user-provided
 	 * contracts matches with the number of stored contracts.
 	 */
-	if len(storageContracts) == len(s.contracts) {
+	if len(storageContracts) == len(contracts) {
 		return false, nil
 	}
 	return true, nil
 }
 
-// ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
-	// TODO this logic will be extracted form this function in a future iteration
-	contracts, err := s.storage.ReadAll(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	if len(contracts) == 0 {
-		slog.Debug("no contracts found", "from_block", fromBlock, "to_block", toBlock)
-		return nil, nil
-	}
-
-	addresses := make([]common.Address, 0)
-	for _, c := range contracts {
-		addresses = append(addresses, c.Address)
-	}
-
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
+// ScanEvents scans and parses ERC721 universal or LaosEvolution events between fromBlock and toBlock
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts ...common.Address) ([]Event, error) {
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -300,35 +223,74 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([
 		return nil, nil
 	}
 
-	contractAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
+	erc721UniversalAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
+
+	evoAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
+	if err != nil {
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
+	}
+
 	var parsedEvents []Event
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
+		if len(eventLogs[i].Topics) == 0 {
+			continue
+		}
+
 		switch eventLogs[i].Topics[0].Hex() {
 		case eventTransferSigHash:
-			transfer, err := parseTransfer(&eventLogs[i], &contractAbi)
+			transfer, err := parseTransfer(&eventLogs[i], &erc721UniversalAbi)
 			if err != nil {
 				return nil, err
 			}
 			parsedEvents = append(parsedEvents, transfer)
 			slog.Info("received event", eventTransferName, transfer)
 		case eventApprovalSigHash:
-			approval, err := parseApproval(&eventLogs[i], &contractAbi)
+			approval, err := parseApproval(&eventLogs[i], &erc721UniversalAbi)
 			if err != nil {
 				return nil, err
 			}
 			parsedEvents = append(parsedEvents, approval)
 			slog.Info("received event", eventApprovalName, approval)
 		case eventApprovalForAllSigHash:
-			approvalForAll, err := parseApprovalForAll(&eventLogs[i], &contractAbi)
+			approvalForAll, err := parseApprovalForAll(&eventLogs[i], &erc721UniversalAbi)
 			if err != nil {
 				return nil, err
 			}
 			parsedEvents = append(parsedEvents, approvalForAll)
 			slog.Info("received event", eventApprovalForAllName, approvalForAll)
+
+		// Evolution events
+		case eventNewCollectionSigHash:
+			ev, err := parseNewCollection(&eventLogs[i], &evoAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventNewCollection, ev)
+
+		case eventMintedWithExternalURISigHash:
+			ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventMintedWithExternalURI, ev)
+
+		case eventEvolvedWithExternalURISgiHash:
+			ev, err := parseEvolvedWithExternalURI(&eventLogs[i], &evoAbi)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedEvents = append(parsedEvents, ev)
+			slog.Info("received event", eventEvolvedWithExternalURI, ev)
+
 		default:
 			slog.Warn("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 		}
