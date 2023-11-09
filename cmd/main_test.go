@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -55,17 +57,24 @@ func TestRunScanOk(t *testing.T) {
 
 			client, scanner, storage := getMocks(t)
 
+			contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
-			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
+			storage.EXPECT().ReadAll(context.Background()).Return([]scan.ERC721UniversalContract{
+				{
+					Address: contract,
+				},
+			}, nil).Times(tt.scanEventsTimes)
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), contract).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 
-			err := runScan(ctx, &tt.c, client, scanner, storage)
+			err := scanUniversalChain(ctx, &tt.c, client, scanner, storage)
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -86,6 +95,13 @@ func TestRunScanTwice(t *testing.T) {
 
 	client, scanner, storage := getMocks(t)
 
+	contract := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+	erc721UniversalContracts := []scan.ERC721UniversalContract{
+		{
+			Address: contract,
+		},
+	}
+
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
 		Times(3)
@@ -95,14 +111,16 @@ func TestRunScanTwice(t *testing.T) {
 	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51)).
+	storage.EXPECT().ReadAll(context.Background()).Return(erc721UniversalContracts, nil).Times(1)
+	storage.EXPECT().ReadAll(context.Background()).Return(erc721UniversalContracts, nil).Times(1)
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), contract).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101)).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), contract).
 		Return(nil, nil).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner, storage)
+	err := scanUniversalChain(ctx, &c, client, scanner, storage)
 	if err != nil {
 		t.Fatalf(`got error "%v" when no error was expeceted`, err)
 	}
@@ -123,7 +141,7 @@ func TestRunScanError(t *testing.T) {
 		Return(uint64(0), expectedErr).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner, storage)
+	err := scanUniversalChain(ctx, &c, client, scanner, storage)
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expeceted`, expectedErr)
 	}
