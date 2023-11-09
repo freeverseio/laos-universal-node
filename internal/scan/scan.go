@@ -75,6 +75,15 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
+// TODO decide where this is supposed to go
+type ERC721UniversalContract struct {
+	Address common.Address `json:"address"`
+	// this will be renamed "currentBlock" and stored in the DB with the related contract
+	// this way the scan can continue scanning that contract from that block
+	Block   uint64 `json:"block"`
+	BaseURI string `json:"base_uri"`
+}
+
 func generateEventSignatureHash(event string, params ...string) string {
 	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
 
@@ -84,20 +93,18 @@ func generateEventSignatureHash(event string, params ...string) string {
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
 	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
-	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int) ([]Event, error)
+	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts []string) ([]Event, error)
 }
 
 type scanner struct {
 	client    EthClient
 	contracts []common.Address
-	storage   Storage
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
+func NewScanner(client EthClient, contracts ...string) Scanner {
 	scan := scanner{
-		client:  client,
-		storage: s,
+		client: client,
 	}
 	for _, c := range contracts {
 		scan.contracts = append(scan.contracts, common.HexToAddress(c))
@@ -107,15 +114,6 @@ func NewScanner(client EthClient, s Storage, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
-	// TODO this logic will be extracted from this function in a future iteration
-	ok, err := s.shouldScanNewUniversalEvents(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, nil
-	}
-
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
@@ -161,45 +159,11 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 	return contracts, nil
 }
 
-func (s scanner) shouldScanNewUniversalEvents(ctx context.Context) (bool, error) {
-	if len(s.contracts) == 0 {
-		return true, nil
-	}
-	storageContracts, err := s.storage.ReadAll(ctx)
-	if err != nil {
-		return false, fmt.Errorf("error reading contracts from storage: %w", err)
-	}
-	/*
-	 * When a user provides a list of contracts via flag, we have to discover and
-	 * scan those contracts only. For this reason, when we have to determine whether we have
-	 * to discover infos about those contracts or not, we will compare if those user-provided contracts
-	 * exist in the list of stored contracts (i.e. infos about those contracts, like starting block,
-	 * have already been found).
-	 * For now, as we don't have a database yet, we only compare that the number of user-provided
-	 * contracts matches with the number of stored contracts.
-	 */
-	if len(storageContracts) == len(s.contracts) {
-		return false, nil
-	}
-	return true, nil
-}
-
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]Event, error) {
-	// TODO this logic will be extracted form this function in a future iteration
-	contracts, err := s.storage.ReadAll(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	if len(contracts) == 0 {
-		slog.Debug("no contracts found", "from_block", fromBlock, "to_block", toBlock)
-		return nil, nil
-	}
-
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, error) {
 	addresses := make([]common.Address, 0)
 	for _, c := range contracts {
-		addresses = append(addresses, c.Address)
+		addresses = append(addresses, common.HexToAddress(c))
 	}
 
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)

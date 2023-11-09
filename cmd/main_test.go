@@ -13,6 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// TODO check test coverage
 func TestRunScanOk(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -68,7 +69,7 @@ func TestRunScanOk(t *testing.T) {
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
-			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), []string{}).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 			tx.EXPECT().Commit().
@@ -110,10 +111,10 @@ func TestRunScanTwice(t *testing.T) {
 	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51)).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), []string{}).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101)).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), []string{}).
 		Return(nil, nil).
 		Times(1)
 	tx.EXPECT().Commit().

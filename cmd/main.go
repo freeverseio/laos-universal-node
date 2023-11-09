@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,6 +38,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// TODO go func() {/* every X minutes */ db.RunValueLogGC()}() && defer db.Close()
 	storageService := storage.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -50,11 +51,8 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		scanStorage, err := scan.NewFSStorage("erc721_contracts.txt")
-		if err != nil {
-			return fmt.Errorf("error initializing storage: %w", err)
-		}
-		s := scan.NewScanner(client, scanStorage, c.Contracts...)
+		// TODO store and check chain id to make sure we are scanning the right chain
+		s := scan.NewScanner(client, c.Contracts...)
 		return runScan(ctx, c, client, s, storageService)
 	})
 
@@ -76,7 +74,8 @@ func run() error {
 
 func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storageService storage.Storage) error {
 	var err error
-	startingBlock := c.StartingBlock
+	repositoryService := repository.New(storageService)
+	startingBlock := c.StartingBlock // TODO if current block is not in DB, consider starting block flag
 	if startingBlock == 0 {
 		startingBlock, err = getL1LatestBlock(ctx, client)
 		if err != nil {
@@ -103,43 +102,57 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			// TODO decide whether this method should go somehwere else
+			shouldDiscover, err := func() (bool, error) {
+				if len(c.Contracts) == 0 {
+					return true, nil
+				}
+				for i := 0; i < len(c.Contracts); i++ {
+					_, err = repositoryService.GetERC721UniversalContract(c.Contracts[i])
+					if err != nil {
+						if err == badger.ErrKeyNotFound {
+							return true, nil
+						}
+						return false, err
+					}
+				}
+				return false, nil
+			}()
 			if err != nil {
-				slog.Error("error occurred while discovering new universal events", "err", err.Error())
+				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
 			}
 
-			if err = func() error {
-				tx := storageService.NewTransaction()
-				defer tx.Discard()
-				for i := 0; i < len(universalContracts); i++ {
-					var value []byte
-					value, err = model.MarshalERC721UniversalContract(universalContracts[i].BaseURI, universalContracts[i].Block)
-					if err != nil {
-						return err
-					}
-					err = tx.Set(universalContracts[i].Address[:], value)
-					if err != nil {
-						return err
-					}
-				}
-				err = tx.Commit()
+			var universalContracts []scan.ERC721UniversalContract
+			if shouldDiscover {
+				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 				if err != nil {
-					return err
+					slog.Error("error occurred while discovering new universal events", "err", err.Error())
+					break
 				}
-				return nil
-			}(); err != nil {
+			}
+
+			if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
 				slog.Error("error occurred while storing universal contract", "err", err.Error())
 				break
 			}
 
-			// TODO when the DB is in use, storage.ReadAll will run here and not inside ScanEvents
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			var contracts []string
+			if len(c.Contracts) > 0 {
+				contracts = c.Contracts
+			} else {
+				contracts, err = repositoryService.GetAllERC721UniversalContracts()
+				if err != nil {
+					slog.Error("error occurred reading contracts from storage", "err", err.Error())
+					break
+				}
+			}
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
-			startingBlock = lastBlock + 1
+			startingBlock = lastBlock + 1 // TODO update contracts currentBlock
 		}
 	}
 }

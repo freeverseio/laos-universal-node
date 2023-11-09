@@ -21,6 +21,7 @@ FROM alpine:3.18.4 AS final
 WORKDIR /app
 COPY --from=builder /app/cmd/universalnode .
 
+# TODO set -storage_path to /app/.universalnode
 ENTRYPOINT ["./universalnode"]
 RUN chown nobody:nobody .
 USER nobody:nobody
