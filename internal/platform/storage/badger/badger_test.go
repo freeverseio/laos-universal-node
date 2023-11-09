@@ -1,4 +1,4 @@
-package storage_test
+package badger_test
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 )
 
 var db *badger.DB // badger.DB is thread-safe
@@ -25,7 +26,7 @@ func TestMain(m *testing.M) {
 func TestStorageGetData(t *testing.T) {
 	t.Parallel()
 
-	service := storage.New(db)
+	service := badgerStorage.NewService(db)
 
 	expectedKey, expectedVal := []byte("expectedKey"), []byte("expectedValue")
 	performTransaction(t, expectedKey, expectedVal, service)
@@ -42,7 +43,7 @@ func TestStorageGetData(t *testing.T) {
 func TestStorageGetNoData(t *testing.T) {
 	t.Parallel()
 
-	service := storage.New(db)
+	service := badgerStorage.NewService(db)
 
 	got, err := service.Get([]byte("idonotexist"))
 	if err == nil {
@@ -59,7 +60,7 @@ func TestStorageGetNoData(t *testing.T) {
 func TestStorageGetKeysWithPrefix(t *testing.T) {
 	t.Parallel()
 
-	service := storage.New(db)
+	service := badgerStorage.NewService(db)
 	expectedKeys := [][]byte{
 		[]byte("entry_1"),
 		[]byte("entry_2"),
@@ -86,7 +87,7 @@ func TestStorageGetKeysWithPrefix(t *testing.T) {
 func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 	t.Parallel()
 
-	service := storage.New(db)
+	service := badgerStorage.NewService(db)
 
 	got, err := service.GetKeysWithPrefix([]byte("idonotexisteither_"))
 	if err != nil {
@@ -97,7 +98,7 @@ func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 	}
 }
 
-func performTransaction(t *testing.T, key, val []byte, service storage.Storage) {
+func performTransaction(t *testing.T, key, val []byte, service storage.Service) {
 	t.Helper()
 	tx := service.NewTransaction()
 	defer tx.Discard()

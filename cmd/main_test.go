@@ -279,7 +279,7 @@ func TestShouldDiscover(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockStorage(ctrl)
+			storage := mockStorage.NewMockService(ctrl)
 			repositoryService := repository.New(storage)
 			for _, contract := range tt.contracts {
 				var returnValue []byte
@@ -581,9 +581,9 @@ func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockStorage, *mockStorage.MockTx) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService, *mockStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
-		mockStorage.NewMockStorage(ctrl), mockStorage.NewMockTx(ctrl)
+		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
 }

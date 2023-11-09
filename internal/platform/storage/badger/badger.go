@@ -1,14 +1,15 @@
-package storage
+package badger
 
 import (
 	"github.com/dgraph-io/badger/v4"
+	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
 type Badger struct {
 	db *badger.DB
 }
 
-func New(db *badger.DB) Storage {
+func NewService(db *badger.DB) storage.Service {
 	return Badger{
 		db: db,
 	}
@@ -58,6 +59,32 @@ func (b Badger) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
 	return keys, err
 }
 
-func (b Badger) NewTransaction() Tx {
-	return b.db.NewTransaction(true)
+type Tx struct {
+	tx *badger.Txn
+}
+
+func (b Badger) NewTransaction() storage.Tx {
+	return Tx{
+		b.db.NewTransaction(true),
+	}
+}
+
+func (t Tx) Commit() error {
+	return t.tx.Commit()
+}
+
+func (t Tx) Discard() {
+	t.tx.Discard()
+}
+
+func (t Tx) Set(key, value []byte) error {
+	return t.tx.Set(key, value)
+}
+
+func (t Tx) Get(key []byte) ([]byte, error) {
+	item, err := t.tx.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return item.ValueCopy(nil)
 }
