@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
@@ -36,6 +37,7 @@ func run() error {
 
 	group, ctx := errgroup.WithContext(ctx)
 
+	// ERC721 Universal scanner
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
@@ -45,10 +47,21 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error initializing storage: %w", err)
 		}
-		s := scan.NewScanner(client, storage, c.Contracts...)
-		return runScan(ctx, c, client, s, storage)
+		s := scan.NewScanner(client, storage)
+		return scanUniversalChain(ctx, c, client, s, storage)
 	})
 
+	// Evo scanner
+	group.Go(func() error {
+		client, err := ethclient.Dial(c.EvoRpc)
+		if err != nil {
+			return fmt.Errorf("error instantiating eth client: %w", err)
+		}
+		s := scan.NewScanner(client, nil)
+		return scanEvoChain(ctx, c, client, s)
+	})
+
+	// Universal noed RPC server
 	group.Go(func() error {
 		rpcServer, err := server.New()
 		if err != nil {
@@ -65,7 +78,7 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
+func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
 	var err error
 	startingBlock := c.StartingBlock
 	if startingBlock == 0 {
@@ -108,12 +121,67 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				}
 			}
 
-			// TODO when the DB is in use, storage.ReadAll will run here and not inside ScanEvents
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			erc721contracts, err := storage.ReadAll(context.Background())
+			if err != nil {
+				slog.Error("error reading contracts from storage", "err", err.Error())
+				break
+			}
+
+			if len(erc721contracts) == 0 {
+				slog.Debug("no contracts found")
+				break
+			}
+
+			contracts := make([]common.Address, 0)
+			for _, c := range erc721contracts {
+				contracts = append(contracts, c.Address)
+			}
+
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts...)
 			if err != nil {
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
+			startingBlock = lastBlock + 1
+		}
+	}
+}
+
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
+	var err error
+	startingBlock := c.EvoStartingBlock
+	if startingBlock == 0 {
+		startingBlock, err = getL1LatestBlock(ctx, client)
+		if err != nil {
+			return fmt.Errorf("error retrieving the latest block: %w", err)
+		}
+		slog.Debug("latest block found", "latest_block", startingBlock)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("context canceled")
+			return nil
+		default:
+			l1LatestBlock, err := getL1LatestBlock(ctx, client)
+			if err != nil {
+				slog.Error("error retrieving the latest block", "err", err.Error())
+				break
+			}
+			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.EvoBlocksRange, c.EvoBlocksMargin)
+			if lastBlock < startingBlock {
+				slog.Debug("last calculated block is behind starting block, waiting...",
+					"last_block", lastBlock, "starting_block", startingBlock)
+				waitBeforeNextScan(ctx, c.WaitingTime)
+				break
+			}
+
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), common.HexToAddress(c.EvoContract))
+			if err != nil {
+				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
+				break
+			}
+
 			startingBlock = lastBlock + 1
 		}
 	}
