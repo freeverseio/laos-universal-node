@@ -9,4 +9,5 @@ type Tx interface {
 type Storage interface {
 	NewTransaction() Tx
 	Get(key []byte) ([]byte, error)
+	GetKeysWithPrefix(prefix []byte) ([][]byte, error)
 }

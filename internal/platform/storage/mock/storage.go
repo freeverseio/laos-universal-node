@@ -116,6 +116,21 @@ func (mr *MockStorageMockRecorder) Get(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), key)
 }
 
+// GetKeysWithPrefix mocks base method.
+func (m *MockStorage) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
+func (mr *MockStorageMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockStorage)(nil).GetKeysWithPrefix), prefix)
+}
+
 // NewTransaction mocks base method.
 func (m *MockStorage) NewTransaction() storage.Tx {
 	m.ctrl.T.Helper()

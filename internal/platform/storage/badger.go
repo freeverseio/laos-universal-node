@@ -1,6 +1,8 @@
 package storage
 
-import "github.com/dgraph-io/badger/v4"
+import (
+	"github.com/dgraph-io/badger/v4"
+)
 
 type Badger struct {
 	db *badger.DB
@@ -26,6 +28,24 @@ func (b Badger) Get(key []byte) ([]byte, error) {
 		return nil
 	})
 	return returnValue, err
+}
+
+func (b Badger) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
+	var keys [][]byte
+	err := b.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		iterator := txn.NewIterator(opts)
+		defer iterator.Close()
+		for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+			item := iterator.Item()
+			var key []byte
+			key = item.KeyCopy(key)
+			keys = append(keys, key)
+		}
+		return nil
+	})
+	return keys, err
 }
 
 func (b Badger) NewTransaction() Tx {
