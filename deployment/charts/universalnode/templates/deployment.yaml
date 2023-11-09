@@ -30,6 +30,8 @@ spec:
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},
                 -rpc={{ .Values.rpc }},
+                -evo_rpc={{ .Values.evoRpc }},
+                -evo_contract={{ .Values.evoContracts }},
                 {{ if hasKey .Values  "startingBlock" }}
                 -starting_block={{ .Values.startingBlock }},
                 {{ end }}
@@ -38,6 +40,15 @@ spec:
                 {{ end }}
                 {{ if hasKey .Values  "blocksRange" }}
                 -blocks_range={{ .Values.blocksRange }},
+                {{ end }}
+                {{ if hasKey .Values  "evoStartingBlock" }}
+                -starting_block={{ .Values.evoStartingBlock }},
+                {{ end }}
+                {{ if hasKey .Values  "evoBlocksMargin" }}
+                -blocks_margin={{ .Values.evoBlocksMargin }},
+                {{ end }}
+                {{ if hasKey .Values  "evoBlocksRange" }}
+                -blocks_range={{ .Values.evoBlocksRange }},
                 {{ end }}
                 {{ .Values.debug | ternary "-debug" "" }}
               ]
