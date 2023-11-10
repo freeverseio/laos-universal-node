@@ -34,17 +34,47 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
-	db, err := badger.Open(badger.DefaultOptions(c.Path))
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
 	if err != nil {
 		return err
 	}
-	// TODO go func() {/* every X minutes */ db.RunValueLogGC()}() && defer db.Close()
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			slog.Error("error closing DB", "err", err)
+		}
+	}()
+
 	storageService := storage.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		numIterations := 3
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				// garbage collection cleans up at most 1 file per iteration
+				// https://dgraph.io/docs/badger/get-started/#garbage-collection
+				for i := 0; i < numIterations; i++ {
+					err := db.RunValueLogGC(0.5)
+					if err != nil {
+						if err != badger.ErrNoRewrite {
+							slog.Error("error occurred while running badger GC", "err", err.Error())
+						}
+						break
+					}
+				}
+			}
+		}
+	})
 
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.Rpc)
