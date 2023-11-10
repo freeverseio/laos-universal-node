@@ -25,7 +25,10 @@ func NewCallData(s string) (CallData, error) {
 // erc721method represents the supported ERC721 methods.
 type Erc721method int
 
-const ShortAddressLength = 4
+const (
+	ShortAddressLength = 4
+	CallDataLength     = 32 // call data must have a length of a multiple of 32 bytes
+)
 
 const (
 	NotSupported Erc721method = iota
@@ -87,7 +90,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	}
 
 	argdata := b[ShortAddressLength:]
-	if len(argdata)%32 != 0 {
+	if len(argdata)%CallDataLength != 0 {
 		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
 	}
 	erc721Abi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
