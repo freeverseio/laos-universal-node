@@ -31,8 +31,8 @@ type ParamsRPCRequest struct {
 func PostRpcRequestMiddleware(h RPCHandler, st scan.Storage) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// we pass both handlers and decide which one to call based on the request
-		proxyRPCHandler := http.HandlerFunc(h.PostRPCProxyHandler)
-		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler)
+		proxyRPCHandler := http.HandlerFunc(h.PostRPCProxyHandler)                   // proxy handler for standard requests
+		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler) // handler for universal minting requests
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
 			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, st)
