@@ -21,10 +21,13 @@ func TestRunScanOk(t *testing.T) {
 		c                config.Config
 		l1LatestBlock    uint64
 		name             string
+		blockNumberDB    string
 		blockNumberTimes int
 		scanEventsTimes  int
 		txCommitTimes    int
 		txDiscardTimes   int
+		startingBlock    uint64
+		newLatestBlock   string
 	}{
 		{
 			c: config.Config{
@@ -34,11 +37,30 @@ func TestRunScanOk(t *testing.T) {
 				WaitingTime:   1 * time.Second,
 			},
 			l1LatestBlock:    101,
+			startingBlock:    1,
 			name:             "scan events one time",
 			blockNumberTimes: 2,
 			scanEventsTimes:  1,
 			txCommitTimes:    1,
 			txDiscardTimes:   1,
+			newLatestBlock:   "102",
+		},
+		{
+			c: config.Config{
+				StartingBlock: 1,
+				BlocksMargin:  0,
+				BlocksRange:   50,
+				WaitingTime:   1 * time.Second,
+			},
+			l1LatestBlock:    101,
+			name:             "scan events one time",
+			blockNumberDB:    "100",
+			startingBlock:    100,
+			blockNumberTimes: 2,
+			scanEventsTimes:  1,
+			txCommitTimes:    1,
+			txDiscardTimes:   1,
+			newLatestBlock:   "102",
 		},
 	}
 	for _, tt := range tests {
@@ -53,10 +75,10 @@ func TestRunScanOk(t *testing.T) {
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
-			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
+			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.startingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
-			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), expecetedContracts).
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.startingBlock)), big.NewInt(int64(tt.l1LatestBlock)), expecetedContracts).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 			tx.EXPECT().Commit().
@@ -72,9 +94,9 @@ func TestRunScanOk(t *testing.T) {
 				Return([][]byte{}, nil).
 				Times(1)
 			storage.EXPECT().Get([]byte("current_block")).
-				Return([]byte(""), nil).
+				Return([]byte(tt.blockNumberDB), nil).
 				Times(1)
-			storage.EXPECT().Set([]byte("current_block"), []byte("102")).
+			storage.EXPECT().Set([]byte("current_block"), []byte(tt.newLatestBlock)).
 				Return(nil).
 				Times(1)
 
