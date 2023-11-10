@@ -38,27 +38,23 @@ func PostRpcRequestMiddleware(standardHandler, erc721Handler http.Handler, st sc
 }
 
 // validateJSONRPCPostRequest checks if the request is a valid JSON-RPC POST request and reads the body.
-func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid bool, body []byte) {
+func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid bool, request *JSONRPCRequest) {
 	if r.Method != "POST" || r.Header.Get("Content-Type") != "application/json" {
-		reportError(w, "No JSON RPC call or invalid Content-Type", http.StatusBadRequest)
+		http.Error(w, "No JSON RPC call or invalid Content-Type", http.StatusBadRequest)
 		return false, nil
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		reportError(w, "Error reading request body", http.StatusBadRequest)
+		http.Error(w, "Error reading request body", http.StatusBadRequest)
 		slog.Error("error reading request body", "err", err)
 		return false, nil
 	}
 	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
-	return true, body
-}
 
-// handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
-func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, standardHandler, erc721Handler http.Handler, st scan.Storage) {
 	var req JSONRPCRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		reportError(w, "Error parsing JSON request", http.StatusBadRequest)
+		http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
 		slog.Error("error parsing JSON request", "err", err)
 		return
 	}
@@ -67,30 +63,35 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, body []byte, s
 		return
 	}
 
-	switch req.Method {
+	return true, &req
+}
+
+// handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
+func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+	switch jsonRequest.Method {
 	case "eth_call":
-		handleEthCallMethod(w, r, req, standardHandler, erc721Handler, st)
+		handleEthCallMethod(w, r, jsonRequest, standardHandler, erc721Handler, st)
 	default:
 		standardHandler.ServeHTTP(w, r)
 	}
 }
 
-func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
-		reportError(w, "Error parsing params or missing params", http.StatusBadRequest)
+		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
 		return
 	}
 
 	// Check for universal minting method.
-	remoteMinting, err := isUniversalMintingMethod(params.Data)
+	isRemoteMinting, err := isUniversalMintingMethod(params.Data)
 	if err != nil {
-		reportError(w, "Error checking for universal minting method: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error checking for universal minting method: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// If not related to remote minting, delegate to standard handler.
-	if !remoteMinting {
+	if !isRemoteMinting {
 		standardHandler.ServeHTTP(w, r)
 		return
 	}
@@ -98,7 +99,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequ
 	// Check if contract is in the list.
 	isInContractList, err := isContractInList(params.To, st)
 	if err != nil {
-		reportError(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -110,11 +111,6 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req JSONRPCRequ
 		standardHandler.ServeHTTP(w, r)
 		return
 	}
-}
-
-// reportError is a utility function for reporting errors through HTTP.
-func reportError(w http.ResponseWriter, message string, statusCode int) {
-	http.Error(w, message, statusCode)
 }
 
 func isContractInList(contractAddress string, st scan.Storage) (bool, error) {
