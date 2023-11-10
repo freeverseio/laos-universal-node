@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/gorilla/mux"
 )
 
@@ -11,7 +12,9 @@ type Router interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-func Routes(h HandlerInterface, r Router) Router {
-	r.HandleFunc("/", h.PostRPCHandler).Methods("POST")
-	return r
+func Routes(h RPCHandler, r Router, storage scan.Storage) Router {
+	router := r.(*mux.Router)
+
+	router.Handle("/", PostRpcRequestMiddleware(h, storage)).Methods("POST")
+	return router
 }
