@@ -137,16 +137,16 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
 	}
-	if startingBlockDB != "" {
+	if startingBlockDB != "" { // startingBlock found in storage
 		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
 		if err != nil {
 			return fmt.Errorf("error parsing the current block from storage: %w", err)
 		}
 		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
 	}
-	if startingBlock == 0 {
+	if startingBlock == 0 { // startingBlock not found in storage
 		startingBlock = c.StartingBlock
-		if startingBlock == 0 {
+		if startingBlock == 0 { // startingBlock not provided by user
 			startingBlock, err = getL1LatestBlock(ctx, client)
 			if err != nil {
 				return fmt.Errorf("error retrieving the latest block: %w", err)
