@@ -41,7 +41,6 @@ func TestParseEvents(t *testing.T) {
 			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					Block:   big.NewInt(100).Uint64(),
 					BaseURI: "johndoe/collection",
 				},
 			},
@@ -64,7 +63,6 @@ func TestParseEvents(t *testing.T) {
 			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					Block:   big.NewInt(100).Uint64(),
 					BaseURI: "johndoe/collection",
 				},
 			},
@@ -88,7 +86,6 @@ func TestParseEvents(t *testing.T) {
 			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					Block:   big.NewInt(100).Uint64(),
 					BaseURI: "johndoe/collection",
 				},
 			},
@@ -332,7 +329,6 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 	toBlock := big.NewInt(100)
 	contract := model.ERC721UniversalContract{
 		Address: address,
-		Block:   fromBlock.Uint64(),
 		BaseURI: "evochain1/collectionId/",
 	}
 

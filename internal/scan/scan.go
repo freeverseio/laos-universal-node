@@ -140,7 +140,6 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 			c := model.ERC721UniversalContract{
 				Address: newERC721Universal.NewContractAddress,
-				Block:   eventLogs[i].BlockNumber,
 				BaseURI: newERC721Universal.BaseURI,
 			}
 			contracts = append(contracts, c)
