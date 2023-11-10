@@ -76,8 +76,6 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
-// TODO decide where this is supposed to go
-
 func generateEventSignatureHash(event string, params ...string) string {
 	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
 
