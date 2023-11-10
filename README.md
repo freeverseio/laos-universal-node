@@ -44,6 +44,6 @@ git push -f
 
 #### Pre-commit hook
 
-Run `cp git/pre-commit ./.git/hooks` to copy the pre-commit hook to your `.git` folder. This runs a few important checks whenever you have something to commit.
+Run `cp git/pre-commit ./.git/hooks/pre-commit` to copy the pre-commit hook to your `.git` folder. This runs a few important checks whenever you have something to commit.
 
 For further details, check [pre-commit](./git/pre-commit).

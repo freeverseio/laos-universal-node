@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	newStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
+	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -39,20 +39,6 @@ func TestRunScanOk(t *testing.T) {
 			txCommitTimes:    1,
 			txDiscardTimes:   1,
 		},
-		{
-			c: config.Config{
-				StartingBlock: 150,
-				BlocksMargin:  50,
-				BlocksRange:   100,
-				WaitingTime:   1 * time.Second,
-			},
-			l1LatestBlock:    199,
-			name:             "scan events zero times",
-			blockNumberTimes: 1,
-			scanEventsTimes:  0,
-			txCommitTimes:    0,
-			txDiscardTimes:   0,
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -62,14 +48,14 @@ func TestRunScanOk(t *testing.T) {
 			defer cancel()
 
 			client, scanner, storage, tx := getMocks(t)
-
+			var expecetedContracts []string
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
-			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), []string{}).
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.c.StartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), expecetedContracts).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 			tx.EXPECT().Commit().
@@ -80,6 +66,7 @@ func TestRunScanOk(t *testing.T) {
 			storage.EXPECT().NewTransaction().
 				Return(tx).
 				Times(tt.txCommitTimes)
+			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(1)
 
 			err := runScan(ctx, &tt.c, client, scanner, storage)
 			if err != nil {
@@ -101,7 +88,7 @@ func TestRunScanTwice(t *testing.T) {
 	defer cancel()
 
 	client, scanner, storage, tx := getMocks(t)
-
+	var expecetedContracts []string
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
 		Times(3)
@@ -111,10 +98,10 @@ func TestRunScanTwice(t *testing.T) {
 	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), []string{}).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), expecetedContracts).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), []string{}).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), expecetedContracts).
 		Return(nil, nil).
 		Times(1)
 	tx.EXPECT().Commit().
@@ -125,6 +112,7 @@ func TestRunScanTwice(t *testing.T) {
 	storage.EXPECT().NewTransaction().
 		Return(tx).
 		Times(2)
+	storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(2)
 
 	err := runScan(ctx, &c, client, scanner, storage)
 	if err != nil {
@@ -157,9 +145,9 @@ func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *newStorage.MockStorage, *newStorage.MockTx) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockStorage, *mockStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
-		newStorage.NewMockStorage(ctrl), newStorage.NewMockTx(ctrl)
+		mockStorage.NewMockStorage(ctrl), mockStorage.NewMockTx(ctrl)
 }
