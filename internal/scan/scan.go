@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 )
 
 var (
@@ -76,13 +77,6 @@ type EventNewERC721Universal struct {
 }
 
 // TODO decide where this is supposed to go
-type ERC721UniversalContract struct {
-	Address common.Address `json:"address"`
-	// this will be renamed "currentBlock" and stored in the DB with the related contract
-	// this way the scan can continue scanning that contract from that block
-	Block   uint64 `json:"block"`
-	BaseURI string `json:"base_uri"`
-}
 
 func generateEventSignatureHash(event string, params ...string) string {
 	eventSig := []byte(fmt.Sprintf("%s(%s)", event, strings.Join(params, ",")))
@@ -92,7 +86,7 @@ func generateEventSignatureHash(event string, params ...string) string {
 
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
-	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error)
+	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error)
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts []string) ([]Event, error)
 }
 
@@ -113,7 +107,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]ERC721UniversalContract, error) {
+func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
@@ -129,7 +123,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
-	contracts := make([]ERC721UniversalContract, 0)
+	contracts := make([]model.ERC721UniversalContract, 0)
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) == 0 {
@@ -144,7 +138,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 			}
 			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
 
-			c := ERC721UniversalContract{
+			c := model.ERC721UniversalContract{
 				Address: newERC721Universal.NewContractAddress,
 				Block:   eventLogs[i].BlockNumber,
 				BaseURI: newERC721Universal.BaseURI,

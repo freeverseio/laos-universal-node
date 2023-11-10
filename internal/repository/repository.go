@@ -2,8 +2,8 @@ package repository
 
 import (
 	"github.com/dgraph-io/badger/v4"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 const (
@@ -23,7 +23,7 @@ func New(s storage.Storage) Service {
 }
 
 // TODO test me
-func (s *Service) StoreERC721UniversalContracts(universalContracts []scan.ERC721UniversalContract) error {
+func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
 	for i := 0; i < len(universalContracts); i++ {

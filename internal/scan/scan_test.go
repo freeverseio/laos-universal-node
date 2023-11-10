@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
@@ -29,7 +30,7 @@ func TestParseEvents(t *testing.T) {
 		fromBlock *big.Int
 		toBlock   *big.Int
 		address   common.Address
-		contracts []scan.ERC721UniversalContract
+		contracts []model.ERC721UniversalContract
 		eventLogs []types.Log
 	}{
 		{
@@ -37,7 +38,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721UniversalContract{
+			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -60,7 +61,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721UniversalContract{
+			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -84,7 +85,7 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-			contracts: []scan.ERC721UniversalContract{
+			contracts: []model.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 					Block:   big.NewInt(100).Uint64(),
@@ -329,7 +330,7 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
-	contract := scan.ERC721UniversalContract{
+	contract := model.ERC721UniversalContract{
 		Address: address,
 		Block:   fromBlock.Uint64(),
 		BaseURI: "evochain1/collectionId/",

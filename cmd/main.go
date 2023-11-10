@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
@@ -177,7 +178,7 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			var universalContracts []scan.ERC721UniversalContract
+			var universalContracts []model.ERC721UniversalContract
 			if shouldDiscover {
 				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 				if err != nil {
