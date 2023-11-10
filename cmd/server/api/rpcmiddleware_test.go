@@ -141,21 +141,21 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 	}
 
 	// Run tests
-	for _, ttest := range tests {
-		tc := ttest // Shadow loop variable otherwise it could be overwrittens
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt // Shadow loop variable otherwise it could be overwrittens
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
 			storageMock := mock.NewMockStorage(ctrl)
 			t.Cleanup(func() {
 				ctrl.Finish()
 			})
-			req := httptest.NewRequest(tc.method, "/rpc", strings.NewReader(tc.body))
-			req.Header.Set("Content-Type", tc.contentType)
+			req := httptest.NewRequest(tt.method, "/rpc", strings.NewReader(tt.body))
+			req.Header.Set("Content-Type", tt.contentType)
 
 			// Record responses
 			w := httptest.NewRecorder()
-			storageMock.EXPECT().ReadAll(context.Background()).Return(tc.storedContracts, nil).AnyTimes()
+			storageMock.EXPECT().ReadAll(context.Background()).Return(tt.storedContracts, nil).AnyTimes()
 			// Create the middleware and serve using the test handlers
 			middleware := api.PostRpcRequestMiddleware(standardHandler, erc721Handler, storageMock)
 			middleware.ServeHTTP(w, req)
@@ -170,8 +170,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 				}
 			}()
 
-			if resp.StatusCode != tc.expectedStatusCode {
-				t.Errorf("got %d, Expected status code %d", resp.StatusCode, tc.expectedStatusCode)
+			if resp.StatusCode != tt.expectedStatusCode {
+				t.Errorf("got %d, Expected status code %d", resp.StatusCode, tt.expectedStatusCode)
 			}
 
 			buf := new(bytes.Buffer)
@@ -179,8 +179,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			if err != nil {
 				t.Errorf("got %v, expected no error", err)
 			}
-			if !strings.Contains(buf.String(), tc.expectedResponse) {
-				t.Errorf("got %q, Expected response to contain %q", buf.String(), tc.expectedResponse)
+			if !strings.Contains(buf.String(), tt.expectedResponse) {
+				t.Errorf("got %q, Expected response to contain %q", buf.String(), tt.expectedResponse)
 			}
 		})
 	}
