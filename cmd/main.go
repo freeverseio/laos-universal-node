@@ -131,29 +131,11 @@ func compareChainIDs(ctx context.Context, client *ethclient.Client, repositorySe
 }
 
 func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
-	var err error
-	var startingBlock uint64
-	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	startingBlock, err := getStartingBlock(ctx, repositoryService, c.StartingBlock, client)
 	if err != nil {
-		return fmt.Errorf("error retrieving the current block from storage: %w", err)
+		return err
 	}
-	if startingBlockDB != "" { // startingBlock found in storage
-		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
-		if err != nil {
-			return fmt.Errorf("error parsing the current block from storage: %w", err)
-		}
-		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
-	}
-	if startingBlock == 0 { // startingBlock not found in storage
-		startingBlock = c.StartingBlock
-		if startingBlock == 0 { // startingBlock not provided by user
-			startingBlock, err = getL1LatestBlock(ctx, client)
-			if err != nil {
-				return fmt.Errorf("error retrieving the latest block: %w", err)
-			}
-			slog.Debug("latest block found", "latest_block", startingBlock)
-		}
-	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -231,6 +213,33 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 			startingBlock = lastBlock + 1
 		}
 	}
+}
+
+func getStartingBlock(ctx context.Context, repositoryService repository.Service, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
+	var startingBlock uint64
+	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	if err != nil {
+		return 0, fmt.Errorf("error retrieving the current block from storage: %w", err)
+	}
+	if startingBlockDB != "" {
+		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error parsing the current block from storage: %w", err)
+		}
+		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	}
+
+	if startingBlock == 0 {
+		startingBlock = configStartingBlock
+		if startingBlock == 0 {
+			startingBlock, err = getL1LatestBlock(ctx, client)
+			if err != nil {
+				return 0, fmt.Errorf("error retrieving the latest block from ownership chain: %w", err)
+			}
+			slog.Debug("latest block found", "latest_block", startingBlock)
+		}
+	}
+	return startingBlock, nil
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
