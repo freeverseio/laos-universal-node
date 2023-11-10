@@ -144,3 +144,17 @@ func (mr *MockStorageMockRecorder) NewTransaction() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTransaction", reflect.TypeOf((*MockStorage)(nil).NewTransaction))
 }
+
+// Set mocks base method.
+func (m *MockStorage) Set(key, value []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Set", key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Set indicates an expected call of Set.
+func (mr *MockStorageMockRecorder) Set(key, value any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStorage)(nil).Set), key, value)
+}

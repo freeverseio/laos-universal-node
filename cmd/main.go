@@ -47,6 +47,8 @@ func run() error {
 
 	storageService := storage.New(db)
 
+	repositoryService := repository.New(storageService)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
@@ -81,9 +83,11 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		// TODO store and check chain id to make sure we are scanning the right chain
+		if err := compareChainIDs(ctx, client, repositoryService); err != nil {
+			return err
+		}
 		s := scan.NewScanner(client, c.Contracts...)
-		return runScan(ctx, c, client, s, storageService)
+		return runScan(ctx, c, client, s, repositoryService)
 	})
 
 	group.Go(func() error {
@@ -102,9 +106,31 @@ func run() error {
 	return nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storageService storage.Storage) error {
+func compareChainIDs(ctx context.Context, client *ethclient.Client, repositoryService repository.Service) error {
+	chainId, err := client.ChainID(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting chain ID from Ethereum client: %w", err)
+	}
+
+	chainIdDB, err := repositoryService.GetChainID()
+	if err != nil {
+		return fmt.Errorf("error getting chain ID from database: %w", err)
+	}
+
+	if chainIdDB == "" {
+		if err = repositoryService.SetChainID(chainId.String()); err != nil {
+			return fmt.Errorf("error setting chain ID in database: %w", err)
+		}
+	} else {
+		if chainId.String() != chainIdDB {
+			return fmt.Errorf("mismatched chain IDs; database has %s, eth client reports %s", chainIdDB, chainId.String())
+		}
+	}
+	return nil
+}
+
+func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
 	var err error
-	repositoryService := repository.New(storageService)
 	startingBlock := c.StartingBlock // TODO if current block is not in DB, consider starting block flag
 	if startingBlock == 0 {
 		startingBlock, err = getL1LatestBlock(ctx, client)

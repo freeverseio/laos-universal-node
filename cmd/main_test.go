@@ -9,6 +9,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -68,7 +69,7 @@ func TestRunScanOk(t *testing.T) {
 				Times(tt.txCommitTimes)
 			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(1)
 
-			err := runScan(ctx, &tt.c, client, scanner, storage)
+			err := runScan(ctx, &tt.c, client, scanner, repository.New(storage))
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -114,7 +115,7 @@ func TestRunScanTwice(t *testing.T) {
 		Times(2)
 	storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(2)
 
-	err := runScan(ctx, &c, client, scanner, storage)
+	err := runScan(ctx, &c, client, scanner, repository.New(storage))
 	if err != nil {
 		t.Fatalf(`got error "%v" when no error was expeceted`, err)
 	}
@@ -135,7 +136,7 @@ func TestRunScanError(t *testing.T) {
 		Return(uint64(0), expectedErr).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner, storage)
+	err := runScan(ctx, &c, client, scanner, repository.New(storage))
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expeceted`, expectedErr)
 	}

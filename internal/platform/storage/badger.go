@@ -14,6 +14,16 @@ func New(db *badger.DB) Storage {
 	}
 }
 
+func (b Badger) Set(key, value []byte) error {
+	return b.db.Update(func(txn *badger.Txn) error {
+		err := txn.Set(key, value)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (b Badger) Get(key []byte) ([]byte, error) {
 	var returnValue []byte
 	err := b.db.View(func(txn *badger.Txn) error {
