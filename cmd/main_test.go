@@ -53,7 +53,7 @@ func TestRunScanOk(t *testing.T) {
 				WaitingTime:   1 * time.Second,
 			},
 			l1LatestBlock:    101,
-			name:             "scan events one time",
+			name:             "scan events one time with block number in db",
 			blockNumberDB:    "100",
 			startingBlock:    100,
 			blockNumberTimes: 2,
