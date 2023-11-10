@@ -15,7 +15,6 @@ type Router interface {
 func Routes(h RPCHandler, r Router, storage scan.Storage) Router {
 	router := r.(*mux.Router)
 
-	// middleware decides based on the JSON-RPC method and the contract address
 	router.Handle("/", PostRpcRequestMiddleware(h, storage)).Methods("POST")
 	return router
 }
