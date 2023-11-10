@@ -86,11 +86,10 @@ func (s *Service) SetCurrentBlock(currentBlockValue string) error {
 	return s.storageService.Set([]byte(currentBlock), []byte(currentBlockValue))
 }
 
-// TODO decide if name should change to GetERC721UniversalContractBaseURI
-func (s *Service) GetERC721UniversalContract(key string) (string, error) {
-	value, err := s.storageService.Get([]byte(contractPrefix + key))
+func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {
+	value, err := s.get(contractPrefix + contract)
 	if err != nil {
-		return "", err
+		return false, err
 	}
-	return string(value), nil
+	return value != nil, nil
 }

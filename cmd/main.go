@@ -160,13 +160,14 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				if len(c.Contracts) == 0 {
 					return true, nil
 				}
+				var hasContract bool
 				for i := 0; i < len(c.Contracts); i++ {
-					_, err = repositoryService.GetERC721UniversalContract(c.Contracts[i])
+					hasContract, err = repositoryService.HasERC721UniversalContract(c.Contracts[i])
 					if err != nil {
-						if err == badger.ErrKeyNotFound {
-							return true, nil
-						}
 						return false, err
+					}
+					if !hasContract {
+						return true, nil
 					}
 				}
 				return false, nil
