@@ -19,44 +19,44 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 	return h.client.Do(req)
 }
 
-type HandlerInterface interface {
+type RPCHandler interface {
 	PostRPCProxyHandler(w http.ResponseWriter, r *http.Request)
 	UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request)
 	SetJsonRPCRequest(req JSONRPCRequest)
 }
 
-type Handler struct {
+type GlobalRPCHandler struct {
 	rpcUrl         string
 	httpClient     HTTPClientInterface // Inject the HTTP client interface here
 	jsonRPCRequest JSONRPCRequest
 }
 
-func (h *Handler) GetRpcUrl() string {
+func (h *GlobalRPCHandler) GetRpcUrl() string {
 	return h.rpcUrl
 }
 
-func (h *Handler) GetHttpClient() HTTPClientInterface {
+func (h *GlobalRPCHandler) GetHttpClient() HTTPClientInterface {
 	return h.httpClient
 }
 
-func (h *Handler) SetJsonRPCRequest(req JSONRPCRequest) {
+func (h *GlobalRPCHandler) SetJsonRPCRequest(req JSONRPCRequest) {
 	h.jsonRPCRequest = req
 }
 
-func (h *Handler) GetJsonRPCRequest() JSONRPCRequest {
+func (h *GlobalRPCHandler) GetJsonRPCRequest() JSONRPCRequest {
 	return h.jsonRPCRequest
 }
 
-type HandlerOption func(*Handler)
+type HandlerOption func(*GlobalRPCHandler)
 
 func WithHttpClient(client HTTPClientInterface) HandlerOption {
-	return func(h *Handler) {
+	return func(h *GlobalRPCHandler) {
 		h.httpClient = client
 	}
 }
 
-func NewHandler(rpcUrl string, opts ...HandlerOption) *Handler {
-	handler := &Handler{
+func NewGlobalRPCHandler(rpcUrl string, opts ...HandlerOption) *GlobalRPCHandler {
+	handler := &GlobalRPCHandler{
 		rpcUrl: rpcUrl,
 		httpClient: &HTTPClientWrapper{
 			client: &http.Client{

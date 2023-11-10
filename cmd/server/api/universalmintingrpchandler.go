@@ -41,6 +41,6 @@ func sendJSONRPCError(w http.ResponseWriter, code int, message string) {
 	}
 }
 
-func (h *Handler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
 	sendJSONRPCError(w, ErrorCodeInvalidRequest, ErrMsgUniversalMintingNotReady)
 }

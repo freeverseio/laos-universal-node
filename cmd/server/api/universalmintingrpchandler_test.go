@@ -24,7 +24,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			h := api.Handler{} // Assuming Handler is properly initialized for a real test
+			h := api.GlobalRPCHandler{} // Assuming Handler is properly initialized for a real test
 			h.UniversalMintingRPCHandler(w, r)
 		})
 

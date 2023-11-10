@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
+	apiMock "github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
@@ -18,41 +19,26 @@ import (
 func TestPostRpcRequestMiddleware(t *testing.T) {
 	t.Parallel() // Run tests in parallel
 
-	// Create a test handler that will be wrapped by the middleware
-	standardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("standardHandler called"))
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-	erc721Handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("erc721Handler called"))
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
 	// Define test cases
 	tests := []struct {
-		name               string
-		body               string
-		contentType        string
-		method             string
-		expectedStatusCode int
-		expectedResponse   string
-		handlerToBeCalled  string
-		storedContracts    []scan.ERC721UniversalContract
+		name                                  string
+		body                                  string
+		contentType                           string
+		method                                string
+		expectedStatusCode                    int
+		expectedResponse                      string
+		proxyHandlerCalledTimes               int
+		ercUniversalMintingHandlerCalledTimes int
+		storedContracts                       []scan.ERC721UniversalContract
 	}{
 		{
-			name:               "Good request with eth_call method",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusOK,
-			expectedResponse:   "erc721Handler called",
-			handlerToBeCalled:  "erc721",
+			name:                                  "Good request with eth_call method",
+			body:                                  `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:                           "application/json",
+			method:                                "POST",
+			expectedStatusCode:                    http.StatusOK,
+			expectedResponse:                      "universalMintingHandler called",
+			ercUniversalMintingHandlerCalledTimes: 1,
 			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
@@ -62,14 +48,14 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			},
 		},
 		{
-			name:               "Good request with eth_call method but contract not in list",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusOK,
-			expectedResponse:   "standardHandler called",
-			handlerToBeCalled:  "standard",
-			storedContracts:    []scan.ERC721UniversalContract{},
+			name:                    "Good request with eth_call method but contract not in list",
+			body:                    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:             "application/json",
+			method:                  "POST",
+			expectedStatusCode:      http.StatusOK,
+			expectedResponse:        "proxyHandler called",
+			proxyHandlerCalledTimes: 1,
+			storedContracts:         []scan.ERC721UniversalContract{},
 		},
 		{
 			name: "Good request with eth_call method",
@@ -82,11 +68,11 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		    }, "latest"],
 		    "id": 1
 		}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusOK,
-			expectedResponse:   "erc721Handler called",
-			handlerToBeCalled:  "erc721",
+			contentType:                           "application/json",
+			method:                                "POST",
+			expectedStatusCode:                    http.StatusOK,
+			expectedResponse:                      "universalMintingHandler called",
+			ercUniversalMintingHandlerCalledTimes: 1,
 			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
@@ -96,13 +82,13 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			},
 		},
 		{
-			name:               "Good request with eth_call method but no remote minting method",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusOK,
-			expectedResponse:   "standardHandler called",
-			handlerToBeCalled:  "standard",
+			name:                    "Good request with eth_call method but no remote minting method",
+			body:                    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:             "application/json",
+			method:                  "POST",
+			expectedStatusCode:      http.StatusOK,
+			expectedResponse:        "proxyHandler called",
+			proxyHandlerCalledTimes: 1,
 			storedContracts: []scan.ERC721UniversalContract{
 				{
 					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
@@ -112,13 +98,13 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			},
 		},
 		{
-			name:               "Good request with no erc721 method",
-			body:               `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusOK,
-			expectedResponse:   "standardHandler called",
-			handlerToBeCalled:  "standard",
+			name:                    "Good request with no erc721 method",
+			body:                    `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
+			contentType:             "application/json",
+			method:                  "POST",
+			expectedStatusCode:      http.StatusOK,
+			expectedResponse:        "proxyHandler called",
+			proxyHandlerCalledTimes: 1,
 		},
 		{
 			name:               "Bad request with GET method",
@@ -127,7 +113,6 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			method:             "GET",
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   "No JSON RPC call or invalid Content-Type\n",
-			handlerToBeCalled:  "none",
 		},
 		{
 			name:               "Bad request with jsonrpc 1.0",
@@ -136,7 +121,6 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			method:             "POST",
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   "Invalid JSON-RPC version\n",
-			handlerToBeCalled:  "none",
 		},
 	}
 
@@ -147,6 +131,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
 			storageMock := mock.NewMockStorage(ctrl)
+			handlerMock := apiMock.NewMockRPCHandler(ctrl)
 			t.Cleanup(func() {
 				ctrl.Finish()
 			})
@@ -155,9 +140,24 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 
 			// Record responses
 			w := httptest.NewRecorder()
+			handlerMock.EXPECT().PostRPCProxyHandler(w, req).Do(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte("proxyHandler called"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			}).Times(tt.proxyHandlerCalledTimes)
+			handlerMock.EXPECT().UniversalMintingRPCHandler(w, req).Do(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte("universalMintingHandler called"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			}).Times(tt.ercUniversalMintingHandlerCalledTimes)
+
 			storageMock.EXPECT().ReadAll(context.Background()).Return(tt.storedContracts, nil).AnyTimes()
 			// Create the middleware and serve using the test handlers
-			middleware := api.PostRpcRequestMiddleware(standardHandler, erc721Handler, storageMock)
+			middleware := api.PostRpcRequestMiddleware(handlerMock, storageMock)
 			middleware.ServeHTTP(w, req)
 
 			// Check the status code and body

@@ -28,11 +28,14 @@ type ParamsRPCRequest struct {
 	Value string `json:"value,omitempty"`
 }
 
-func PostRpcRequestMiddleware(standardHandler, erc721Handler http.Handler, st scan.Storage) http.Handler {
+func PostRpcRequestMiddleware(h RPCHandler, st scan.Storage) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// we pass both handlers and decide which one to call based on the request
+		proxyRPCHandler := http.HandlerFunc(h.PostRPCProxyHandler)
+		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler)
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
-			handleJSONRPCRequest(w, r, body, standardHandler, erc721Handler, st)
+			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, st)
 		}
 	})
 }
@@ -67,16 +70,16 @@ func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid b
 }
 
 // handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
-func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, st scan.Storage) {
 	switch jsonRequest.Method {
 	case "eth_call":
-		handleEthCallMethod(w, r, jsonRequest, standardHandler, erc721Handler, st)
+		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, st)
 	default:
-		standardHandler.ServeHTTP(w, r)
+		proxyRPCHandler.ServeHTTP(w, r)
 	}
 }
 
-func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, standardHandler, erc721Handler http.Handler, st scan.Storage) {
+func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, st scan.Storage) {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
@@ -92,7 +95,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 
 	// If not related to remote minting, delegate to standard handler.
 	if !isRemoteMinting {
-		standardHandler.ServeHTTP(w, r)
+		proxyRPCHandler.ServeHTTP(w, r)
 		return
 	}
 
@@ -105,10 +108,10 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 
 	// If contract is in the list, use the specific handler for ERC721 universal minting.
 	if isInContractList {
-		erc721Handler.ServeHTTP(w, r)
+		universalMintingHandler.ServeHTTP(w, r)
 		return
 	} else {
-		standardHandler.ServeHTTP(w, r)
+		proxyRPCHandler.ServeHTTP(w, r)
 		return
 	}
 }

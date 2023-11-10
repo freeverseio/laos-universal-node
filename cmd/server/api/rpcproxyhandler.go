@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (h *Handler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
+func (h *GlobalRPCHandler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the body of the incoming request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

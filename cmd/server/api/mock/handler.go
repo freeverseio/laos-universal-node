@@ -12,34 +12,35 @@ import (
 	http "net/http"
 	reflect "reflect"
 
+	api "github.com/freeverseio/laos-universal-node/cmd/server/api"
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockHttpClientInterface is a mock of HttpClientInterface interface.
-type MockHttpClientInterface struct {
+// MockHTTPClientInterface is a mock of HTTPClientInterface interface.
+type MockHTTPClientInterface struct {
 	ctrl     *gomock.Controller
-	recorder *MockHttpClientInterfaceMockRecorder
+	recorder *MockHTTPClientInterfaceMockRecorder
 }
 
-// MockHttpClientInterfaceMockRecorder is the mock recorder for MockHttpClientInterface.
-type MockHttpClientInterfaceMockRecorder struct {
-	mock *MockHttpClientInterface
+// MockHTTPClientInterfaceMockRecorder is the mock recorder for MockHTTPClientInterface.
+type MockHTTPClientInterfaceMockRecorder struct {
+	mock *MockHTTPClientInterface
 }
 
-// NewMockHttpClientInterface creates a new mock instance.
-func NewMockHttpClientInterface(ctrl *gomock.Controller) *MockHttpClientInterface {
-	mock := &MockHttpClientInterface{ctrl: ctrl}
-	mock.recorder = &MockHttpClientInterfaceMockRecorder{mock}
+// NewMockHTTPClientInterface creates a new mock instance.
+func NewMockHTTPClientInterface(ctrl *gomock.Controller) *MockHTTPClientInterface {
+	mock := &MockHTTPClientInterface{ctrl: ctrl}
+	mock.recorder = &MockHTTPClientInterfaceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockHttpClientInterface) EXPECT() *MockHttpClientInterfaceMockRecorder {
+func (m *MockHTTPClientInterface) EXPECT() *MockHTTPClientInterfaceMockRecorder {
 	return m.recorder
 }
 
 // Do mocks base method.
-func (m *MockHttpClientInterface) Do(req *http.Request) (*http.Response, error) {
+func (m *MockHTTPClientInterface) Do(req *http.Request) (*http.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Do", req)
 	ret0, _ := ret[0].(*http.Response)
@@ -48,42 +49,66 @@ func (m *MockHttpClientInterface) Do(req *http.Request) (*http.Response, error) 
 }
 
 // Do indicates an expected call of Do.
-func (mr *MockHttpClientInterfaceMockRecorder) Do(req any) *gomock.Call {
+func (mr *MockHTTPClientInterfaceMockRecorder) Do(req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockHttpClientInterface)(nil).Do), req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockHTTPClientInterface)(nil).Do), req)
 }
 
-// MockApiHandlerInterface is a mock of ApiHandlerInterface interface.
-type MockApiHandlerInterface struct {
+// MockRPCHandler is a mock of RPCHandler interface.
+type MockRPCHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockApiHandlerInterfaceMockRecorder
+	recorder *MockRPCHandlerMockRecorder
 }
 
-// MockApiHandlerInterfaceMockRecorder is the mock recorder for MockApiHandlerInterface.
-type MockApiHandlerInterfaceMockRecorder struct {
-	mock *MockApiHandlerInterface
+// MockRPCHandlerMockRecorder is the mock recorder for MockRPCHandler.
+type MockRPCHandlerMockRecorder struct {
+	mock *MockRPCHandler
 }
 
-// NewMockApiHandlerInterface creates a new mock instance.
-func NewMockApiHandlerInterface(ctrl *gomock.Controller) *MockApiHandlerInterface {
-	mock := &MockApiHandlerInterface{ctrl: ctrl}
-	mock.recorder = &MockApiHandlerInterfaceMockRecorder{mock}
+// NewMockRPCHandler creates a new mock instance.
+func NewMockRPCHandler(ctrl *gomock.Controller) *MockRPCHandler {
+	mock := &MockRPCHandler{ctrl: ctrl}
+	mock.recorder = &MockRPCHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockApiHandlerInterface) EXPECT() *MockApiHandlerInterfaceMockRecorder {
+func (m *MockRPCHandler) EXPECT() *MockRPCHandlerMockRecorder {
 	return m.recorder
 }
 
-// PostRpcHandler mocks base method.
-func (m *MockApiHandlerInterface) PostRpcHandler(w http.ResponseWriter, r *http.Request) {
+// PostRPCProxyHandler mocks base method.
+func (m *MockRPCHandler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Request) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PostRpcHandler", w, r)
+	m.ctrl.Call(m, "PostRPCProxyHandler", w, r)
 }
 
-// PostRpcHandler indicates an expected call of PostRpcHandler.
-func (mr *MockApiHandlerInterfaceMockRecorder) PostRpcHandler(w, r any) *gomock.Call {
+// PostRPCProxyHandler indicates an expected call of PostRPCProxyHandler.
+func (mr *MockRPCHandlerMockRecorder) PostRPCProxyHandler(w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostRpcHandler", reflect.TypeOf((*MockApiHandlerInterface)(nil).PostRpcHandler), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostRPCProxyHandler", reflect.TypeOf((*MockRPCHandler)(nil).PostRPCProxyHandler), w, r)
+}
+
+// SetJsonRPCRequest mocks base method.
+func (m *MockRPCHandler) SetJsonRPCRequest(req api.JSONRPCRequest) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetJsonRPCRequest", req)
+}
+
+// SetJsonRPCRequest indicates an expected call of SetJsonRPCRequest.
+func (mr *MockRPCHandlerMockRecorder) SetJsonRPCRequest(req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetJsonRPCRequest", reflect.TypeOf((*MockRPCHandler)(nil).SetJsonRPCRequest), req)
+}
+
+// UniversalMintingRPCHandler mocks base method.
+func (m *MockRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UniversalMintingRPCHandler", w, r)
+}
+
+// UniversalMintingRPCHandler indicates an expected call of UniversalMintingRPCHandler.
+func (mr *MockRPCHandlerMockRecorder) UniversalMintingRPCHandler(w, r any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UniversalMintingRPCHandler", reflect.TypeOf((*MockRPCHandler)(nil).UniversalMintingRPCHandler), w, r)
 }
