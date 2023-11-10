@@ -130,6 +130,22 @@ func compareChainIDs(ctx context.Context, client *ethclient.Client, repositorySe
 	return nil
 }
 
+func shouldDiscover(repositoryService repository.Service, contracts []string) (bool, error) {
+	if len(contracts) == 0 {
+		return true, nil
+	}
+	for i := 0; i < len(contracts); i++ {
+		hasContract, err := repositoryService.HasERC721UniversalContract(contracts[i])
+		if err != nil {
+			return false, err
+		}
+		if !hasContract {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
 	startingBlock, err := getStartingBlock(ctx, repositoryService, c.StartingBlock, client)
 	if err != nil {
@@ -155,23 +171,7 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				break
 			}
 
-			// TODO decide whether this method should go somehwere else
-			shouldDiscover, err := func() (bool, error) {
-				if len(c.Contracts) == 0 {
-					return true, nil
-				}
-				var hasContract bool
-				for i := 0; i < len(c.Contracts); i++ {
-					hasContract, err = repositoryService.HasERC721UniversalContract(c.Contracts[i])
-					if err != nil {
-						return false, err
-					}
-					if !hasContract {
-						return true, nil
-					}
-				}
-				return false, nil
-			}()
+			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
 			if err != nil {
 				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
