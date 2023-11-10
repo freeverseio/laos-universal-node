@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -131,13 +132,27 @@ func compareChainIDs(ctx context.Context, client *ethclient.Client, repositorySe
 
 func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
 	var err error
-	startingBlock := c.StartingBlock // TODO if current block is not in DB, consider starting block flag
-	if startingBlock == 0 {
-		startingBlock, err = getL1LatestBlock(ctx, client)
+	var startingBlock uint64
+	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	if err != nil {
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
+	}
+	if startingBlockDB != "" {
+		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
 		if err != nil {
-			return fmt.Errorf("error retrieving the latest block: %w", err)
+			return fmt.Errorf("error parsing the current block from storage: %w", err)
 		}
-		slog.Debug("latest block found", "latest_block", startingBlock)
+		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	}
+	if startingBlock == 0 {
+		startingBlock = c.StartingBlock
+		if startingBlock == 0 {
+			startingBlock, err = getL1LatestBlock(ctx, client)
+			if err != nil {
+				return fmt.Errorf("error retrieving the latest block: %w", err)
+			}
+			slog.Debug("latest block found", "latest_block", startingBlock)
+		}
 	}
 	for {
 		select {
@@ -208,7 +223,12 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 				slog.Error("error occurred while scanning events", "err", err.Error())
 				break
 			}
-			startingBlock = lastBlock + 1 // TODO update contracts currentBlock
+
+			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
+			startingBlock = lastBlock + 1
 		}
 	}
 }

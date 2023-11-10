@@ -67,7 +67,16 @@ func TestRunScanOk(t *testing.T) {
 			storage.EXPECT().NewTransaction().
 				Return(tx).
 				Times(tt.txCommitTimes)
-			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(1)
+
+			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
+				Return([][]byte{}, nil).
+				Times(1)
+			storage.EXPECT().Get([]byte("current_block")).
+				Return([]byte(""), nil).
+				Times(1)
+			storage.EXPECT().Set([]byte("current_block"), []byte("102")).
+				Return(nil).
+				Times(1)
 
 			err := runScan(ctx, &tt.c, client, scanner, repository.New(storage))
 			if err != nil {
@@ -113,7 +122,18 @@ func TestRunScanTwice(t *testing.T) {
 	storage.EXPECT().NewTransaction().
 		Return(tx).
 		Times(2)
-	storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return([][]byte{}, nil).Times(2)
+	storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
+		Return([][]byte{}, nil).
+		Times(2)
+	storage.EXPECT().Get([]byte("current_block")).
+		Return([]byte(""), nil).
+		Times(1)
+	storage.EXPECT().Set([]byte("current_block"), []byte("52")).
+		Return(nil).
+		Times(1)
+	storage.EXPECT().Set([]byte("current_block"), []byte("102")).
+		Return(nil).
+		Times(1)
 
 	err := runScan(ctx, &c, client, scanner, repository.New(storage))
 	if err != nil {
@@ -135,10 +155,13 @@ func TestRunScanError(t *testing.T) {
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(0), expectedErr).
 		Times(1)
+	storage.EXPECT().Get([]byte("current_block")).
+		Return([]byte(""), nil).
+		Times(1)
 
 	err := runScan(ctx, &c, client, scanner, repository.New(storage))
 	if err == nil {
-		t.Fatalf(`got no error when error "%v" was expeceted`, expectedErr)
+		t.Fatalf(`got no error when error "%v" was expected`, expectedErr)
 	}
 }
 

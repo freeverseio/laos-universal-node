@@ -9,6 +9,7 @@ import (
 const (
 	contractPrefix = "contract_"
 	chainID        = "chain_id"
+	currentBlock   = "current_block"
 )
 
 type Service struct {
@@ -71,6 +72,18 @@ func (s *Service) GetChainID() (string, error) {
 
 func (s *Service) SetChainID(chainIDValue string) error {
 	return s.storageService.Set([]byte(chainID), []byte(chainIDValue))
+}
+
+func (s *Service) GetCurrentBlock() (string, error) {
+	value, err := s.get(currentBlock)
+	if err != nil {
+		return "", err
+	}
+	return string(value), nil
+}
+
+func (s *Service) SetCurrentBlock(currentBlockValue string) error {
+	return s.storageService.Set([]byte(currentBlock), []byte(currentBlockValue))
 }
 
 // TODO decide if name should change to GetERC721UniversalContractBaseURI
