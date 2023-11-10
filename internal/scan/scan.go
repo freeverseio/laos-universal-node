@@ -217,6 +217,8 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	if err != nil {
 		return transfer, err
 	}
+	// TODO check topics length
+	// https://etherscan.io/tx/0x3b835c801ad643c1a72eca9b6e86b0a55e574ca7553a0efe9f0ed6dba0eb9d1d#eventlogls -ff
 	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
