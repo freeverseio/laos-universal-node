@@ -324,6 +324,14 @@ func TestCompareChainIDs(t *testing.T) {
 			dbChainID:        "2",
 			wantError:        true,
 		},
+		{
+			name:               "error from database on set",
+			ethClientChainID:   ethChainID,
+			dbChainID:          "",
+			expectSetInDB:      true,
+			expectedDBSetError: errors.New("db set error"),
+			wantError:          true,
+		},
 	}
 
 	for _, tt := range tests {
