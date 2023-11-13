@@ -22,7 +22,6 @@ func New(s storage.Storage) Service {
 	}
 }
 
-// TODO test me
 func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
