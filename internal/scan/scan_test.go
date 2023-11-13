@@ -145,83 +145,176 @@ func TestParseEvents(t *testing.T) {
 	}
 }
 
+func TestScanOnlyValidEvents(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		eventLogs      []types.Log
+		expectedEvents int
+	}{
+		{
+			name: "it only returns Transfer, Approval and ApprovalForAll",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						// Event hash is not included in the list of events to be parsed
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+			},
+			expectedEvents: 3,
+		},
+		{
+			name: "it does not parse Transfer with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			expectedEvents: 2,
+		},
+		{
+			name: "it does not parse Approval with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			expectedEvents: 2,
+		},
+		{
+			name: "it does not parse ApprovalForAll with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			expectedEvents: 2,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cli := getMockEthClient(t)
+
+			fromBlock := big.NewInt(0)
+			toBlock := big.NewInt(100)
+			address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+			contracts := []string{address.String()}
+			s := scan.NewScanner(cli)
+
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+				Addresses: []common.Address{address},
+			}).Return(tt.eventLogs, nil)
+
+			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			if err != nil {
+				t.Fatalf("error occurred when scanning events %v", err.Error())
+			}
+
+			if len(events) != tt.expectedEvents {
+				t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
+			}
+		})
+	}
+}
+
 func TestScanEvents(t *testing.T) {
 	t.Parallel()
-	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
-		t.Parallel()
-
-		cli := getMockEthClient(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-		contracts := []string{
-			address.String(),
-		}
-
-		s := scan.NewScanner(cli)
-
-		eventLogs := []types.Log{
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveForAllEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(transferEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(transferEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-			{
-				Topics: []common.Hash{
-					// Event hash is not included in the list of events to be parsed
-					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-		}
-
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
-		if err != nil {
-			t.Fatalf("error occurred when scanning events %v", err.Error())
-		}
-
-		if len(events) != 4 {
-			t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
-		}
-	})
-
 	t.Run("it returns when there are no events", func(t *testing.T) {
 		t.Parallel()
 

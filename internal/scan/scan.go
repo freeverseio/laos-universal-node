@@ -26,6 +26,7 @@ var (
 	eventApprovalSigHash           = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
 	eventApprovalForAllSigHash     = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
 	eventNewERC721UniversalSigHash = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
+	eventTopicsError               = fmt.Errorf("unexpected topics length")
 )
 
 // EthClient is an interface for interacting with Ethereum.
@@ -177,24 +178,42 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 		case eventTransferSigHash:
 			transfer, err := parseTransfer(&eventLogs[i], &contractAbi)
 			if err != nil {
-				return nil, err
+				if err != eventTopicsError {
+					return nil, err
+				}
+				slog.Warn("incorrect number of topics found in Transfer event",
+					"topics_found", len(eventLogs[i].Topics),
+					"topics_expected", 4)
+			} else {
+				parsedEvents = append(parsedEvents, transfer)
+				slog.Info("received event", eventTransferName, transfer)
 			}
-			parsedEvents = append(parsedEvents, transfer)
-			slog.Info("received event", eventTransferName, transfer)
 		case eventApprovalSigHash:
 			approval, err := parseApproval(&eventLogs[i], &contractAbi)
 			if err != nil {
-				return nil, err
+				if err != eventTopicsError {
+					return nil, err
+				}
+				slog.Warn("incorrect number of topics found in Approval event",
+					"topics_found", len(eventLogs[i].Topics),
+					"topics_expected", 4)
+			} else {
+				parsedEvents = append(parsedEvents, approval)
+				slog.Info("received event", eventApprovalName, approval)
 			}
-			parsedEvents = append(parsedEvents, approval)
-			slog.Info("received event", eventApprovalName, approval)
 		case eventApprovalForAllSigHash:
 			approvalForAll, err := parseApprovalForAll(&eventLogs[i], &contractAbi)
 			if err != nil {
-				return nil, err
+				if err != eventTopicsError {
+					return nil, err
+				}
+				slog.Warn("incorrect number of topics found in ApprovalForAll event",
+					"topics_found", len(eventLogs[i].Topics),
+					"topics_expected", 3)
+			} else {
+				parsedEvents = append(parsedEvents, approvalForAll)
+				slog.Info("received event", eventApprovalForAllName, approvalForAll)
 			}
-			parsedEvents = append(parsedEvents, approvalForAll)
-			slog.Info("received event", eventApprovalForAllName, approvalForAll)
 		default:
 			slog.Debug("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 		}
@@ -213,12 +232,13 @@ func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big
 
 func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	var transfer EventTransfer
+	if len(eL.Topics) != 4 {
+		return transfer, eventTopicsError
+	}
 	err := unpackIntoInterface(&transfer, eventTransferName, contractAbi, eL)
 	if err != nil {
 		return transfer, err
 	}
-	// TODO check topics length
-	// https://etherscan.io/tx/0x3b835c801ad643c1a72eca9b6e86b0a55e574ca7553a0efe9f0ed6dba0eb9d1d#eventlogls -ff
 	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
@@ -228,6 +248,9 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 
 func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
 	var approval EventApproval
+	if len(eL.Topics) != 4 {
+		return approval, eventTopicsError
+	}
 	err := unpackIntoInterface(&approval, eventApprovalName, contractAbi, eL)
 	if err != nil {
 		return approval, err
@@ -241,6 +264,9 @@ func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
 
 func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForAll, error) {
 	var approvalForAll EventApprovalForAll
+	if len(eL.Topics) != 3 {
+		return approvalForAll, eventTopicsError
+	}
 	err := unpackIntoInterface(&approvalForAll, eventApprovalForAllName, contractAbi, eL)
 	if err != nil {
 		return approvalForAll, err
