@@ -14,20 +14,21 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// TODO check test coverage
 func TestRunScanOk(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		c                     config.Config
-		l1LatestBlock         uint64
-		name                  string
-		blockNumberDB         string
-		blockNumberTimes      int
-		scanEventsTimes       int
-		txCommitTimes         int
-		txDiscardTimes        int
-		expectedStartingBlock uint64
-		newLatestBlock        string
+		c                           config.Config
+		l1LatestBlock               uint64
+		name                        string
+		blockNumberDB               string
+		blockNumberTimes            int
+		scanEventsTimes             int
+		scanNewUniversalEventsTimes int
+		txCommitTimes               int
+		txDiscardTimes              int
+		expectedStartingBlock       uint64
+		newLatestBlock              string
+		expectedContracts           []string
 	}{
 		{
 			c: config.Config{
@@ -36,14 +37,15 @@ func TestRunScanOk(t *testing.T) {
 				BlocksRange:   100,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:         101,
-			expectedStartingBlock: 1,
-			name:                  "scan events one time",
-			blockNumberTimes:      2,
-			scanEventsTimes:       1,
-			txCommitTimes:         1,
-			txDiscardTimes:        1,
-			newLatestBlock:        "102",
+			l1LatestBlock:               101,
+			expectedStartingBlock:       1,
+			name:                        "scan events one time",
+			blockNumberTimes:            2,
+			scanEventsTimes:             1,
+			scanNewUniversalEventsTimes: 1,
+			txCommitTimes:               1,
+			txDiscardTimes:              1,
+			newLatestBlock:              "102",
 		},
 		{
 			c: config.Config{
@@ -52,15 +54,16 @@ func TestRunScanOk(t *testing.T) {
 				BlocksRange:   50,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:         101,
-			name:                  "scan events one time with block number in db",
-			blockNumberDB:         "100",
-			expectedStartingBlock: 100,
-			blockNumberTimes:      2,
-			scanEventsTimes:       1,
-			txCommitTimes:         1,
-			txDiscardTimes:        1,
-			newLatestBlock:        "102",
+			l1LatestBlock:               101,
+			name:                        "scan events one time with block number in db",
+			blockNumberDB:               "100",
+			expectedStartingBlock:       100,
+			blockNumberTimes:            2,
+			scanEventsTimes:             1,
+			scanNewUniversalEventsTimes: 1,
+			txCommitTimes:               1,
+			txDiscardTimes:              1,
+			newLatestBlock:              "102",
 		},
 		{
 			c: config.Config{
@@ -68,14 +71,35 @@ func TestRunScanOk(t *testing.T) {
 				BlocksRange:  50,
 				WaitingTime:  1 * time.Second,
 			},
-			l1LatestBlock:         100,
-			name:                  "scan events with last block from blockchain",
-			expectedStartingBlock: 100,
-			blockNumberTimes:      3,
-			scanEventsTimes:       1,
-			txCommitTimes:         1,
-			txDiscardTimes:        1,
-			newLatestBlock:        "101",
+			l1LatestBlock:               100,
+			name:                        "scan events with last block from blockchain",
+			expectedStartingBlock:       100,
+			blockNumberTimes:            3,
+			scanEventsTimes:             1,
+			scanNewUniversalEventsTimes: 1,
+			txCommitTimes:               1,
+			txDiscardTimes:              1,
+			newLatestBlock:              "101",
+		},
+		{
+			c: config.Config{
+				StartingBlock: 1,
+				BlocksMargin:  0,
+				BlocksRange:   50,
+				WaitingTime:   1 * time.Second,
+				Contracts:     []string{"0x0", "0x1"},
+			},
+			l1LatestBlock:               101,
+			name:                        "scan events with last contracts from user",
+			blockNumberDB:               "100",
+			expectedStartingBlock:       100,
+			blockNumberTimes:            2,
+			scanEventsTimes:             1,
+			scanNewUniversalEventsTimes: 0,
+			txCommitTimes:               1,
+			txDiscardTimes:              1,
+			newLatestBlock:              "102",
+			expectedContracts:           []string{"0x0", "0x1"},
 		},
 	}
 	for _, tt := range tests {
@@ -86,14 +110,15 @@ func TestRunScanOk(t *testing.T) {
 			defer cancel()
 
 			client, scanner, storage, tx := getMocks(t)
-			var expecetedContracts []string
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
+
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
-				Times(tt.scanEventsTimes)
-			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), expecetedContracts).
+				Times(tt.scanNewUniversalEventsTimes)
+
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
 				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 			tx.EXPECT().Commit().
@@ -105,9 +130,17 @@ func TestRunScanOk(t *testing.T) {
 				Return(tx).
 				Times(tt.txCommitTimes)
 
-			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
-				Return([][]byte{}, nil).
-				Times(1)
+			if tt.c.Contracts == nil || len(tt.c.Contracts) == 0 {
+				storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
+					Return([][]byte{}, nil).
+					Times(1)
+			} else {
+				for _, contract := range tt.c.Contracts {
+					storage.EXPECT().Get([]byte("contract_"+contract)).
+						Return([]byte("1"), nil).
+						Times(1)
+				}
+			}
 			storage.EXPECT().Get([]byte("current_block")).
 				Return([]byte(tt.blockNumberDB), nil).
 				Times(1)
