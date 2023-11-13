@@ -196,7 +196,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			parsedEvents = append(parsedEvents, approvalForAll)
 			slog.Info("received event", eventApprovalForAllName, approvalForAll)
 		default:
-			slog.Warn("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
+			slog.Debug("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 		}
 	}
 
