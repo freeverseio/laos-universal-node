@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Values.name }}
   labels:
@@ -39,5 +39,17 @@ spec:
                 {{ if hasKey .Values  "blocksRange" }}
                 -blocks_range={{ .Values.blocksRange }},
                 {{ end }}
+                -storage_path=/app/.universalnode,
                 {{ .Values.debug | ternary "-debug" "" }}
               ]
+        volumeMounts:
+        - name: storage
+          mountPath: /app/.universalnode
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
