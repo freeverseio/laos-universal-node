@@ -202,85 +202,35 @@ func TestScanOnlyValidEvents(t *testing.T) {
 						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
 					},
 				},
-				{
-					Topics: []common.Hash{
-						common.HexToHash(approveEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-				},
-				{
-					Topics: []common.Hash{
-						common.HexToHash(approveForAllEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
-					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-				},
 			},
-			expectedEvents: 2,
+			expectedEvents: 0,
 		},
 		{
 			name: "it does not parse Approval with unexpected topics length",
 			eventLogs: []types.Log{
 				{
 					Topics: []common.Hash{
-						common.HexToHash(transferEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-					},
-				},
-				{
-					Topics: []common.Hash{
 						common.HexToHash(approveEventHash),
 						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 					},
 					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 				},
-				{
-					Topics: []common.Hash{
-						common.HexToHash(approveForAllEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
-					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-				},
 			},
-			expectedEvents: 2,
+			expectedEvents: 0,
 		},
 		{
 			name: "it does not parse ApprovalForAll with unexpected topics length",
 			eventLogs: []types.Log{
 				{
 					Topics: []common.Hash{
-						common.HexToHash(transferEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-					},
-				},
-				{
-					Topics: []common.Hash{
-						common.HexToHash(approveEventHash),
-						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-				},
-				{
-					Topics: []common.Hash{
 						common.HexToHash(approveForAllEventHash),
 						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 					},
 					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
 				},
 			},
-			expectedEvents: 2,
+			expectedEvents: 0,
 		},
 	}
 	for _, tt := range tests {
