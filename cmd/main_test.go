@@ -215,7 +215,6 @@ func TestShouldDiscover(t *testing.T) {
 		{
 			name:           "no contracts should discover",
 			contracts:      []string{},
-			mockReturn:     false, // not really used in this case
 			expectedResult: true,
 			expectingError: false,
 		},
@@ -229,7 +228,7 @@ func TestShouldDiscover(t *testing.T) {
 		{
 			name:           "at least one new contract should discover",
 			contracts:      []string{"contract1", "new_contract"},
-			mockReturn:     false, // suppose contract1 exists but new_contract does not
+			mockReturn:     false, // for example new_contract exists but contract1 does not
 			expectedResult: true,
 			expectingError: false,
 		},
@@ -256,7 +255,10 @@ func TestShouldDiscover(t *testing.T) {
 				} else {
 					returnValue = nil
 				}
-				storage.EXPECT().Get([]byte("contract_"+contract)).Return(returnValue, tt.mockReturnErr).AnyTimes()
+				storage.EXPECT().Get([]byte("contract_"+contract)).Return(returnValue, tt.mockReturnErr).Times(1)
+				if !tt.mockReturn {
+					break // break because we only need to check one contract
+				}
 			}
 
 			result, err := shouldDiscover(repositoryService, tt.contracts)
@@ -331,9 +333,11 @@ func TestCompareChainIDs(t *testing.T) {
 			mockClient, _, storage, _ := getMocks(t)
 			repositoryService := repository.New(storage)
 			ctx := context.Background()
-			mockClient.EXPECT().ChainID(ctx).Return(tt.ethClientChainID, tt.ethClientError).AnyTimes()
-			storage.EXPECT().Get([]byte("chain_id")).Return([]byte(tt.dbChainID), tt.dbError).AnyTimes()
 
+			mockClient.EXPECT().ChainID(ctx).Return(tt.ethClientChainID, tt.ethClientError).Times(1)
+			if tt.ethClientError == nil {
+				storage.EXPECT().Get([]byte("chain_id")).Return([]byte(tt.dbChainID), tt.dbError).Times(1)
+			}
 			if tt.expectSetInDB {
 				storage.EXPECT().Set([]byte("chain_id"), []byte(ethChainID.String())).Return(tt.expectedDBSetError)
 			}
