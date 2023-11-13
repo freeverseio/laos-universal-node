@@ -174,6 +174,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	var parsedEvents []Event
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
+		// TODO check len(eventLogs[i].Topics) !!!
 		switch eventLogs[i].Topics[0].Hex() {
 		case eventTransferSigHash:
 			transfer, err := parseTransfer(&eventLogs[i], &contractAbi)
