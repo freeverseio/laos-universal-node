@@ -202,6 +202,151 @@ func TestRunScanError(t *testing.T) {
 	}
 }
 
+func TestShouldDiscover(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		contracts      []string
+		mockReturn     bool
+		mockReturnErr  error
+		expectedResult bool
+		expectingError bool
+	}{
+		{
+			name:           "no contracts should discover",
+			contracts:      []string{},
+			mockReturn:     false, // not really used in this case
+			expectedResult: true,
+			expectingError: false,
+		},
+		{
+			name:           "existing contracts should not discover",
+			contracts:      []string{"contract1", "contract2"},
+			mockReturn:     true,
+			expectedResult: false,
+			expectingError: false,
+		},
+		{
+			name:           "at least one new contract should discover",
+			contracts:      []string{"contract1", "new_contract"},
+			mockReturn:     false, // suppose contract1 exists but new_contract does not
+			expectedResult: true,
+			expectingError: false,
+		},
+		{
+			name:           "error retrieving contract should return error",
+			contracts:      []string{"contract1"},
+			mockReturnErr:  errors.New("storage error"),
+			expectedResult: false,
+			expectingError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			storage := mockStorage.NewMockStorage(ctrl)
+			repositoryService := repository.New(storage)
+			for _, contract := range tt.contracts {
+				var returnValue []byte
+				if tt.mockReturn {
+					returnValue = []byte("1")
+				} else {
+					returnValue = nil
+				}
+				storage.EXPECT().Get([]byte("contract_"+contract)).Return(returnValue, tt.mockReturnErr).AnyTimes()
+			}
+
+			result, err := shouldDiscover(repositoryService, tt.contracts)
+
+			if tt.expectingError {
+				if err == nil {
+					t.Errorf("got no error nut expected an error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("got unexpected error: %v, expected none", err)
+				}
+				if result != tt.expectedResult {
+					t.Errorf("got %v, expected %v", result, tt.expectedResult)
+				}
+			}
+		})
+	}
+}
+
+func TestCompareChainIDs(t *testing.T) {
+	t.Parallel()
+	ethChainID := big.NewInt(3) // Example Ethereum network chain ID
+	dbChainID := "3"            // Matching chain ID for the database
+
+	tests := []struct {
+		name               string
+		ethClientChainID   *big.Int
+		ethClientError     error
+		dbChainID          string
+		dbError            error
+		expectSetInDB      bool
+		expectedDBSetError error
+		wantError          bool
+	}{
+		{
+			name:             "chain IDs match",
+			ethClientChainID: ethChainID,
+			dbChainID:        dbChainID,
+			wantError:        false,
+		},
+		{
+			name:           "error from Ethereum client",
+			ethClientError: errors.New("client error"),
+			wantError:      true,
+		},
+		{
+			name:      "error from database on get",
+			dbError:   errors.New("db get error"),
+			wantError: true,
+		},
+		{
+			name:               "chain ID not set in database",
+			ethClientChainID:   ethChainID,
+			dbChainID:          "",
+			expectSetInDB:      true,
+			expectedDBSetError: nil,
+			wantError:          false,
+		},
+		{
+			name:             "mismatched chain IDs",
+			ethClientChainID: ethChainID,
+			dbChainID:        "2",
+			wantError:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			mockClient, _, storage, _ := getMocks(t)
+			repositoryService := repository.New(storage)
+			ctx := context.Background()
+			mockClient.EXPECT().ChainID(ctx).Return(tt.ethClientChainID, tt.ethClientError).AnyTimes()
+			storage.EXPECT().Get([]byte("chain_id")).Return([]byte(tt.dbChainID), tt.dbError).AnyTimes()
+
+			if tt.expectSetInDB {
+				storage.EXPECT().Set([]byte("chain_id"), []byte(ethChainID.String())).Return(tt.expectedDBSetError)
+			}
+
+			err := compareChainIDs(ctx, mockClient, repositoryService)
+
+			if (err != nil) != tt.wantError {
+				t.Errorf("compareChainIDs() error = %v, wantError %v", err, tt.wantError)
+			}
+		})
+	}
+}
+
 func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }

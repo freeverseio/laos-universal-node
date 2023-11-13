@@ -108,7 +108,7 @@ func run() error {
 	return nil
 }
 
-func compareChainIDs(ctx context.Context, client *ethclient.Client, repositoryService repository.Service) error {
+func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryService repository.Service) error {
 	chainId, err := client.ChainID(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting chain ID from Ethereum client: %w", err)
