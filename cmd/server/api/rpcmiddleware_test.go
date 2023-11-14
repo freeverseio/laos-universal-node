@@ -38,7 +38,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedResponse:                      "universalMintingHandler called",
 			ercUniversalMintingHandlerCalledTimes: 1,
 			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
 		},
 		{
@@ -79,7 +79,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:      http.StatusOK,
 			expectedResponse:        "proxyHandler called",
 			proxyHandlerCalledTimes: 1,
-			storedContracts:         [][]byte{[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")},
+			storedContracts:         [][]byte{[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")},
 		},
 		{
 			name:                    "Good request with no erc721 method",

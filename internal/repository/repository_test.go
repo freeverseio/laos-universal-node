@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/dgraph-io/badger/v4"
@@ -114,7 +115,8 @@ func TestGetAllERC721UniversalContracts(t *testing.T) {
 		}
 
 		for i := 0; i < len(contracts); i++ {
-			if string(keys[i]) != contracts[i] {
+			contract := strings.TrimPrefix(string(keys[i]), "contract_")
+			if contract != contracts[i] {
 				t.Fatalf("got contract %s, expecting %s", contracts[i], string(keys[i]))
 			}
 		}
