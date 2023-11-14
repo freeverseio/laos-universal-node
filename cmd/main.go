@@ -104,6 +104,7 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
+		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(client)
 		return scanEvoChain(ctx, c, client, s, repositoryService)
 	})
