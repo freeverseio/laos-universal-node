@@ -41,9 +41,9 @@ func run() error {
 		return err
 	}
 	defer func() {
-		err := db.Close()
+		err = db.Close()
 		if err != nil {
-			slog.Error("error closing DB", "err", err)
+			slog.Error("error closing db", "err", err)
 		}
 	}()
 
@@ -55,6 +55,10 @@ func run() error {
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
+
+	if err != nil {
+		return fmt.Errorf("error initializing storage: %w", err)
+	}
 
 	group.Go(func() error {
 		numIterations := 3
@@ -99,7 +103,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, repositoryService)
 	})
 
 	if err := group.Wait(); err != nil {

@@ -8,6 +8,8 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/cmd/server/mock"
+	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -26,6 +28,9 @@ func TestListenAndServe(t *testing.T) {
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
 
+	storage := mockStorage.NewMockStorage(ctrl)
+	repositoryService := repository.New(storage)
+
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
 		t.Fatalf("got unexpected error: %v, expected: no error", err)
@@ -34,7 +39,7 @@ func TestListenAndServe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err = s.ListenAndServe(ctx, "rpcUrl", "localhost:8080")
+	err = s.ListenAndServe(ctx, "rpcUrl", "localhost:8080", repositoryService)
 	if err != nil {
 		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
@@ -53,6 +58,8 @@ func TestListenAndServeWithCancel(t *testing.T) {
 	mockHTTPServer.EXPECT().ListenAndServe().Return(http.ErrServerClosed)
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
+	storage := mockStorage.NewMockStorage(ctrl)
+	repositoryService := repository.New(storage)
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
@@ -66,7 +73,7 @@ func TestListenAndServeWithCancel(t *testing.T) {
 
 	// Start the server in a goroutine.
 	go func() {
-		err := s.ListenAndServe(ctx, "rpcUrl", ":9999") // using a random port, as it won't actually bind
+		err := s.ListenAndServe(ctx, "rpcUrl", ":9999", repositoryService) // using a random port, as it won't actually bind
 		done <- err
 	}()
 
@@ -97,6 +104,8 @@ func TestListenAndServeWithError(t *testing.T) {
 	mockHTTPServer.EXPECT().ListenAndServe().Return(nil)
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
+	storage := mockStorage.NewMockStorage(ctrl)
+	repositoryService := repository.New(storage)
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
 	if err != nil {
@@ -106,7 +115,7 @@ func TestListenAndServeWithError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err = s.ListenAndServe(ctx, "rpcUrl", ":9999")
+	err = s.ListenAndServe(ctx, "rpcUrl", ":9999", repositoryService)
 	if err == nil {
 		t.Fatalf("got nil, expected error")
 	}
