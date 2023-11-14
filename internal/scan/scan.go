@@ -174,49 +174,50 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	var parsedEvents []Event
 	for i := range eventLogs {
 		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
-		// TODO check len(eventLogs[i].Topics) !!!
-		switch eventLogs[i].Topics[0].Hex() {
-		case eventTransferSigHash:
-			transfer, err := parseTransfer(&eventLogs[i], &contractAbi)
-			if err != nil {
-				if err != eventTopicsError {
-					return nil, err
+		if len(eventLogs[i].Topics) > 0 {
+			switch eventLogs[i].Topics[0].Hex() {
+			case eventTransferSigHash:
+				transfer, err := parseTransfer(&eventLogs[i], &contractAbi)
+				if err != nil {
+					if err != eventTopicsError {
+						return nil, err
+					}
+					slog.Warn("incorrect number of topics found in Transfer event",
+						"topics_found", len(eventLogs[i].Topics),
+						"topics_expected", 4)
+				} else {
+					parsedEvents = append(parsedEvents, transfer)
+					slog.Info("received event", eventTransferName, transfer)
 				}
-				slog.Warn("incorrect number of topics found in Transfer event",
-					"topics_found", len(eventLogs[i].Topics),
-					"topics_expected", 4)
-			} else {
-				parsedEvents = append(parsedEvents, transfer)
-				slog.Info("received event", eventTransferName, transfer)
-			}
-		case eventApprovalSigHash:
-			approval, err := parseApproval(&eventLogs[i], &contractAbi)
-			if err != nil {
-				if err != eventTopicsError {
-					return nil, err
+			case eventApprovalSigHash:
+				approval, err := parseApproval(&eventLogs[i], &contractAbi)
+				if err != nil {
+					if err != eventTopicsError {
+						return nil, err
+					}
+					slog.Warn("incorrect number of topics found in Approval event",
+						"topics_found", len(eventLogs[i].Topics),
+						"topics_expected", 4)
+				} else {
+					parsedEvents = append(parsedEvents, approval)
+					slog.Info("received event", eventApprovalName, approval)
 				}
-				slog.Warn("incorrect number of topics found in Approval event",
-					"topics_found", len(eventLogs[i].Topics),
-					"topics_expected", 4)
-			} else {
-				parsedEvents = append(parsedEvents, approval)
-				slog.Info("received event", eventApprovalName, approval)
-			}
-		case eventApprovalForAllSigHash:
-			approvalForAll, err := parseApprovalForAll(&eventLogs[i], &contractAbi)
-			if err != nil {
-				if err != eventTopicsError {
-					return nil, err
+			case eventApprovalForAllSigHash:
+				approvalForAll, err := parseApprovalForAll(&eventLogs[i], &contractAbi)
+				if err != nil {
+					if err != eventTopicsError {
+						return nil, err
+					}
+					slog.Warn("incorrect number of topics found in ApprovalForAll event",
+						"topics_found", len(eventLogs[i].Topics),
+						"topics_expected", 3)
+				} else {
+					parsedEvents = append(parsedEvents, approvalForAll)
+					slog.Info("received event", eventApprovalForAllName, approvalForAll)
 				}
-				slog.Warn("incorrect number of topics found in ApprovalForAll event",
-					"topics_found", len(eventLogs[i].Topics),
-					"topics_expected", 3)
-			} else {
-				parsedEvents = append(parsedEvents, approvalForAll)
-				slog.Info("received event", eventApprovalForAllName, approvalForAll)
+			default:
+				slog.Debug("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 			}
-		default:
-			slog.Debug("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 		}
 	}
 

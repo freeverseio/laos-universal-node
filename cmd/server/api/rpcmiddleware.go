@@ -121,8 +121,7 @@ func isContractInList(contractAddress string, repositoryService repository.Servi
 		return false, err
 	}
 	for _, contract := range list {
-		addr := contract // convert to string
-		if strings.EqualFold(addr, contractAddress) {
+		if strings.EqualFold(contract, contractAddress) {
 			return true, nil
 		}
 	}

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"strings"
+
 	"github.com/dgraph-io/badger/v4"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
@@ -45,7 +47,8 @@ func (s *Service) GetAllERC721UniversalContracts() ([]string, error) {
 		return nil, err
 	}
 	for _, k := range keys {
-		contracts = append(contracts, string(k))
+		contract := strings.TrimPrefix(string(k), contractPrefix)
+		contracts = append(contracts, contract)
 	}
 	return contracts, nil
 }
