@@ -148,7 +148,7 @@ func TestRunScanOk(t *testing.T) {
 				Return(nil).
 				Times(1)
 
-			err := runScan(ctx, &tt.c, client, scanner, repository.New(storage))
+			err := scanUniversalChain(ctx, &tt.c, client, scanner, repository.New(storage))
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -168,7 +168,7 @@ func TestRunScanTwice(t *testing.T) {
 	defer cancel()
 
 	client, scanner, storage, tx := getMocks(t)
-	var expecetedContracts []string
+	var expectedContracts []string
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
 		Times(3)
@@ -178,10 +178,10 @@ func TestRunScanTwice(t *testing.T) {
 	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), expecetedContracts).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), expectedContracts).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), expecetedContracts).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), expectedContracts).
 		Return(nil, nil).
 		Times(1)
 	tx.EXPECT().Commit().
@@ -205,7 +205,7 @@ func TestRunScanTwice(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner, repository.New(storage))
+	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage))
 	if err != nil {
 		t.Fatalf(`got error "%v" when no error was expeceted`, err)
 	}
@@ -229,7 +229,7 @@ func TestRunScanError(t *testing.T) {
 		Return([]byte(""), nil).
 		Times(1)
 
-	err := runScan(ctx, &c, client, scanner, repository.New(storage))
+	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage))
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expected`, expectedErr)
 	}

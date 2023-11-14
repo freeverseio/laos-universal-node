@@ -29,7 +29,10 @@ spec:
             cpu: "2"
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},
+                -storage_path=/app/.universalnode,
                 -rpc={{ .Values.rpc }},
+                -evo_rpc={{ .Values.evoRpc }},
+                -evo_contract={{ .Values.evoContracts }},
                 {{ if hasKey .Values  "startingBlock" }}
                 -starting_block={{ .Values.startingBlock }},
                 {{ end }}
@@ -39,7 +42,15 @@ spec:
                 {{ if hasKey .Values  "blocksRange" }}
                 -blocks_range={{ .Values.blocksRange }},
                 {{ end }}
-                -storage_path=/app/.universalnode,
+                {{ if hasKey .Values  "evoStartingBlock" }}
+                -evo_starting_block={{ .Values.evoStartingBlock }},
+                {{ end }}
+                {{ if hasKey .Values  "evoBlocksMargin" }}
+                -evo_blocks_margin={{ .Values.evoBlocksMargin }},
+                {{ end }}
+                {{ if hasKey .Values  "evoBlocksRange" }}
+                -evo_blocks_range={{ .Values.evoBlocksRange }},
+                {{ end }}
                 {{ .Values.debug | ternary "-debug" "" }}
               ]
         volumeMounts:

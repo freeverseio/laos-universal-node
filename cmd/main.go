@@ -60,6 +60,7 @@ func run() error {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
 
+	// Badger DB garbage collection
 	group.Go(func() error {
 		numIterations := 3
 		ticker := time.NewTicker(10 * time.Minute)
@@ -84,6 +85,7 @@ func run() error {
 		}
 	})
 
+	// Ownership chain scanner
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
@@ -93,9 +95,20 @@ func run() error {
 			return err
 		}
 		s := scan.NewScanner(client, c.Contracts...)
-		return runScan(ctx, c, client, s, repositoryService)
+		return scanUniversalChain(ctx, c, client, s, repositoryService)
 	})
 
+	// Evolution chain scanner
+	group.Go(func() error {
+		client, err := ethclient.Dial(c.EvoRpc)
+		if err != nil {
+			return fmt.Errorf("error instantiating eth client: %w", err)
+		}
+		s := scan.NewScanner(client)
+		return scanEvoChain(ctx, c, client, s)
+	})
+
+	// Universal node RPC server
 	group.Go(func() error {
 		rpcServer, err := server.New()
 		if err != nil {
@@ -151,7 +164,7 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 	return false, nil
 }
 
-func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
 	startingBlock, err := getStartingBlock(ctx, repositoryService, c.StartingBlock, client)
 	if err != nil {
 		return err
@@ -192,7 +205,7 @@ func runScan(ctx context.Context, c *config.Config, client scan.EthClient, s sca
 			}
 
 			if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
-				slog.Error("error occurred while storing universal contract", "err", err.Error())
+				slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 				break
 			}
 
@@ -246,6 +259,48 @@ func getStartingBlock(ctx context.Context, repositoryService repository.Service,
 		}
 	}
 	return startingBlock, nil
+}
+
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
+	// TODO call "getStartingBlock" for evo chain
+	var err error
+	startingBlock := c.EvoStartingBlock
+	if startingBlock == 0 {
+		startingBlock, err = getL1LatestBlock(ctx, client)
+		if err != nil {
+			return fmt.Errorf("error retrieving the latest block: %w", err)
+		}
+		slog.Debug("latest block found", "latest_block", startingBlock)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("context canceled")
+			return nil
+		default:
+			l1LatestBlock, err := getL1LatestBlock(ctx, client)
+			if err != nil {
+				slog.Error("error retrieving the latest block", "err", err.Error())
+				break
+			}
+			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.EvoBlocksRange, c.EvoBlocksMargin)
+			if lastBlock < startingBlock {
+				slog.Debug("last calculated block is behind starting block, waiting...",
+					"last_block", lastBlock, "starting_block", startingBlock)
+				waitBeforeNextScan(ctx, c.WaitingTime)
+				break
+			}
+
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), []string{c.EvoContract}) // TODO choose if c.EvoContract should be a []string
+			if err != nil {
+				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
+				break
+			}
+
+			// TODO store evo_current_block
+			startingBlock = lastBlock + 1
+		}
+	}
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {

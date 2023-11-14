@@ -16,10 +16,13 @@ import (
 )
 
 const (
-	transferEventHash           = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-	approveEventHash            = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
-	approveForAllEventHash      = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
-	newERC721UniversalEventHash = "0x74b81bc88402765a52dad72d3d893684f472a679558f3641500e0ee14924a10a"
+	transferEventHash               = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	approveEventHash                = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+	approveForAllEventHash          = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+	newERC721UniversalEventHash     = "0x74b81bc88402765a52dad72d3d893684f472a679558f3641500e0ee14924a10a"
+	newCollectionEventHash          = "0x6eb24fd767a7bcfa417f3fe25a2cb245d2ae52293d3c4a8f8c6450a09795d289"
+	mintedWithExternalURIEventHash  = "0x4b3b5da28a351f8bb73b960d7c80b2cef3e3570cb03448234dee173942c74786"
+	evolvedWithExternalURIEventHash = "0x95c167d04a267f10e6b3f373c7a336dc65cf459caf048854dc32a2d37ab1607c"
 )
 
 func TestParseEvents(t *testing.T) {
@@ -100,6 +103,51 @@ func TestParseEvents(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "it should parse NewCollection event",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0x0000000000000000000000000000000000000403"),
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(newCollectionEventHash),
+						common.HexToHash("0x0000000000000000000000009c231bfb2dbbd2c92a9f7c710d51e0796c52dce5"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000094"),
+				},
+			},
+		},
+		{
+			name:      "it should parse MintedWithExternalURI events",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0x0000000000000000000000000000000000000403"),
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(mintedWithExternalURIEventHash),
+						common.HexToHash("0x000000000000000000000000684bc8f81250ad3f7f930b27586b799a4dda957b"),
+					},
+					Data: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000080000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b000000000000000000000000000000000000000000000000000000000000000c6d795f66697273745f7572690000000000000000000000000000000000000000"),
+				},
+			},
+		},
+		{
+			name:      "it should parse EvolvedWithExternalURIevents",
+			fromBlock: big.NewInt(0),
+			toBlock:   big.NewInt(100),
+			address:   common.HexToAddress("0x0000000000000000000000000000000000000403"),
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(evolvedWithExternalURIEventHash),
+						common.HexToHash("0x000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b"),
+					},
+					Data: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -137,6 +185,21 @@ func TestParseEvents(t *testing.T) {
 				_, ok := events[0].(scan.EventApprovalForAll)
 				if !ok {
 					t.Fatal("error parsing event to EventApprovalForAll type")
+				}
+			case scan.EventNewCollecion:
+				_, ok := events[0].(scan.EventNewCollecion)
+				if !ok {
+					t.Fatal("error parsing event to EventNewCollection type")
+				}
+			case scan.EventMintedWithExternalURI:
+				_, ok := events[0].(scan.EventMintedWithExternalURI)
+				if !ok {
+					t.Fatal("error parsing event to EventMintedWithExternalURI type")
+				}
+			case scan.EventEvolvedWithExternalURI:
+				_, ok := events[0].(scan.EventEvolvedWithExternalURI)
+				if !ok {
+					t.Fatal("error parsing event to EventEvolvedWithExternalURI type")
 				}
 			default:
 				t.Fatalf("unknown event: %v", eventType)
@@ -265,6 +328,7 @@ func TestScanOnlyValidEvents(t *testing.T) {
 
 func TestScanEvents(t *testing.T) {
 	t.Parallel()
+
 	t.Run("it returns when there are no events", func(t *testing.T) {
 		t.Parallel()
 
@@ -295,7 +359,6 @@ func TestScanEvents(t *testing.T) {
 			t.Fatalf("nil events expected, got %v", events)
 		}
 	})
-
 	t.Run("it does not parse events when blockchain does not return any event", func(t *testing.T) {
 		t.Parallel()
 
