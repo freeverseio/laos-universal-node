@@ -12,15 +12,7 @@ You can start and sync the universal node locally with the following command:
 ```
 $ docker run -p 5001:5001 freeverseio/laos-universal-node:<release> 
 ```
-
 The port is for the json-rpc interface.
-
-Right now there is only one method supported:
-
-```
-{"jsonrpc":"2.0", "method":"System.Up", "params":[]}
-```
-
 
 ## Contributing
 
