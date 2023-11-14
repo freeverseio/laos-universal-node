@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	contractPrefix = "contract_"
-	chainID        = "chain_id"
-	currentBlock   = "current_block"
+	contractPrefix  = "contract_"
+	chainID         = "chain_id"
+	currentBlock    = "current_block"
+	evoCurrentBlock = "evo_current_block"
 )
 
 type Service struct {
@@ -84,8 +85,20 @@ func (s *Service) GetCurrentBlock() (string, error) {
 	return string(value), nil
 }
 
-func (s *Service) SetCurrentBlock(currentBlockValue string) error {
-	return s.storageService.Set([]byte(currentBlock), []byte(currentBlockValue))
+func (s *Service) GetEvoChainCurrentBlock() (string, error) {
+	value, err := s.get(evoCurrentBlock)
+	if err != nil {
+		return "", err
+	}
+	return string(value), nil
+}
+
+func (s *Service) SetCurrentBlock(value string) error {
+	return s.storageService.Set([]byte(currentBlock), []byte(value))
+}
+
+func (s *Service) SetEvoChainCurrentBlock(value string) error {
+	return s.storageService.Set([]byte(evoCurrentBlock), []byte(value))
 }
 
 func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {

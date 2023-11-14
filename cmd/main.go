@@ -105,7 +105,7 @@ func run() error {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
 		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s)
+		return scanEvoChain(ctx, c, client, s, repositoryService)
 	})
 
 	// Universal node RPC server
@@ -165,7 +165,11 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 }
 
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
-	startingBlock, err := getStartingBlock(ctx, repositoryService, c.StartingBlock, client)
+	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	if err != nil {
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
+	}
+	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.StartingBlock, client)
 	if err != nil {
 		return err
 	}
@@ -234,44 +238,17 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func getStartingBlock(ctx context.Context, repositoryService repository.Service, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
-	var startingBlock uint64
-	startingBlockDB, err := repositoryService.GetCurrentBlock()
+// TODO test this function
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
 	if err != nil {
-		return 0, fmt.Errorf("error retrieving the current block from storage: %w", err)
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
 	}
-	if startingBlockDB != "" {
-		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
-		if err != nil {
-			return 0, fmt.Errorf("error parsing the current block from storage: %w", err)
-		}
-		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.EvoStartingBlock, client)
+	if err != nil {
+		return err
 	}
 
-	if startingBlock == 0 {
-		startingBlock = configStartingBlock
-		if startingBlock == 0 {
-			startingBlock, err = getL1LatestBlock(ctx, client)
-			if err != nil {
-				return 0, fmt.Errorf("error retrieving the latest block from ownership chain: %w", err)
-			}
-			slog.Debug("latest block found", "latest_block", startingBlock)
-		}
-	}
-	return startingBlock, nil
-}
-
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
-	// TODO call "getStartingBlock" for evo chain
-	var err error
-	startingBlock := c.EvoStartingBlock
-	if startingBlock == 0 {
-		startingBlock, err = getL1LatestBlock(ctx, client)
-		if err != nil {
-			return fmt.Errorf("error retrieving the latest block: %w", err)
-		}
-		slog.Debug("latest block found", "latest_block", startingBlock)
-	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -297,10 +274,37 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			// TODO store evo_current_block
+			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
 			startingBlock = lastBlock + 1
 		}
 	}
+}
+
+func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
+	var startingBlock uint64
+	var err error
+	if startingBlockDB != "" {
+		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error parsing the current block from storage: %w", err)
+		}
+		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	}
+
+	if startingBlock == 0 {
+		startingBlock = configStartingBlock
+		if startingBlock == 0 {
+			startingBlock, err = getL1LatestBlock(ctx, client)
+			if err != nil {
+				return 0, fmt.Errorf("error retrieving the latest block from chain: %w", err)
+			}
+			slog.Debug("latest block found", "latest_block", startingBlock)
+		}
+	}
+	return startingBlock, nil
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
