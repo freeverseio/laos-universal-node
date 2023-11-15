@@ -31,10 +31,7 @@ var (
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
 	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
-	eventEvolvedWithExternalURISgiHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
-	EventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
-	EventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
-	EventEvolvedWithExternalURISgiHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
+	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
 
@@ -274,7 +271,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventMintedWithExternalURI, ev)
 
-			case eventEvolvedWithExternalURISgiHash:
+			case eventEvolvedWithExternalURISigHash:
 				ev, err := parseEvolvedWithExternalURI(&eventLogs[i], &evoAbi)
 				if err != nil {
 					return nil, err
