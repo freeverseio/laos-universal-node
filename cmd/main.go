@@ -199,17 +199,18 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 
 			var universalContracts []model.ERC721UniversalContract
+
 			if shouldDiscover {
 				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 				if err != nil {
 					slog.Error("error occurred while discovering new universal events", "err", err.Error())
 					break
 				}
-			}
 
-			if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
-				slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
-				break
+				if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
+					slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
+					break
+				}
 			}
 
 			var contracts []string

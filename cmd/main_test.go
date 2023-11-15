@@ -67,8 +67,8 @@ func TestRunScanOk(t *testing.T) {
 			blockNumberTimes:            2,
 			scanEventsTimes:             1,
 			scanNewUniversalEventsTimes: 0,
-			txCommitTimes:               1,
-			txDiscardTimes:              1,
+			txCommitTimes:               0,
+			txDiscardTimes:              0,
 			newLatestBlock:              "102",
 			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 		},
@@ -107,8 +107,8 @@ func TestRunScanOk(t *testing.T) {
 			blockNumberTimes:            2,
 			scanEventsTimes:             1,
 			scanNewUniversalEventsTimes: 0,
-			txCommitTimes:               1,
-			txDiscardTimes:              1,
+			txCommitTimes:               0,
+			txDiscardTimes:              0,
 			newLatestBlock:              "102",
 			expectedContracts:           []string{"0x0", "0x1"},
 		},
@@ -179,7 +179,7 @@ func TestRunScanTwice(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner, storage, tx := getMocks(t)
+	client, scanner, storage, _ := getMocks(t)
 
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
@@ -204,14 +204,6 @@ func TestRunScanTwice(t *testing.T) {
 	storage.EXPECT().Set([]byte("current_block"), []byte("102")).
 		Return(nil).
 		Times(1)
-	tx.EXPECT().Commit().
-		Return(nil).
-		Times(2)
-	tx.EXPECT().Discard().
-		Times(2)
-	storage.EXPECT().NewTransaction().
-		Return(tx).
-		Times(2)
 
 	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage))
 	if err != nil {
