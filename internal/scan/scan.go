@@ -136,6 +136,8 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 	return scan
 }
 
+// TODO decide whether contracts should be a variadic parameter of ScanNewUniversalEvents or not (if so, conversion from []string to []common.Address should be done in config.go)
+
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
