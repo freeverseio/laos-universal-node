@@ -141,10 +141,8 @@ func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryServi
 		if err = repositoryService.SetChainID(chainId.String()); err != nil {
 			return fmt.Errorf("error setting chain ID in database: %w", err)
 		}
-	} else {
-		if chainId.String() != chainIdDB {
-			return fmt.Errorf("mismatched chain IDs: database has %s, eth client reports %s", chainIdDB, chainId.String())
-		}
+	} else if chainId.String() != chainIdDB {
+		return fmt.Errorf("mismatched chain IDs: database has %s, eth client reports %s", chainIdDB, chainId.String())
 	}
 	return nil
 }
