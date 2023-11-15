@@ -237,7 +237,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-// TODO test this function
 func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
 	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
 	if err != nil {
