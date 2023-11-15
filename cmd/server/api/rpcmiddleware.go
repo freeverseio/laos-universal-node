@@ -99,6 +99,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 
 	// Check if contract is in the list.
+	// TODO refactor isContractInList and use `repository.HasERC721UniversalContract()`
 	isInContractList, err := isContractInList(params.To, repositoryService)
 	if err != nil {
 		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
