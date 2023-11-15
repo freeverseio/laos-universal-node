@@ -28,6 +28,7 @@ func TestRunScanOk(t *testing.T) {
 		txDiscardTimes              int
 		expectedStartingBlock       uint64
 		newLatestBlock              string
+		storedContracts             [][]byte
 		expectedContracts           []string
 	}{
 		{
@@ -46,6 +47,10 @@ func TestRunScanOk(t *testing.T) {
 			txCommitTimes:               1,
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
+			storedContracts: [][]byte{
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+			expectedContracts: []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 		},
 		{
 			c: config.Config{
@@ -53,6 +58,7 @@ func TestRunScanOk(t *testing.T) {
 				BlocksMargin:  0,
 				BlocksRange:   50,
 				WaitingTime:   1 * time.Second,
+				Contracts:     []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			},
 			l1LatestBlock:               101,
 			name:                        "scan events one time with block number in db",
@@ -60,10 +66,11 @@ func TestRunScanOk(t *testing.T) {
 			expectedStartingBlock:       100,
 			blockNumberTimes:            2,
 			scanEventsTimes:             1,
-			scanNewUniversalEventsTimes: 1,
+			scanNewUniversalEventsTimes: 0,
 			txCommitTimes:               1,
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
+			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 		},
 		{
 			c: config.Config{
@@ -80,6 +87,10 @@ func TestRunScanOk(t *testing.T) {
 			txCommitTimes:               1,
 			txDiscardTimes:              1,
 			newLatestBlock:              "101",
+			storedContracts: [][]byte{
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+			expectedContracts: []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 		},
 		{
 			c: config.Config{
@@ -132,7 +143,7 @@ func TestRunScanOk(t *testing.T) {
 
 			if tt.c.Contracts == nil || len(tt.c.Contracts) == 0 {
 				storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
-					Return([][]byte{}, nil).
+					Return(tt.storedContracts, nil).
 					Times(1)
 			} else {
 				for _, contract := range tt.c.Contracts {
@@ -163,37 +174,26 @@ func TestRunScanTwice(t *testing.T) {
 		BlocksMargin:  0,
 		BlocksRange:   50,
 		WaitingTime:   1 * time.Second,
+		Contracts:     []string{"0x0"},
 	}
 	ctx, cancel := getContext()
 	defer cancel()
 
 	client, scanner, storage, tx := getMocks(t)
-	var expectedContracts []string
+
 	client.EXPECT().BlockNumber(ctx).
 		Return(uint64(101), nil).
-		Times(3)
-	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(int64(51))).
+		AnyTimes()
+
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), c.Contracts).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(52)), big.NewInt(int64(101))).
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), c.Contracts).
 		Return(nil, nil).
 		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), expectedContracts).
-		Return(nil, nil).
-		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), expectedContracts).
-		Return(nil, nil).
-		Times(1)
-	tx.EXPECT().Commit().
-		Return(nil).
-		Times(2)
-	tx.EXPECT().Discard().
-		Times(2)
-	storage.EXPECT().NewTransaction().
-		Return(tx).
-		Times(2)
-	storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
-		Return([][]byte{}, nil).
+
+	storage.EXPECT().Get([]byte("contract_0x0")).
+		Return([]byte(""), nil).
 		Times(2)
 	storage.EXPECT().Get([]byte("current_block")).
 		Return([]byte(""), nil).
@@ -204,6 +204,14 @@ func TestRunScanTwice(t *testing.T) {
 	storage.EXPECT().Set([]byte("current_block"), []byte("102")).
 		Return(nil).
 		Times(1)
+	tx.EXPECT().Commit().
+		Return(nil).
+		Times(2)
+	tx.EXPECT().Discard().
+		Times(2)
+	storage.EXPECT().NewTransaction().
+		Return(tx).
+		Times(2)
 
 	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage))
 	if err != nil {
@@ -411,7 +419,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		expectedError          error
 	}{
 		{
-			name: "scan evo chain",
+			name: "scan evo chain OK",
 			c: config.Config{
 				StartingBlock:   0,
 				EvoBlocksMargin: 0,
@@ -428,7 +436,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			expectedNewLatestBlock: "151",
 		},
 		{
-			name: "scan evo chain with no starting block in DB and 0 in config",
+			name: "scan evo chain OK with no starting block in DB and 0 in config",
 			c: config.Config{
 				StartingBlock:   0,
 				EvoBlocksMargin: 0,
@@ -445,7 +453,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			expectedNewLatestBlock: "251",
 		},
 		{
-			name: "scan evo chain with no starting block in DB and 0 in config",
+			name: "scan evo chain OK with no starting block in DB and 100 in config",
 			c: config.Config{
 				EvoStartingBlock: 100,
 				EvoBlocksMargin:  0,
@@ -554,8 +562,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 					Return(nil, tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {
-							// we cancel the loop since we only want one iteration
-							cancel()
+							cancel() // we cancel the loop since we only want one iteration
 						}
 					},
 					).Times(1)
@@ -564,8 +571,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 					storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
 						Return(tt.errorSaveBlockNumber).Do(
 						func(_ []byte, _ []byte) {
-							// we cancel the loop since we only want one iteration
-							cancel()
+							cancel() // we cancel the loop since we only want one iteration
 						},
 					).Times(1)
 				}

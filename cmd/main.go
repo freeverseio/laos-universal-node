@@ -222,10 +222,13 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 			}
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
-			if err != nil {
-				slog.Error("error occurred while scanning events", "err", err.Error())
-				break
+
+			if len(contracts) > 0 {
+				_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				if err != nil {
+					slog.Error("error occurred while scanning events", "err", err.Error())
+					break
+				}
 			}
 
 			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
