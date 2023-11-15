@@ -392,6 +392,193 @@ func TestCompareChainIDs(t *testing.T) {
 	}
 }
 
+func TestScanEvoChainOnce(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                   string
+		c                      config.Config
+		l1LatestBlock          uint64
+		blockNumberDB          string
+		blockNumberTimes       int
+		scanEventsTimes        int
+		expectedFromBlock      uint64
+		expectedToBlock        uint64
+		expectedNewLatestBlock string
+		errorScanEvents        error
+		errorSaveBlockNumber   error
+		errorGetBlockNumber    error
+		errorGetL1LatestBlock  error
+		expectedError          error
+	}{
+		{
+			name: "scan evo chain",
+			c: config.Config{
+				StartingBlock:   0,
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				EvoContract:     "0x0",
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "100",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: "151",
+		},
+		{
+			name: "scan evo chain with no starting block in DB and 0 in config",
+			c: config.Config{
+				StartingBlock:   0,
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				EvoContract:     "0x0",
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       2,
+			blockNumberDB:          "",
+			expectedFromBlock:      250,
+			expectedToBlock:        250,
+			expectedNewLatestBlock: "251",
+		},
+		{
+			name: "scan evo chain with no starting block in DB and 0 in config",
+			c: config.Config{
+				EvoStartingBlock: 100,
+				EvoBlocksMargin:  0,
+				EvoBlocksRange:   50,
+				WaitingTime:      1 * time.Second,
+				EvoContract:      "0x0",
+				Contracts:        []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: "151",
+		},
+		{
+			name: "scan evo chain with an error getting the block number from L1",
+			c: config.Config{
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				EvoContract:     "0x0",
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "",
+			expectedNewLatestBlock: "151",
+			errorGetL1LatestBlock:  errors.New("error getting block number from L1"),
+			expectedError:          errors.New("error retrieving the latest block from chain: error getting block number from L1"),
+		},
+		{
+			name: "scan evo chain with an error getting the block number from DB",
+			c: config.Config{
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				EvoContract:     "0x0",
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       0,
+			blockNumberDB:          "",
+			expectedNewLatestBlock: "151",
+			errorGetBlockNumber:    errors.New("error getting block number from DB"),
+			expectedError:          errors.New("error retrieving the current block from storage: error getting block number from DB"),
+		},
+		{
+			name: "scan evo chain and getting an error saving the block number",
+			c: config.Config{
+				EvoStartingBlock: 100,
+				EvoBlocksMargin:  0,
+				EvoBlocksRange:   50,
+				WaitingTime:      1 * time.Second,
+				EvoContract:      "0x0",
+				Contracts:        []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: "151",
+			errorSaveBlockNumber:   errors.New("error saving block number"),
+			expectedError:          nil, // in this case we break the loop and don't return an error
+		},
+		{
+			name: "scan evo chain and getting an error from scan events",
+			c: config.Config{
+				EvoStartingBlock: 100,
+				EvoBlocksMargin:  0,
+				EvoBlocksRange:   50,
+				WaitingTime:      1 * time.Second,
+				EvoContract:      "0x0",
+				Contracts:        []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "100",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: "151",
+			errorScanEvents:        errors.New("error scanning events"),
+			expectedError:          nil, // in this case we break the loop and don't return an error
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := getContext()
+			defer cancel()
+
+			client, scanner, storage, _ := getMocks(t)
+			client.EXPECT().BlockNumber(ctx).
+				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
+				Times(tt.blockNumberTimes)
+
+			storage.EXPECT().Get([]byte("evo_current_block")).
+				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
+				Times(1)
+
+			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
+				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), []string{tt.c.EvoContract}).
+					Return(nil, tt.errorScanEvents).
+					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
+						if tt.errorScanEvents != nil {
+							// we cancel the loop since we only want one iteration
+							cancel()
+						}
+					},
+					).Times(1)
+
+				if tt.errorScanEvents == nil {
+					storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
+						Return(tt.errorSaveBlockNumber).Do(
+						func(_ []byte, _ []byte) {
+							// we cancel the loop since we only want one iteration
+							cancel()
+						},
+					).Times(1)
+				}
+			}
+
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage))
+			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
+				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
+			}
+		})
+	}
+}
+
 func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
