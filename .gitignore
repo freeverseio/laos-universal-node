@@ -35,3 +35,11 @@ erc721_contracts.txt
 
 # local k8 config
 deployment/environments/local/*
+
+# DB-related files
+*.log
+*.vlog
+*.sst
+DISCARD
+KEYREGISTRY
+MANIFEST

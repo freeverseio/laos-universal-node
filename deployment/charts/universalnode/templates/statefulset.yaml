@@ -13,6 +13,9 @@ spec:
       labels:
         app.kubernetes.io/app: {{ .Values.name }}
     spec:
+      # allow user "nobody" to write to /app/.universalnode https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+      securityContext:
+        fsGroup: 65534
       containers:
       - name: universalnode
         image: freeverseio/laos-universal-node:{{ .Values.imageTag }}
