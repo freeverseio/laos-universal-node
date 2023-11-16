@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -10,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 )
 
 // JSONRPCRequest represents the expected structure of a JSON-RPC request.
@@ -28,14 +27,14 @@ type ParamsRPCRequest struct {
 	Value string `json:"value,omitempty"`
 }
 
-func PostRpcRequestMiddleware(h RPCHandler, st scan.Storage) http.Handler {
+func PostRpcRequestMiddleware(h RPCHandler, repositoryService repository.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// we pass both handlers and decide which one to call based on the request
 		proxyRPCHandler := http.HandlerFunc(h.PostRPCProxyHandler)                   // proxy handler for standard requests
 		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler) // handler for universal minting requests
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
-			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, st)
+			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, repositoryService)
 		}
 	})
 }
@@ -70,16 +69,16 @@ func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid b
 }
 
 // handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
-func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, st scan.Storage) {
+func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, repositoryService repository.Service) {
 	switch jsonRequest.Method {
 	case "eth_call":
-		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, st)
+		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, repositoryService)
 	default:
 		proxyRPCHandler.ServeHTTP(w, r)
 	}
 }
 
-func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, st scan.Storage) {
+func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, repositoryService repository.Service) {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
@@ -100,7 +99,8 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 
 	// Check if contract is in the list.
-	isInContractList, err := isContractInList(params.To, st)
+	// TODO refactor isContractInList and use `repository.HasERC721UniversalContract()`
+	isInContractList, err := isContractInList(params.To, repositoryService)
 	if err != nil {
 		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
 		return
@@ -116,14 +116,13 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 }
 
-func isContractInList(contractAddress string, st scan.Storage) (bool, error) {
-	list, err := st.ReadAll(context.Background())
+func isContractInList(contractAddress string, repositoryService repository.Service) (bool, error) {
+	list, err := repositoryService.GetAllERC721UniversalContracts()
 	if err != nil {
 		return false, err
 	}
 	for _, contract := range list {
-		addr := contract.Address.Hex() // convert to string
-		if strings.EqualFold(addr, contractAddress) {
+		if strings.EqualFold(contract, contractAddress) {
 			return true, nil
 		}
 	}

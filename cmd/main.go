@@ -7,13 +7,17 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,38 +36,80 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			slog.Error("error closing db", "err", err)
+		}
+	}()
+
+	storageService := storage.New(db)
+
+	repositoryService := repository.New(storageService)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
 
-	storage, err := scan.NewFSStorage("erc721_contracts.txt")
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
 
-	// ERC721 Universal scanner
+	// Badger DB garbage collection
+	group.Go(func() error {
+		numIterations := 3
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				// garbage collection cleans up at most 1 file per iteration
+				// https://dgraph.io/docs/badger/get-started/#garbage-collection
+				for i := 0; i < numIterations; i++ {
+					err := db.RunValueLogGC(0.5)
+					if err != nil {
+						if err != badger.ErrNoRewrite {
+							slog.Error("error occurred while running badger GC", "err", err.Error())
+						}
+						break
+					}
+				}
+			}
+		}
+	})
+
+	// Ownership chain scanner
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.Rpc)
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-
-		s := scan.NewScanner(client, storage)
-		return scanUniversalChain(ctx, c, client, s, storage)
+		if err := compareChainIDs(ctx, client, repositoryService); err != nil {
+			return err
+		}
+		s := scan.NewScanner(client, c.Contracts...)
+		return scanUniversalChain(ctx, c, client, s, repositoryService)
 	})
 
-	// Evo scanner
+	// Evolution chain scanner
 	group.Go(func() error {
 		client, err := ethclient.Dial(c.EvoRpc)
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
-		s := scan.NewScanner(client, nil)
-		return scanEvoChain(ctx, c, client, s)
+		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
+		s := scan.NewScanner(client)
+		return scanEvoChain(ctx, c, client, s, repositoryService)
 	})
 
-	// Universal noed RPC server
+	// Universal node RPC server
 	group.Go(func() error {
 		rpcServer, err := server.New()
 		if err != nil {
@@ -71,7 +117,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, storage)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, repositoryService)
 	})
 
 	if err := group.Wait(); err != nil {
@@ -80,16 +126,53 @@ func run() error {
 	return nil
 }
 
-func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, storage scan.Storage) error {
-	var err error
-	startingBlock := c.StartingBlock
-	if startingBlock == 0 {
-		startingBlock, err = getL1LatestBlock(ctx, client)
-		if err != nil {
-			return fmt.Errorf("error retrieving the latest block: %w", err)
-		}
-		slog.Debug("latest block found", "latest_block", startingBlock)
+func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryService repository.Service) error {
+	chainId, err := client.ChainID(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting chain ID from Ethereum client: %w", err)
 	}
+
+	chainIdDB, err := repositoryService.GetChainID()
+	if err != nil {
+		return fmt.Errorf("error getting chain ID from database: %w", err)
+	}
+
+	if chainIdDB == "" {
+		if err = repositoryService.SetChainID(chainId.String()); err != nil {
+			return fmt.Errorf("error setting chain ID in database: %w", err)
+		}
+	} else if chainId.String() != chainIdDB {
+		return fmt.Errorf("mismatched chain IDs: database has %s, eth client reports %s", chainIdDB, chainId.String())
+	}
+	return nil
+}
+
+func shouldDiscover(repositoryService repository.Service, contracts []string) (bool, error) {
+	if len(contracts) == 0 {
+		return true, nil
+	}
+	for i := 0; i < len(contracts); i++ {
+		hasContract, err := repositoryService.HasERC721UniversalContract(contracts[i])
+		if err != nil {
+			return false, err
+		}
+		if !hasContract {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	if err != nil {
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
+	}
+	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.StartingBlock, client)
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -109,39 +192,48 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 
-			universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
 			if err != nil {
-				slog.Error("error occurred while discovering new universal events", "err", err.Error())
+				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
 			}
 
-			// This will be replaced by a batch write to the DB
-			for i := 0; i < len(universalContracts); i++ {
-				if err = storage.Store(ctx, universalContracts[i]); err != nil {
-					slog.Error("error occurred while storing universal contract", "err", err.Error())
+			var universalContracts []model.ERC721UniversalContract
+
+			if shouldDiscover {
+				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+				if err != nil {
+					slog.Error("error occurred while discovering new universal events", "err", err.Error())
+					break
+				}
+
+				if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
+					slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 					break
 				}
 			}
 
-			erc721contracts, err := storage.ReadAll(context.Background())
-			if err != nil {
-				slog.Error("error reading contracts from storage", "err", err.Error())
-				break
+			var contracts []string
+			if len(c.Contracts) > 0 {
+				contracts = c.Contracts
+			} else {
+				contracts, err = repositoryService.GetAllERC721UniversalContracts()
+				if err != nil {
+					slog.Error("error occurred reading contracts from storage", "err", err.Error())
+					break
+				}
 			}
 
-			if len(erc721contracts) == 0 {
-				slog.Debug("no contracts found")
-				break
+			if len(contracts) > 0 {
+				_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				if err != nil {
+					slog.Error("error occurred while scanning events", "err", err.Error())
+					break
+				}
 			}
 
-			contracts := make([]common.Address, 0)
-			for _, c := range erc721contracts {
-				contracts = append(contracts, c.Address)
-			}
-
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts...)
-			if err != nil {
-				slog.Error("error occurred while scanning events", "err", err.Error())
+			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}
 			startingBlock = lastBlock + 1
@@ -149,16 +241,16 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner) error {
-	var err error
-	startingBlock := c.EvoStartingBlock
-	if startingBlock == 0 {
-		startingBlock, err = getL1LatestBlock(ctx, client)
-		if err != nil {
-			return fmt.Errorf("error retrieving the latest block: %w", err)
-		}
-		slog.Debug("latest block found", "latest_block", startingBlock)
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
+	if err != nil {
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
 	}
+	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.EvoStartingBlock, client)
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -178,15 +270,43 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), common.HexToAddress(c.EvoContract))
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), []string{c.EvoContract}) // TODO choose if c.EvoContract should be a []string
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
 
+			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
 			startingBlock = lastBlock + 1
 		}
 	}
+}
+
+func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
+	var startingBlock uint64
+	var err error
+	if startingBlockDB != "" {
+		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error parsing the current block from storage: %w", err)
+		}
+		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	}
+
+	if startingBlock == 0 {
+		startingBlock = configStartingBlock
+		if startingBlock == 0 {
+			startingBlock, err = getL1LatestBlock(ctx, client)
+			if err != nil {
+				return 0, fmt.Errorf("error retrieving the latest block from chain: %w", err)
+			}
+			slog.Debug("latest block found", "latest_block", startingBlock)
+		}
+	}
+	return startingBlock, nil
 }
 
 func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {

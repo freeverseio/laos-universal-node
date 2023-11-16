@@ -2,17 +2,15 @@ package api_test
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	apiMock "github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
-	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
+	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"go.uber.org/mock/gomock"
 )
 
@@ -29,7 +27,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		expectedResponse                      string
 		proxyHandlerCalledTimes               int
 		ercUniversalMintingHandlerCalledTimes int
-		storedContracts                       []scan.ERC721UniversalContract
+		storedContracts                       [][]byte
 	}{
 		{
 			name:                                  "Good request with eth_call method",
@@ -39,12 +37,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:                    http.StatusOK,
 			expectedResponse:                      "universalMintingHandler called",
 			ercUniversalMintingHandlerCalledTimes: 1,
-			storedContracts: []scan.ERC721UniversalContract{
-				{
-					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-					Block:   uint64(0),
-					BaseURI: "evochain1/collectionId/",
-				},
+			storedContracts: [][]byte{
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
 		},
 		{
@@ -55,7 +49,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:      http.StatusOK,
 			expectedResponse:        "proxyHandler called",
 			proxyHandlerCalledTimes: 1,
-			storedContracts:         []scan.ERC721UniversalContract{},
+			storedContracts:         [][]byte{},
 		},
 		{
 			name: "Good request with eth_call method",
@@ -73,12 +67,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:                    http.StatusOK,
 			expectedResponse:                      "universalMintingHandler called",
 			ercUniversalMintingHandlerCalledTimes: 1,
-			storedContracts: []scan.ERC721UniversalContract{
-				{
-					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-					Block:   uint64(0),
-					BaseURI: "evochain1/collectionId/",
-				},
+			storedContracts: [][]byte{
+				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
 		},
 		{
@@ -89,13 +79,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:      http.StatusOK,
 			expectedResponse:        "proxyHandler called",
 			proxyHandlerCalledTimes: 1,
-			storedContracts: []scan.ERC721UniversalContract{
-				{
-					Address: common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-					Block:   uint64(0),
-					BaseURI: "evochain1/collectionId/",
-				},
-			},
+			storedContracts:         [][]byte{[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")},
 		},
 		{
 			name:                    "Good request with no erc721 method",
@@ -130,7 +114,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
-			storageMock := mock.NewMockStorage(ctrl)
+			storage := mockStorage.NewMockStorage(ctrl)
+
 			handlerMock := apiMock.NewMockRPCHandler(ctrl)
 			t.Cleanup(func() {
 				ctrl.Finish()
@@ -140,6 +125,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 
 			// Record responses
 			w := httptest.NewRecorder()
+			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return(tt.storedContracts, nil).AnyTimes()
+			repositoryService := repository.New(storage)
+
 			handlerMock.EXPECT().PostRPCProxyHandler(w, req).Do(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte("proxyHandler called"))
@@ -155,9 +143,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 				}
 			}).Times(tt.ercUniversalMintingHandlerCalledTimes)
 
-			storageMock.EXPECT().ReadAll(context.Background()).Return(tt.storedContracts, nil).AnyTimes()
 			// Create the middleware and serve using the test handlers
-			middleware := api.PostRpcRequestMiddleware(handlerMock, storageMock)
+			middleware := api.PostRpcRequestMiddleware(handlerMock, repositoryService)
 			middleware.ServeHTTP(w, req)
 
 			// Check the status code and body

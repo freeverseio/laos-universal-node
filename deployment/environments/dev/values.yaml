@@ -7,7 +7,7 @@ networks:
     blocksMargin: 70
     blocksRange: 2
     evoRpc: https://caladan.gorengine.com/own
-    evoContract: "0x0000000000000000000000000000000000000403"
+    evoContracts: "0x0000000000000000000000000000000000000403"
     evoStartingBlock: "0"
     evoBlocksMargin: 70
     evoBlocksRange: 2
@@ -19,7 +19,7 @@ networks:
     blocksMargin: 70
     blocksRange: 2
     evoRpc: https://caladan.gorengine.com/own
-    evoContract: "0x0000000000000000000000000000000000000403"
+    evoContracts: "0x0000000000000000000000000000000000000403"
     evoStartingBlock: "0"
     evoBlocksMargin: 70
     evoBlocksRange: 2

@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Values.name }}
   labels:
@@ -29,6 +29,7 @@ spec:
             cpu: "2"
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},
+                -storage_path=/app/.universalnode,
                 -rpc={{ .Values.rpc }},
                 -evo_rpc={{ .Values.evoRpc }},
                 -evo_contract={{ .Values.evoContracts }},
@@ -52,3 +53,14 @@ spec:
                 {{ end }}
                 {{ .Values.debug | ternary "-debug" "" }}
               ]
+        volumeMounts:
+        - name: storage
+          mountPath: /app/.universalnode
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

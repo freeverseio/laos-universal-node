@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	"go.uber.org/mock/gomock"
@@ -32,6 +33,7 @@ func TestParseEvents(t *testing.T) {
 		fromBlock *big.Int
 		toBlock   *big.Int
 		address   common.Address
+		contracts []model.ERC721UniversalContract
 		eventLogs []types.Log
 	}{
 		{
@@ -39,6 +41,12 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []model.ERC721UniversalContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					BaseURI: "johndoe/collection",
+				},
+			},
 			eventLogs: []types.Log{
 				{
 					Topics: []common.Hash{
@@ -55,6 +63,12 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []model.ERC721UniversalContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					BaseURI: "johndoe/collection",
+				},
+			},
 			eventLogs: []types.Log{
 				{
 					Topics: []common.Hash{
@@ -72,6 +86,12 @@ func TestParseEvents(t *testing.T) {
 			fromBlock: big.NewInt(0),
 			toBlock:   big.NewInt(100),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+			contracts: []model.ERC721UniversalContract{
+				{
+					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					BaseURI: "johndoe/collection",
+				},
+			},
 			eventLogs: []types.Log{
 				{
 					Topics: []common.Hash{
@@ -135,9 +155,9 @@ func TestParseEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			cli, storage := getMocks(t)
+			cli := getMockEthClient(t)
 
-			s := scan.NewScanner(cli, storage)
+			s := scan.NewScanner(cli)
 
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: tt.fromBlock,
@@ -145,7 +165,7 @@ func TestParseEvents(t *testing.T) {
 				Addresses: []common.Address{tt.address},
 			}).Return(tt.eventLogs, nil)
 
-			events, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, tt.address)
+			events, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
@@ -188,90 +208,140 @@ func TestParseEvents(t *testing.T) {
 	}
 }
 
+func TestScanOnlyValidEvents(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		eventLogs      []types.Log
+		expectedEvents int
+	}{
+		{
+			name: "it only returns Transfer, Approval and ApprovalForAll",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						// Event hash is not included in the list of events to be parsed
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+			},
+			expectedEvents: 3,
+		},
+		{
+			name: "it does not parse Transfer with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+					},
+				},
+			},
+			expectedEvents: 0,
+		},
+		{
+			name: "it does not parse Approval with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			expectedEvents: 0,
+		},
+		{
+			name: "it does not parse ApprovalForAll with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(approveForAllEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+					},
+					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				},
+			},
+			expectedEvents: 0,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cli := getMockEthClient(t)
+
+			fromBlock := big.NewInt(0)
+			toBlock := big.NewInt(100)
+			address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+			contracts := []string{address.String()}
+			s := scan.NewScanner(cli)
+
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+				Addresses: []common.Address{address},
+			}).Return(tt.eventLogs, nil)
+
+			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			if err != nil {
+				t.Fatalf("error occurred when scanning events %v", err.Error())
+			}
+
+			if len(events) != tt.expectedEvents {
+				t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
+			}
+		})
+	}
+}
+
 func TestScanEvents(t *testing.T) {
 	t.Parallel()
-	t.Run("it should only parse Transfer, Approve and ApproveForAllEvents", func(t *testing.T) {
-		t.Parallel()
-
-		cli, storage := getMocks(t)
-
-		fromBlock := big.NewInt(0)
-		toBlock := big.NewInt(100)
-		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-
-		s := scan.NewScanner(cli, storage)
-
-		eventLogs := []types.Log{
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveForAllEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(approveEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-				Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(transferEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-			{
-				Topics: []common.Hash{
-					common.HexToHash(transferEventHash),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-			{
-				Topics: []common.Hash{
-					// Event hash is not included in the list of events to be parsed
-					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-					common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-					common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-					common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-				},
-			},
-		}
-
-		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-			FromBlock: fromBlock,
-			ToBlock:   toBlock,
-			Addresses: []common.Address{address},
-		}).Return(eventLogs, nil)
-
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, address)
-		if err != nil {
-			t.Fatalf("error occurred when scanning events %v", err.Error())
-		}
-
-		if len(events) != 4 {
-			t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
-		}
-	})
 
 	t.Run("it returns when there are no events", func(t *testing.T) {
 		t.Parallel()
 
-		cli, storage := getMocks(t)
+		cli := getMockEthClient(t)
 
 		fromBlock := big.NewInt(0)
 		toBlock := big.NewInt(100)
 		address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+		contracts := []string{
+			address.String(),
+		}
 
-		s := scan.NewScanner(cli, storage)
+		s := scan.NewScanner(cli)
 
 		eventLogs := []types.Log{}
 
@@ -281,7 +351,7 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, address)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 		if err != nil {
 			t.Fatalf("nil error expected, got %v", err)
 		}
@@ -289,7 +359,29 @@ func TestScanEvents(t *testing.T) {
 			t.Fatalf("nil events expected, got %v", events)
 		}
 	})
+	t.Run("it does not parse events when blockchain does not return any event", func(t *testing.T) {
+		t.Parallel()
 
+		cli := getMockEthClient(t)
+
+		fromBlock := big.NewInt(0)
+		toBlock := big.NewInt(100)
+
+		s := scan.NewScanner(cli)
+		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+			FromBlock: fromBlock,
+			ToBlock:   toBlock,
+			Addresses: []common.Address{},
+		}).Return(nil, nil)
+
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
+		if err != nil {
+			t.Errorf("got error %s when scanning events while no error was expected", err.Error())
+		}
+		if len(events) > 0 {
+			t.Fatalf("got events %v when no events where expected", events)
+		}
+	})
 	t.Run("scan raises error", func(t *testing.T) {
 		t.Parallel()
 
@@ -310,13 +402,16 @@ func TestScanEvents(t *testing.T) {
 		for _, tt := range tests {
 			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
-				cli, storage := getMocks(t)
+				cli := getMockEthClient(t)
 
 				fromBlock := big.NewInt(0)
 				toBlock := big.NewInt(100)
 				address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+				contracts := []string{
+					address.String(),
+				}
 
-				s := scan.NewScanner(cli, storage)
+				s := scan.NewScanner(cli)
 
 				cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 					FromBlock: fromBlock,
@@ -324,7 +419,7 @@ func TestScanEvents(t *testing.T) {
 					Addresses: []common.Address{address},
 				}).Return(nil, tt.error)
 
-				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock, address)
+				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 				if err == nil {
 					t.Fatalf("got nil error, expected %v", tt.error.Error())
 				}
@@ -338,9 +433,12 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 	address := common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
+	contract := model.ERC721UniversalContract{
+		Address: address,
+		BaseURI: "evochain1/collectionId/",
+	}
 
 	tests := []struct {
-		readAllError            error
 		filterLogsError         error
 		name                    string
 		events                  []types.Log
@@ -352,31 +450,21 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 			filterLogsError:         fmt.Errorf("error filtering logs"),
 			filterLogsExpectedTimes: 1,
 		},
-		{
-			name:                    "discovery fails because reading from storage fails",
-			events:                  nil,
-			filterLogsExpectedTimes: 0,
-			filterLogsError:         nil,
-			readAllError:            fmt.Errorf("error while reading contracts from storage"),
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cli, storage := getMocks(t)
-			s := scan.NewScanner(cli, storage)
+			cli := getMockEthClient(t)
+			s := scan.NewScanner(cli, contract.Address.String())
 
-			storage.EXPECT().ReadAll(context.Background()).
-				Return(nil, tt.readAllError).
-				Times(1)
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
 				Addresses: []common.Address{address},
 			}).Return(tt.events, tt.filterLogsError).Times(tt.filterLogsExpectedTimes)
 
-			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock, address)
+			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
 			if err == nil {
 				t.Fatalf("got no error, %v expected", tt.name)
 			}
@@ -441,8 +529,8 @@ func TestScanNewUniversalEvents(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cli, storage := getMocks(t)
-			s := scan.NewScanner(cli, storage)
+			cli := getMockEthClient(t)
+			s := scan.NewScanner(cli)
 
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
@@ -460,69 +548,8 @@ func TestScanNewUniversalEvents(t *testing.T) {
 	}
 }
 
-func TestScanNewUniversalEventsDiscovery(t *testing.T) {
-	t.Parallel()
-	fromBlock := big.NewInt(0)
-	toBlock := big.NewInt(100)
-	userDefinedContracts := []common.Address{
-		common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-		common.HexToAddress("0x59b6c3b079a2af72ece16065c85b95ac2405459b"),
-	}
-	tests := []struct {
-		name                    string
-		storedContracts         []scan.ERC721UniversalContract
-		filterLogsExpectedTimes int
-	}{
-		{
-			name:                    "discovery returns false",
-			filterLogsExpectedTimes: 0,
-			storedContracts: []scan.ERC721UniversalContract{
-				{
-					Address: userDefinedContracts[0],
-					Block:   fromBlock.Uint64(),
-					BaseURI: "evochain1/collectionId/",
-				},
-				{
-					Address: userDefinedContracts[1],
-					Block:   fromBlock.Uint64(),
-					BaseURI: "evochain2/collectionId/",
-				},
-			},
-		},
-		{
-			name:                    "discovery returns true",
-			filterLogsExpectedTimes: 1,
-			storedContracts: []scan.ERC721UniversalContract{
-				{
-					Address: userDefinedContracts[0],
-					Block:   fromBlock.Uint64(),
-					BaseURI: "evochain1/collectionId/",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			cli, storage := getMocks(t)
-			s := scan.NewScanner(cli, storage)
-			storage.EXPECT().ReadAll(context.Background()).Return(tt.storedContracts, nil).Times(1)
-			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
-				FromBlock: fromBlock,
-				ToBlock:   toBlock,
-				Addresses: userDefinedContracts,
-			}).Return(nil, nil).Times(tt.filterLogsExpectedTimes)
-			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock, userDefinedContracts...)
-			if err != nil {
-				t.Fatalf("got error %v, expected nil", err)
-			}
-		})
-	}
-}
-
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockStorage) {
+func getMockEthClient(t *testing.T) *mock.MockEthClient {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	return mock.NewMockEthClient(ctrl), mock.NewMockStorage(ctrl)
+	return mock.NewMockEthClient(ctrl)
 }

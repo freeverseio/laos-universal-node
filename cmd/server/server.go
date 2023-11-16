@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/gorilla/mux"
 	"golang.org/x/exp/slog"
 )
@@ -81,12 +81,12 @@ func New(opts ...ServerOption) (*Server, error) {
 
 // ListenAndServe starts the RPC server to listen and serve incoming requests on the specified address.
 // It also handles graceful shutdown on receiving a context cancellation signal.
-func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string, st scan.Storage) error {
+func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string, repositoryService repository.Service) error {
 	s.httpServer.SetAddr(addr)
 
 	handler := api.NewGlobalRPCHandler(rpcUrl)
 	router := mux.NewRouter()
-	s.httpServer.SetHandler(api.Routes(handler, router, st))
+	s.httpServer.SetHandler(api.Routes(handler, router, repositoryService))
 	slog.Info("server listening", "address", addr)
 
 	go func() {
