@@ -4,22 +4,22 @@ networks:
     host: polygon-mumbai.unode.gorengine.com
     debug: true
     startingBlock: "0"
-    blocksMargin: 70
+    blocksMargin: 0
     blocksRange: 2
     evoRpc: https://caladan.gorengine.com/own
     evoContracts: "0x0000000000000000000000000000000000000403"
     evoStartingBlock: "0"
-    evoBlocksMargin: 70
+    evoBlocksMargin: 0
     evoBlocksRange: 2
   - name: polygon-mainnet
     rpc: https://rpc-mainnet.maticvigil.com/
     host: polygon-mainnet.unode.gorengine.com
     debug: true
     startingBlock: "0"
-    blocksMargin: 70
+    blocksMargin: 0
     blocksRange: 2
     evoRpc: https://caladan.gorengine.com/own
     evoContracts: "0x0000000000000000000000000000000000000403"
     evoStartingBlock: "0"
-    evoBlocksMargin: 70
+    evoBlocksMargin: 0
     evoBlocksRange: 2
