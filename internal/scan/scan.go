@@ -359,6 +359,7 @@ func parseNewCollection(eL *types.Log, contractAbi *abi.ABI) (EventNewCollecion,
 	if err != nil {
 		return newCollection, err
 	}
+	newCollection.Owner = common.HexToAddress(eL.Topics[1].Hex())
 
 	return newCollection, nil
 }
@@ -369,6 +370,7 @@ func parseEvolvedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventEvol
 	if err != nil {
 		return evolveWithExternalURI, err
 	}
+	evolveWithExternalURI.TokenId = eL.Topics[1].Big()
 
 	return evolveWithExternalURI, nil
 }
@@ -379,6 +381,7 @@ func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventMinte
 	if err != nil {
 		return mintWithExternalURI, err
 	}
+	mintWithExternalURI.To = common.HexToAddress(eL.Topics[1].Hex())
 
 	return mintWithExternalURI, nil
 }
