@@ -29,9 +29,12 @@ var (
 	eventApprovalSigHash               = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
 	eventApprovalForAllSigHash         = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
-	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
-	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
-	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
+	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
+	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
+	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
+	EventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
+	EventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
+	EventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
 
@@ -85,24 +88,22 @@ type EventNewERC721Universal struct {
 
 // EventNewCollecion is the LaosEvolution event emitted when a new collection is created
 type EventNewCollecion struct {
-	CollectionId uint64
-	Owner        common.Address
+	CollectionAddress common.Address
+	Owner             common.Address
 }
 
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
-	CollectionId uint64
-	Slot         *big.Int
-	To           common.Address
-	TokenURI     string
-	TokenId      *big.Int
+	Slot     *big.Int
+	To       common.Address
+	TokenURI string
+	TokenId  *big.Int
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
 type EventEvolvedWithExternalURI struct {
-	CollectionId uint64
-	TokenId      *big.Int
-	TokenURI     string
+	TokenId  *big.Int
+	TokenURI string
 }
 
 func generateEventSignatureHash(event string, params ...string) string {
@@ -202,6 +203,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
+	collectionAbi, err := abi.JSON(strings.NewReader(contract.CollectionMetaData.ABI))
+	if err != nil {
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
+	}
+
 	evoAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
@@ -252,9 +258,9 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					parsedEvents = append(parsedEvents, approvalForAll)
 					slog.Info("received event", eventApprovalForAllName, approvalForAll)
 				}
-			// Evolution events
+			// Collection event
 			case eventNewCollectionSigHash:
-				ev, err := parseNewCollection(&eventLogs[i], &evoAbi)
+				ev, err := parseNewCollection(&eventLogs[i], &collectionAbi)
 				if err != nil {
 					return nil, err
 				}
@@ -262,6 +268,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventNewCollection, ev)
 
+			// Evolution events
 			case eventMintedWithExternalURISigHash:
 				ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
 				if err != nil {
