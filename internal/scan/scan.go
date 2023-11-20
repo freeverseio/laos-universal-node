@@ -88,7 +88,6 @@ type EventNewERC721Universal struct {
 }
 
 func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
-
 	// Define a regular expression pattern to match the desired content between parentheses
 	pattern := `AccountKey20\(([^)]+)\)`
 
