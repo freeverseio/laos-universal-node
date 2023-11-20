@@ -86,6 +86,12 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
+func (e EventNewERC721Universal) CollectionAddress() common.Address {
+	s := strings.Split(e.BaseURI, "/")
+
+	return common.HexToAddress(s[len(s)-1])
+}
+
 // EventNewCollecion is the LaosEvolution event emitted when a new collection is created
 type EventNewCollecion struct {
 	CollectionAddress common.Address
