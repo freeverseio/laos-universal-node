@@ -64,6 +64,21 @@ func (mr *MockTxMockRecorder) Discard() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discard", reflect.TypeOf((*MockTx)(nil).Discard))
 }
 
+// Get mocks base method.
+func (m *MockTx) Get(key []byte) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTx)(nil).Get), key)
+}
+
 // Set mocks base method.
 func (m *MockTx) Set(key, value []byte) error {
 	m.ctrl.T.Helper()
@@ -78,31 +93,31 @@ func (mr *MockTxMockRecorder) Set(key, value any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockTx)(nil).Set), key, value)
 }
 
-// MockStorage is a mock of Storage interface.
-type MockStorage struct {
+// MockService is a mock of Service interface.
+type MockService struct {
 	ctrl     *gomock.Controller
-	recorder *MockStorageMockRecorder
+	recorder *MockServiceMockRecorder
 }
 
-// MockStorageMockRecorder is the mock recorder for MockStorage.
-type MockStorageMockRecorder struct {
-	mock *MockStorage
+// MockServiceMockRecorder is the mock recorder for MockService.
+type MockServiceMockRecorder struct {
+	mock *MockService
 }
 
-// NewMockStorage creates a new mock instance.
-func NewMockStorage(ctrl *gomock.Controller) *MockStorage {
-	mock := &MockStorage{ctrl: ctrl}
-	mock.recorder = &MockStorageMockRecorder{mock}
+// NewMockService creates a new mock instance.
+func NewMockService(ctrl *gomock.Controller) *MockService {
+	mock := &MockService{ctrl: ctrl}
+	mock.recorder = &MockServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
+func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
 // Get mocks base method.
-func (m *MockStorage) Get(key []byte) ([]byte, error) {
+func (m *MockService) Get(key []byte) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", key)
 	ret0, _ := ret[0].([]byte)
@@ -111,13 +126,13 @@ func (m *MockStorage) Get(key []byte) ([]byte, error) {
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStorageMockRecorder) Get(key any) *gomock.Call {
+func (mr *MockServiceMockRecorder) Get(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockService)(nil).Get), key)
 }
 
 // GetKeysWithPrefix mocks base method.
-func (m *MockStorage) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
+func (m *MockService) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
 	ret0, _ := ret[0].([][]byte)
@@ -126,13 +141,13 @@ func (m *MockStorage) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
 }
 
 // GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
-func (mr *MockStorageMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockStorage)(nil).GetKeysWithPrefix), prefix)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockService)(nil).GetKeysWithPrefix), prefix)
 }
 
 // NewTransaction mocks base method.
-func (m *MockStorage) NewTransaction() storage.Tx {
+func (m *MockService) NewTransaction() storage.Tx {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewTransaction")
 	ret0, _ := ret[0].(storage.Tx)
@@ -140,13 +155,13 @@ func (m *MockStorage) NewTransaction() storage.Tx {
 }
 
 // NewTransaction indicates an expected call of NewTransaction.
-func (mr *MockStorageMockRecorder) NewTransaction() *gomock.Call {
+func (mr *MockServiceMockRecorder) NewTransaction() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTransaction", reflect.TypeOf((*MockStorage)(nil).NewTransaction))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTransaction", reflect.TypeOf((*MockService)(nil).NewTransaction))
 }
 
 // Set mocks base method.
-func (m *MockStorage) Set(key, value []byte) error {
+func (m *MockService) Set(key, value []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", key, value)
 	ret0, _ := ret[0].(error)
@@ -154,7 +169,7 @@ func (m *MockStorage) Set(key, value []byte) error {
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockStorageMockRecorder) Set(key, value any) *gomock.Call {
+func (mr *MockServiceMockRecorder) Set(key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStorage)(nil).Set), key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockService)(nil).Set), key, value)
 }

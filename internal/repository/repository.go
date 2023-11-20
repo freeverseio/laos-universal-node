@@ -16,10 +16,10 @@ const (
 )
 
 type Service struct {
-	storageService storage.Storage
+	storageService storage.Service
 }
 
-func New(s storage.Storage) Service {
+func New(s storage.Service) Service {
 	return Service{
 		s,
 	}

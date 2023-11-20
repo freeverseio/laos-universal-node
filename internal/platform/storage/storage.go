@@ -4,9 +4,10 @@ type Tx interface {
 	Commit() error
 	Discard()
 	Set(key []byte, value []byte) error
+	Get(key []byte) ([]byte, error)
 }
 
-type Storage interface {
+type Service interface {
 	NewTransaction() Tx
 	Get(key []byte) ([]byte, error)
 	Set(key []byte, value []byte) error

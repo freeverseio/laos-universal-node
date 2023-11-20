@@ -17,7 +17,7 @@ func TestCheckContractInList(t *testing.T) {
 			ctrl.Finish()
 		})
 
-		storage := mockStorage.NewMockStorage(ctrl)
+		storage := mockStorage.NewMockService(ctrl)
 		keys := [][]byte{
 			[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 		}

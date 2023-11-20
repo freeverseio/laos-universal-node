@@ -54,6 +54,7 @@ linters:
     - unconvert
     - unparam
     - whitespace
+    - gofmt
   
 issues:
   exclude-use-default: false
