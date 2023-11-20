@@ -277,7 +277,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
-
+			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
