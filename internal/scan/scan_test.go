@@ -325,11 +325,10 @@ func TestScanOnlyValidEvents(t *testing.T) {
 				Addresses: []common.Address{address},
 			}).Return(tt.eventLogs, nil)
 
-			events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			events, _, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
-			fmt.Println(lastScannedBlock)
 
 			if len(events) != tt.expectedEvents {
 				t.Fatalf("error scanning events: %v events exepected, got %v", 4, len(events))
