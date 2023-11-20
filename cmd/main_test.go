@@ -551,7 +551,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 
 			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
 				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), []string{tt.c.EvoContract}).
-					Return(nil, tt.errorScanEvents).
+					Return(nil, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {
 							cancel() // we cancel the loop since we only want one iteration
