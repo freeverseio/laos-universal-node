@@ -548,6 +548,54 @@ func TestScanNewUniversalEvents(t *testing.T) {
 	}
 }
 
+func TestBaseURI(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                      string
+		baseURI                   string
+		expectedCollectionAddress common.Address
+	}{
+		{
+			name:                      "extract collection address from baseURI",
+			baseURI:                   "evochain/0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b",
+			expectedCollectionAddress: common.HexToAddress("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+		},
+		{
+			name:                      "extract collection address from baseURI extended",
+			baseURI:                   "evochain/freeverse/universalcollection/0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b",
+			expectedCollectionAddress: common.HexToAddress("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+		},
+		{
+			name:                      "extract collection address from baseURI short",
+			baseURI:                   "0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b",
+			expectedCollectionAddress: common.HexToAddress("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+		},
+		{
+			name:                      "extract collection address from empty baseURI",
+			baseURI:                   "",
+			expectedCollectionAddress: common.HexToAddress("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			e := scan.EventNewERC721Universal{
+				BaseURI: tt.baseURI,
+			}
+
+			address := e.CollectionAddress()
+
+			if address != tt.expectedCollectionAddress {
+				t.Fatalf("got %d collection address, %d expected", address, tt.expectedCollectionAddress)
+			}
+		})
+	}
+}
+
 func getMockEthClient(t *testing.T) *mock.MockEthClient {
 	t.Helper()
 	ctrl := gomock.NewController(t)
