@@ -20,7 +20,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		universalContracts := []model.ERC721UniversalContract{
@@ -57,7 +57,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		universalContracts := []model.ERC721UniversalContract{
@@ -95,7 +95,7 @@ func TestGetAllERC721UniversalContracts(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		keys := [][]byte{
@@ -127,7 +127,7 @@ func TestGetAllERC721UniversalContracts(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		errExpected := fmt.Errorf("error")
@@ -147,7 +147,7 @@ func TestGetChainID(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		mockStorage.EXPECT().Get([]byte("chain_id")).Return([]byte("1"), nil)
@@ -167,7 +167,7 @@ func TestGetChainID(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		errExpected := fmt.Errorf("error")
@@ -187,7 +187,7 @@ func TestGetCurrentBlock(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		mockStorage.EXPECT().Get([]byte("current_block")).Return([]byte("1"), nil)
@@ -207,7 +207,7 @@ func TestGetCurrentBlock(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
 		mockStorage.EXPECT().Get([]byte("current_block")).Return(nil, badger.ErrKeyNotFound)
@@ -231,7 +231,7 @@ func TestStoreCurrentBlock(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 		mockStorage.EXPECT().Set([]byte("current_block"), []byte("2")).Return(nil)
 
@@ -248,7 +248,7 @@ func TestHasERC721UniversalContract(t *testing.T) {
 		t.Parallel()
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 		mockStorage.EXPECT().Get([]byte("contract_0x0")).Return([]byte("http://baseuri2.com"), nil)
 
@@ -266,7 +266,7 @@ func TestHasERC721UniversalContract(t *testing.T) {
 		t.Parallel()
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
-		mockStorage := mock.NewMockStorage(mockCtrl)
+		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 		errExpected := fmt.Errorf("error")
 		mockStorage.EXPECT().Get([]byte("contract_0x0")).Return([]byte(""), errExpected)

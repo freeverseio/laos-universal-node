@@ -16,7 +16,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"golang.org/x/sync/errgroup"
@@ -47,7 +47,7 @@ func run() error {
 		}
 	}()
 
-	storageService := storage.New(db)
+	storageService := badgerStorage.NewService(db)
 
 	repositoryService := repository.New(storageService)
 
