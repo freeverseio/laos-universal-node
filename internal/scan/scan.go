@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -86,10 +87,22 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
-func (e EventNewERC721Universal) CollectionAddress() common.Address {
-	s := strings.Split(e.BaseURI, "/")
+func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
 
-	return common.HexToAddress(s[len(s)-1])
+	// Define a regular expression pattern to match the desired content between parentheses
+	pattern := `AccountKey20\(([^)]+)\)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(pattern)
+
+	// Find the match in the input string
+	match := re.FindStringSubmatch(e.BaseURI)
+
+	if len(match) != 2 {
+		return common.Address{}, fmt.Errorf("no collection address found in base URI: %s", e.BaseURI)
+	}
+
+	return common.HexToAddress(match[1]), nil
 }
 
 // EventNewCollecion is the LaosEvolution event emitted when a new collection is created
