@@ -55,13 +55,14 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
 						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 					},
+					BlockNumber: 100,
 				},
 			},
 		},
 		{
 			name:      "it should parse Approval events",
 			fromBlock: big.NewInt(0),
-			toBlock:   big.NewInt(100),
+			toBlock:   big.NewInt(90),
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
@@ -77,7 +78,8 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
 						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+					Data:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+					BlockNumber: 90,
 				},
 			},
 		},
@@ -99,7 +101,8 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
 						common.HexToHash("0x0000000000000000000000001e0049783f008a0085193e00003d00cd54003c71"),
 					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+					Data:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+					BlockNumber: 100,
 				},
 			},
 		},
@@ -114,7 +117,8 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash(newCollectionEventHash),
 						common.HexToHash("0x0000000000000000000000009c231bfb2dbbd2c92a9f7c710d51e0796c52dce5"),
 					},
-					Data: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000094"),
+					BlockNumber: 100,
+					Data:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000094"),
 				},
 			},
 		},
@@ -129,7 +133,8 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash(mintedWithExternalURIEventHash),
 						common.HexToHash("0x000000000000000000000000684bc8f81250ad3f7f930b27586b799a4dda957b"),
 					},
-					Data: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000080000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b000000000000000000000000000000000000000000000000000000000000000c6d795f66697273745f7572690000000000000000000000000000000000000000"),
+					BlockNumber: 100,
+					Data:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000080000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b000000000000000000000000000000000000000000000000000000000000000c6d795f66697273745f7572690000000000000000000000000000000000000000"),
 				},
 			},
 		},
@@ -144,7 +149,8 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash(evolvedWithExternalURIEventHash),
 						common.HexToHash("0x000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b"),
 					},
-					Data: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000"),
+					BlockNumber: 100,
+					Data:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000"),
 				},
 			},
 		},
@@ -165,11 +171,14 @@ func TestParseEvents(t *testing.T) {
 				Addresses: []common.Address{tt.address},
 			}).Return(tt.eventLogs, nil)
 
-			events, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
+			events, lastScannedBlock, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
 
+			if tt.eventLogs[0].BlockNumber != lastScannedBlock.Uint64() {
+				t.Fatalf("lastScannedBlock should not be equal to eventLogs[0].BlockNumber")
+			}
 			switch eventType := events[0].(type) {
 			case scan.EventTransfer:
 				_, ok := events[0].(scan.EventTransfer)
@@ -314,7 +323,7 @@ func TestScanOnlyValidEvents(t *testing.T) {
 				Addresses: []common.Address{address},
 			}).Return(tt.eventLogs, nil)
 
-			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			events, _, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
@@ -351,10 +360,15 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+		events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 		if err != nil {
 			t.Fatalf("nil error expected, got %v", err)
 		}
+		expectedLastScannedBlock := big.NewInt(100)
+		if lastScannedBlock.Cmp(expectedLastScannedBlock) != 0 {
+			t.Fatalf("got %v, lastScannedBlock expected %v, ", lastScannedBlock, expectedLastScannedBlock)
+		}
+
 		if events != nil {
 			t.Fatalf("nil events expected, got %v", events)
 		}
@@ -374,10 +388,15 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{},
 		}).Return(nil, nil)
 
-		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
+		events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
 		if err != nil {
 			t.Errorf("got error %s when scanning events while no error was expected", err.Error())
 		}
+		expectedLastScannedBlock := big.NewInt(100)
+		if lastScannedBlock.Cmp(expectedLastScannedBlock) != 0 {
+			t.Fatalf("got %v, lastScannedBlock expected %v, ", lastScannedBlock, expectedLastScannedBlock)
+		}
+
 		if len(events) > 0 {
 			t.Fatalf("got events %v when no events where expected", events)
 		}
@@ -419,9 +438,12 @@ func TestScanEvents(t *testing.T) {
 					Addresses: []common.Address{address},
 				}).Return(nil, tt.error)
 
-				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+				_, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 				if err == nil {
 					t.Fatalf("got nil error, expected %v", tt.error.Error())
+				}
+				if lastScannedBlock != nil {
+					t.Fatalf("got lastScannedBlock %v, expected nil", lastScannedBlock)
 				}
 			})
 		}

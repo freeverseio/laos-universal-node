@@ -223,20 +223,22 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 			}
-
+			var lastScannedBlock *big.Int
 			if len(contracts) > 0 {
-				_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				_, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
+			} else {
+				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}
-
-			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+			nextStartingBlock := lastScannedBlock.Uint64() + 1
+			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}
-			startingBlock = lastBlock + 1
+			startingBlock = nextStartingBlock
 		}
 	}
 }
@@ -270,17 +272,18 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), []string{c.EvoContract}) // TODO choose if c.EvoContract should be a []string
+			_, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), []string{c.EvoContract}) // TODO choose if c.EvoContract should be a []string
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
-
-			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(lastBlock+1, 10)); err != nil {
+			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
+			nextStartingBlock := lastScannedBlock.Uint64() + 1
+			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}
-			startingBlock = lastBlock + 1
+			startingBlock = nextStartingBlock
 		}
 	}
 }
