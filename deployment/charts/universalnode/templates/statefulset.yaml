@@ -35,7 +35,6 @@ spec:
                 -storage_path=/app/.universalnode,
                 -rpc={{ .Values.rpc }},
                 -evo_rpc={{ .Values.evoRpc }},
-                -evo_contract={{ .Values.evoContracts }},
                 {{ if hasKey .Values  "startingBlock" }}
                 -starting_block={{ .Values.startingBlock }},
                 {{ end }}
