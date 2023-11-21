@@ -198,7 +198,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) {
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
 	var lastBlock *big.Int
 	lastBlock = fromBlock
 	var addresses []common.Address
