@@ -33,9 +33,6 @@ var (
 	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
 	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
-	EventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
-	EventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
-	EventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
 
