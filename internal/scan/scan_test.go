@@ -371,7 +371,7 @@ func TestScanEvents(t *testing.T) {
 		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{},
+			Addresses: nil,
 		}).Return(nil, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
