@@ -1,0 +1,278 @@
+package v1
+
+import (
+	"fmt"
+	"log/slog"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
+	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
+	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
+)
+
+type service struct {
+	storageService storage.Service
+}
+
+// NewStateService creates a new state service
+func NewStateService(storageService storage.Service) state.Service {
+	return &service{
+		storageService: storageService,
+	}
+}
+
+// Creates a new state transaction
+func (s *service) NewTransaction() state.Tx {
+	storageTx := s.storageService.NewTransaction()
+	return &tx{
+		ownershipTrees:       make(map[common.Address]ownership.Tree),
+		enumeratedTrees:      make(map[common.Address]enumerated.Tree),
+		enumeratedTotalTrees: make(map[common.Address]enumeratedtotal.Tree),
+		tx:                   storageTx,
+	}
+}
+
+type tx struct {
+	tx                   storage.Tx
+	ownershipTrees       map[common.Address]ownership.Tree
+	enumeratedTrees      map[common.Address]enumerated.Tree
+	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
+}
+
+// IsTreeSetForContact returns true if the tree is set
+func (t *tx) IsTreeSetForContract(contract common.Address) bool {
+	_, ok := t.ownershipTrees[contract]
+	return ok
+}
+
+// CreateTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
+func (t *tx) CreateTreesForContract(contract common.Address) (
+	ownershipTree ownership.Tree,
+	enumeratedTree enumerated.Tree,
+	enumeratedTotalTree enumeratedtotal.Tree,
+	err error,
+) {
+	slog.Debug("creating trees for contract ", "contract", contract.String())
+
+	ownershipTree, err = ownership.NewTree(contract, t.tx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	enumeratedTree, err = enumerated.NewTree(contract, t.tx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, t.tx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return ownershipTree, enumeratedTree, enumeratedTotalTree, nil
+}
+
+// SetTreesForContract sets trees for contract
+func (t *tx) SetTreesForContract(
+	contract common.Address,
+	ownershipTree ownership.Tree,
+	enumeratedTree enumerated.Tree,
+	enumeratedTotalTree enumeratedtotal.Tree,
+) error {
+	slog.Debug("setting trees for contract %s", "contract", contract.String())
+
+	t.ownershipTrees[contract] = ownershipTree
+	t.enumeratedTrees[contract] = enumeratedTree
+	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
+
+	return nil
+}
+
+// OwnerOf returns the owner of the token
+func (t *tx) OwnerOf(contract common.Address, tokenId *big.Int) (common.Address, error) {
+	slog.Debug("OwnerOf ", "contract", contract.String(), "tokenId", tokenId.String())
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return common.Address{}, fmt.Errorf("contract %s does not exist", contract.String())
+	}
+	return ownershipTree.OwnerOf(tokenId)
+}
+
+// BalanceOf returns the balance of the owner
+func (t *tx) BalanceOf(contract, owner common.Address) (*big.Int, error) {
+	slog.Debug("BalanceOf ", "contract", contract.String(), "owner", owner.String())
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return big.NewInt(0), fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	tokens, err := enumeratedTree.TokensOf(owner)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	return big.NewInt(int64(len(tokens))), nil
+}
+
+// TokenOfOwnerByIndex returns the token of the owner by index
+func (t *tx) TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.Int, error) {
+	slog.Debug("TokenOfOwnerByIndex ", "contract", contract.String(), "owner", owner.String(), "idx", idx)
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return big.NewInt(0), fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	tokens, err := enumeratedTree.TokensOf(owner)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	return &tokens[idx], nil
+}
+
+// Transfer transfers ownership of the token. From, To, and TokenID are set in event
+func (t *tx) Transfer(contract common.Address, eventTransfer scan.EventTransfer) error {
+	slog.Debug("Transfer ", "contract",
+		contract.String(),
+		"From", eventTransfer.From.String(),
+		"To", eventTransfer.To.String(), "tokenId",
+		eventTransfer.TokenId.String())
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := ownershipTree.Transfer(eventTransfer)
+	if err != nil {
+		return err
+	}
+
+	tokenData, err := ownershipTree.TokenData(eventTransfer.TokenId)
+	if err != nil {
+		return err
+	}
+
+	if !tokenData.Minted {
+		return nil
+	}
+
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTree.Transfer(true, eventTransfer)
+	if err != nil {
+		return err
+	}
+
+	// if transfer is to zero address (burn) we have to modify the enumeratedTotal tree
+	if eventTransfer.To.Cmp(common.Address{}) == 0 {
+		enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+		if !ok {
+			return fmt.Errorf("contract %s does not exist", contract.String())
+		}
+
+		totalSupply, err := enumeratedTotalTree.TotalSupply()
+		if err != nil {
+			return err
+		}
+
+		tokenIdLast, err := enumeratedTotalTree.TokenByIndex(int(totalSupply) - 1)
+		if err != nil {
+			return err
+		}
+
+		err = enumeratedTotalTree.Burn(tokenData.Idx)
+		if err != nil {
+			return err
+		}
+
+		tokenDataLast, err := ownershipTree.TokenData(tokenIdLast)
+		if err != nil {
+			return err
+		}
+
+		tokenDataLast.Idx = tokenData.Idx
+		return ownershipTree.SetTokenData(tokenDataLast, tokenIdLast)
+	}
+
+	return nil
+}
+
+// Mint creates a new token
+func (t *tx) Mint(contract common.Address, tokenId *big.Int) error {
+	slog.Debug("Mint ", "contract", contract.String(), "tokenId", tokenId.String())
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTotalTree.Mint(tokenId)
+	if err != nil {
+		return err
+	}
+
+	totalSupply, err := enumeratedTotalTree.TotalSupply()
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = ownershipTree.Mint(tokenId, int(totalSupply)-1)
+	if err != nil {
+		return err
+	}
+
+	tokenData, err := ownershipTree.TokenData(tokenId)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return enumeratedTree.Mint(tokenId, tokenData.SlotOwner)
+}
+
+// TotalSupply returns the total number of tokens in the contract
+func (t *tx) TotalSupply(contract common.Address) (int64, error) {
+	slog.Debug("TotalSupply ", "contract", contract.String())
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return 0, fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return enumeratedTotalTree.TotalSupply()
+}
+
+// TokenByIndex returns the token at the index
+func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
+	slog.Debug("TokenByIndex ", "contract", contract.String(), "idx", idx)
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return big.NewInt(0), fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return enumeratedTotalTree.TokenByIndex(idx)
+}
+
+// Discards transaction
+func (t *tx) Discard() {
+	t.tx.Discard()
+}
+
+// Commits transaction
+func (t *tx) Commit() error {
+	return t.tx.Commit()
+}

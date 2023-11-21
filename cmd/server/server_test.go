@@ -28,7 +28,7 @@ func TestListenAndServe(t *testing.T) {
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
 
-	storage := mockStorage.NewMockStorage(ctrl)
+	storage := mockStorage.NewMockService(ctrl)
 	repositoryService := repository.New(storage)
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
@@ -58,7 +58,7 @@ func TestListenAndServeWithCancel(t *testing.T) {
 	mockHTTPServer.EXPECT().ListenAndServe().Return(http.ErrServerClosed)
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
-	storage := mockStorage.NewMockStorage(ctrl)
+	storage := mockStorage.NewMockService(ctrl)
 	repositoryService := repository.New(storage)
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))
@@ -104,7 +104,7 @@ func TestListenAndServeWithError(t *testing.T) {
 	mockHTTPServer.EXPECT().ListenAndServe().Return(nil)
 	mockHTTPServer.EXPECT().Shutdown(gomock.Any()).Return(nil).AnyTimes()
 	mockHTTPServer.EXPECT().SetKeepAlivesEnabled(false).AnyTimes()
-	storage := mockStorage.NewMockStorage(ctrl)
+	storage := mockStorage.NewMockService(ctrl)
 	repositoryService := repository.New(storage)
 
 	s, err := server.New(server.WithHTTPServer(mockHTTPServer))

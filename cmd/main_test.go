@@ -130,7 +130,7 @@ func TestRunScanOk(t *testing.T) {
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
-				Return(nil, nil).
+				Return(nil, big.NewInt(int64(tt.l1LatestBlock)), nil).
 				Times(tt.scanEventsTimes)
 			tx.EXPECT().Commit().
 				Return(nil).
@@ -186,10 +186,10 @@ func TestRunScanTwice(t *testing.T) {
 		AnyTimes()
 
 	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), c.Contracts).
-		Return(nil, nil).
+		Return(nil, big.NewInt(51), nil).
 		Times(1)
 	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), c.Contracts).
-		Return(nil, nil).
+		Return(nil, big.NewInt(101), nil).
 		Times(1)
 
 	storage.EXPECT().Get([]byte("contract_0x0")).
@@ -279,7 +279,7 @@ func TestShouldDiscover(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockStorage(ctrl)
+			storage := mockStorage.NewMockService(ctrl)
 			repositoryService := repository.New(storage)
 			for _, contract := range tt.contracts {
 				var returnValue []byte
@@ -544,7 +544,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 
 			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
 				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
-					Return(nil, tt.errorScanEvents).
+					Return(nil, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {
 							cancel() // we cancel the loop since we only want one iteration
@@ -570,13 +570,53 @@ func TestScanEvoChainOnce(t *testing.T) {
 	}
 }
 
+func TestRunScanAndCancelContext(t *testing.T) {
+	t.Parallel()
+	c := config.Config{
+		StartingBlock: 1,
+		BlocksMargin:  0,
+		BlocksRange:   50,
+		WaitingTime:   1 * time.Second,
+		Contracts:     []string{"0x0"},
+	}
+	ctx, cancel := getContext()
+	defer cancel()
+
+	client, scanner, storage, _ := getMocks(t)
+
+	client.EXPECT().BlockNumber(ctx).
+		Return(uint64(101), nil).
+		AnyTimes()
+
+	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), c.Contracts).
+		Do(func(ctx context.Context, _ *big.Int, _ *big.Int, _ []string) {
+			cancel()
+		},
+		).Return(nil, big.NewInt(50), nil).Times(1)
+
+	storage.EXPECT().Get([]byte("contract_0x0")).
+		Return([]byte(""), nil).
+		Times(1)
+	storage.EXPECT().Get([]byte("current_block")).
+		Return([]byte(""), nil).
+		Times(1)
+	storage.EXPECT().Set([]byte("current_block"), []byte("51")).
+		Return(nil).
+		Times(1)
+
+	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage))
+	if err != nil {
+		t.Fatalf(`got error "%v" when no error was expeceted`, err)
+	}
+}
+
 func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockStorage, *mockStorage.MockTx) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService, *mockStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
-		mockStorage.NewMockStorage(ctrl), mockStorage.NewMockTx(ctrl)
+		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
 }

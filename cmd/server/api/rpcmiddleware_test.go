@@ -114,7 +114,7 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockStorage(ctrl)
+			storage := mockStorage.NewMockService(ctrl)
 
 			handlerMock := apiMock.NewMockRPCHandler(ctrl)
 			t.Cleanup(func() {
