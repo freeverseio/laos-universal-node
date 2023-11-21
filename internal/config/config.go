@@ -14,7 +14,6 @@ type Config struct {
 	StartingBlock    uint64
 	EvoStartingBlock uint64
 	Contracts        []string
-	EvoContract      string
 	Rpc              string
 	EvoRpc           string
 	Path             string
@@ -34,7 +33,6 @@ func Load() *Config {
 	evoBlocksRange := flag.Uint("evo_blocks_range", 100, "Amount of blocks the scanner processes on the evolution chain")
 	evoBlocksMargin := flag.Uint("evo_blocks_margin", 0, "Number of blocks to assume finality on the evolution chain")
 	contracts := flag.String("contracts", "", "Comma-separated list of the web3 addresses of the smart contracts to scan")
-	evoContract := flag.String("evo_contract", "0x0000000000000000000000000000000000000403", "Web3 address of the LaosEvolution smart contract")
 	debug := flag.Bool("debug", false, "Set logs to debug level")
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	evoRpc := flag.String("evo_rpc", "", "URL of the RPC evolution chain")
@@ -52,7 +50,6 @@ func Load() *Config {
 		EvoBlocksMargin:  *evoBlocksMargin,
 		EvoBlocksRange:   *evoBlocksRange,
 		Debug:            *debug,
-		EvoContract:      *evoContract,
 		Rpc:              *rpc,
 		EvoRpc:           *evoRpc,
 		StartingBlock:    *startingBlock,
@@ -70,9 +67,9 @@ func Load() *Config {
 }
 
 func (c *Config) LogFields() {
-	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "evo_rpc", c.EvoRpc, "contracts", c.Contracts, "evo_contracts", c.EvoContract,
-		"starting_block", c.StartingBlock, "evo_starting_block", c.EvoStartingBlock, "blocks_margin", c.BlocksMargin, "evo_blocks_margin", c.EvoBlocksMargin,
-		"blocks_range", c.BlocksRange, "evo_blocks_range", c.EvoBlocksRange, "debug", c.Debug, "wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
+	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "evo_rpc", c.EvoRpc, "contracts", c.Contracts, "starting_block", c.StartingBlock,
+		"evo_starting_block", c.EvoStartingBlock, "blocks_margin", c.BlocksMargin, "evo_blocks_margin", c.EvoBlocksMargin, "blocks_range", c.BlocksRange,
+		"evo_blocks_range", c.EvoBlocksRange, "debug", c.Debug, "wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
 }
 
 func getDefaultStoragePath() string {

@@ -202,7 +202,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, error) {
-	addresses := make([]common.Address, 0)
+	var addresses []common.Address
 	for _, c := range contracts {
 		addresses = append(addresses, common.HexToAddress(c))
 	}

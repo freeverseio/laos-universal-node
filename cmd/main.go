@@ -270,7 +270,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), []string{c.EvoContract}) // TODO choose if c.EvoContract should be a []string
+			_, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil) // TODO choose if c.EvoContract should be a []string
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
