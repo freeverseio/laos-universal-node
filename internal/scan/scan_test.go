@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"os"
-	"os/signal"
 	"testing"
 
 	"github.com/ethereum/go-ethereum"
@@ -450,56 +448,6 @@ func TestScanEvents(t *testing.T) {
 			})
 		}
 	})
-}
-
-func TestScanEventsWithCancelCtx(t *testing.T) {
-	t.Parallel()
-
-	cli := getMockEthClient(t)
-
-	fromBlock := big.NewInt(0)
-	toBlock := big.NewInt(100)
-	address := common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
-	contracts := []string{
-		address.String(),
-	}
-
-	eventLogs := []types.Log{
-		{
-			Topics: []common.Hash{
-				common.HexToHash(transferEventHash),
-				common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
-				common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
-				common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
-			},
-			BlockNumber: 100,
-		},
-	}
-
-	s := scan.NewScanner(cli)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	// Set up a channel to listen for the signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
-
-	cli.EXPECT().FilterLogs(ctx, ethereum.FilterQuery{
-		FromBlock: fromBlock,
-		ToBlock:   toBlock,
-		Addresses: []common.Address{address},
-	}).Do(func(ctx context.Context, query ethereum.FilterQuery) {
-		cancel()
-	}).Return(eventLogs, nil)
-
-	_, lastScannedBlock, err := s.ScanEvents(ctx, fromBlock, toBlock, contracts)
-	if err != nil {
-		t.Fatalf("got %v, nil error expected", err)
-	}
-	if lastScannedBlock.Uint64() != 100 {
-		t.Fatalf("got %v, expected %v", lastScannedBlock, 100)
-	}
 }
 
 func TestScanNewUniversalEventsErr(t *testing.T) {

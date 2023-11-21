@@ -219,7 +219,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				transfer, err := parseTransfer(&eventLogs[i], &erc721UniversalAbi)
 				if err != nil {
 					if err != eventTopicsError {
-						return nil, new(big.Int).SetUint64(eventLogs[i].BlockNumber), err
+						return nil, nil, err
 					}
 					slog.Warn("incorrect number of topics found in Transfer event",
 						"topics_found", len(eventLogs[i].Topics),

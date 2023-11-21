@@ -599,7 +599,7 @@ func TestRunScanAndCancelContext(t *testing.T) {
 		Do(func(ctx context.Context, _ *big.Int, _ *big.Int, _ []string) {
 			cancel()
 		},
-		).Return(nil, big.NewInt(51), nil).Times(1)
+		).Return(nil, big.NewInt(50), nil).Times(1)
 
 	storage.EXPECT().Get([]byte("contract_0x0")).
 		Return([]byte(""), nil).
@@ -607,7 +607,7 @@ func TestRunScanAndCancelContext(t *testing.T) {
 	storage.EXPECT().Get([]byte("current_block")).
 		Return([]byte(""), nil).
 		Times(1)
-	storage.EXPECT().Set([]byte("current_block"), []byte("52")).
+	storage.EXPECT().Set([]byte("current_block"), []byte("51")).
 		Return(nil).
 		Times(1)
 
