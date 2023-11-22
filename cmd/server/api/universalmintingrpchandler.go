@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"net/http"
@@ -10,6 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
 	"github.com/freeverseio/laos-universal-node/internal/state"
+)
+
+const (
+	RpcId = 1
 )
 
 type RPCResponse struct {
@@ -73,17 +78,10 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 }
 
 func ownerOf(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
-	tokenIDParam, err := callData.GetParam("tokenId")
+	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
-		http.Error(w, "Error getting tokenId", http.StatusBadRequest)
-		return
-	}
-	//
-	tokenID, ok := tokenIDParam.(*big.Int)
-	if !ok {
-		slog.Error("Invalid tokenId", "tokenID", tokenID)
-		http.Error(w, "Invalid tokenId ", http.StatusBadRequest)
+		sendErrorResponse(w, err)
 		return
 	}
 	tx := stateService.NewTransaction()
@@ -91,74 +89,33 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, stateService sta
 	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
-		http.Error(w, "Error creating merkle trees", http.StatusInternalServerError)
+		sendErrorResponse(w, err)
 		return
 	}
+
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
-	if err != nil {
-		slog.Error("Error getting owner", "err", err)
-		http.Error(w, "Error getting owner", http.StatusInternalServerError)
-		return
-	}
-
-	response := RPCResponse{
-		Jsonrpc: "2.0",
-		ID:      1,
-		Result:  owner.Hex(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the response
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		// Handle error in case the response couldn't be sent
-		slog.Error("Failed to send response", "err", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendResponse(w, owner.Hex(), err)
 }
 
 func balanceOf(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
-	ownerAddressParam, err := callData.GetParam("owner")
+	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
-		http.Error(w, "Error getting owner", http.StatusBadRequest)
+		sendErrorResponse(w, err)
 		return
 	}
-	ownerAddress := ownerAddressParam.(common.Address)
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
-		http.Error(w, "Error creating merkle trees", http.StatusInternalServerError)
+		sendErrorResponse(w, err)
 		return
 	}
+
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	if err != nil {
-		slog.Error("Error getting balance", "err", err)
-		http.Error(w, "Error getting balance", http.StatusInternalServerError)
-		return
-	}
-
-	response := RPCResponse{
-		Jsonrpc: "2.0",
-		ID:      1,
-		Result:  balance.String(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the response
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		// Handle error in case the response couldn't be sent
-		slog.Error("Failed to send response", "err", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendResponse(w, balance.String(), err)
 }
 
 func totalSupply(params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
@@ -167,40 +124,18 @@ func totalSupply(params ParamsRPCRequest, stateService state.Service, w http.Res
 	tx, err := createMerkleTrees(tx, common.HexToAddress(params.To))
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
-		http.Error(w, "Error creating merkle trees", http.StatusInternalServerError)
+		sendErrorResponse(w, err)
 		return
 	}
 	totalSupply, err := tx.TotalSupply(common.HexToAddress(params.To))
-	if err != nil {
-		slog.Error("Error getting balance", "err", err)
-		// TODO format error
-		http.Error(w, "Error getting balance", http.StatusInternalServerError)
-		return
-	}
-
-	response := RPCResponse{
-		Jsonrpc: "2.0",
-		ID:      1,
-		Result:  strconv.FormatInt(totalSupply, 10),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the response
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		// Handle error in case the response couldn't be sent
-		slog.Error("Failed to send response", "err", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendResponse(w, strconv.FormatInt(totalSupply, 10), err)
 }
 
 func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
 	indexParam, err := callData.GetParam("index")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
-		http.Error(w, "Error getting owner", http.StatusBadRequest)
+		sendErrorResponse(w, err)
 		return
 	}
 	index := indexParam.(*big.Int)
@@ -208,7 +143,7 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stat
 	ownerAddressParam, err := callData.GetParam("owner")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
-		http.Error(w, "Error getting owner", http.StatusBadRequest)
+		sendErrorResponse(w, err)
 		return
 	}
 	ownerAddress := ownerAddressParam.(common.Address)
@@ -218,41 +153,18 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stat
 	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
-		// TODO format error
-		http.Error(w, "Error creating merkle trees", http.StatusInternalServerError)
+		sendErrorResponse(w, err)
 		return
 	}
 	tokenId, err := tx.TokenOfOwnerByIndex(common.HexToAddress(params.To), ownerAddress, int(index.Int64()))
-	if err != nil {
-		slog.Error("Error getting balance", "err", err)
-		// TODO format error
-		http.Error(w, "Error what the fuck", http.StatusInternalServerError)
-		return
-	}
-
-	response := RPCResponse{
-		Jsonrpc: "2.0",
-		ID:      1,
-		Result:  tokenId.String(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the response
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		// Handle error in case the response couldn't be sent
-		slog.Error("Failed to send response", "err", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendResponse(w, tokenId.String(), err)
 }
 
 func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
 	indexParam, err := callData.GetParam("index")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
-		http.Error(w, "Error getting owner", http.StatusBadRequest)
+		sendErrorResponse(w, err)
 		return
 	}
 	index := indexParam.(*big.Int)
@@ -262,34 +174,11 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, stateServic
 	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
-		// TODO format error
-		http.Error(w, "Error creating merkle trees", http.StatusInternalServerError)
+		sendErrorResponse(w, err)
 		return
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
-	if err != nil {
-		slog.Error("Error getting balance", "err", err)
-		// TODO format error
-		http.Error(w, "Error getting balance", http.StatusInternalServerError)
-		return
-	}
-
-	response := RPCResponse{
-		Jsonrpc: "2.0",
-		ID:      1,
-		Result:  tokenId.String(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the response
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		// Handle error in case the response couldn't be sent
-		slog.Error("Failed to send response", "err", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendResponse(w, tokenId.String(), err)
 }
 
 func createMerkleTrees(tx state.Tx, contactAddress common.Address) (state.Tx, error) {
@@ -303,4 +192,77 @@ func createMerkleTrees(tx state.Tx, contactAddress common.Address) (state.Tx, er
 		return nil, err
 	}
 	return tx, nil
+}
+
+func sendResponse(w http.ResponseWriter, result string, err error) {
+	if err != nil {
+		slog.Error("Failed to send response", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+
+	response := RPCResponse{
+		Jsonrpc: "2.0",
+		ID:      RpcId,
+		Result:  result,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		slog.Error("Failed to send response", "err", err)
+	}
+}
+
+func sendErrorResponse(w http.ResponseWriter, err error) {
+	slog.Error("Failed to send response", "err", err)
+
+	errorResponse := JSONRPCErrorResponse{
+		JSONRPC: "2.0",
+		ID:      ErrorId,
+		Error: struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		}{
+			Code:    ErrorCodeInvalidRequest,
+			Message: err.Error(),
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	err = json.NewEncoder(w).Encode(errorResponse)
+	if err != nil {
+		slog.Error("Failed to send response", "err", err)
+	}
+}
+
+// getParamBigInt extracts a *big.Int parameter from callData.
+func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error) {
+	param, err := callData.GetParam(paramName)
+	if err != nil {
+		return nil, err
+	}
+
+	bigIntParam, ok := param.(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("invalid %s", paramName)
+	}
+
+	return bigIntParam, nil
+}
+
+// getParamAddress extracts a common.Address parameter from callData.
+func getParamAddress(callData erc721.CallData, paramName string) (common.Address, error) {
+	param, err := callData.GetParam(paramName)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	addressParam, ok := param.(common.Address)
+	if !ok {
+		return common.Address{}, fmt.Errorf("invalid %s", paramName)
+	}
+
+	return addressParam, nil
 }
