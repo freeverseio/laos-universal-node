@@ -29,7 +29,8 @@ func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC72
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
 	for i := 0; i < len(universalContracts); i++ {
-		err := tx.Set([]byte(contractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
+		addressLowerCase := strings.ToLower(universalContracts[i].Address.String())
+		err := tx.Set([]byte(contractPrefix+addressLowerCase), []byte(universalContracts[i].BaseURI))
 		if err != nil {
 			return err
 		}

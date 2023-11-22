@@ -1,10 +1,12 @@
 package api
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/dgraph-io/badger/v4"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	"github.com/freeverseio/laos-universal-node/internal/repository"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
@@ -16,16 +18,21 @@ func TestCheckContractInList(t *testing.T) {
 		t.Cleanup(func() {
 			ctrl.Finish()
 		})
-
+		contract1 := "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"
+		contract2 := "0x36CB70039FE1bd36b4659858d4c4D0cBcafd743A"
 		storage := mockStorage.NewMockService(ctrl)
-		keys := [][]byte{
-			[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-		}
+		tx := mockStorage.NewMockTx(ctrl)
+		key := []byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 
-		storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return(keys, nil).Times(2)
-		repositoryService := repository.New(storage)
+		storage.EXPECT().NewTransaction().Return(tx).Times(2)
+		tx.EXPECT().Discard().AnyTimes()
 
-		b, err := isContractInList("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", repositoryService)
+		tx.EXPECT().Get([]byte("contract_"+strings.ToLower(contract1))).Return(key, nil).Times(1)
+
+		tx.EXPECT().Get([]byte("contract_"+strings.ToLower(contract2))).Return(nil, badger.ErrKeyNotFound).Times(1)
+		stateService := v1.NewStateService(storage)
+
+		b, err := isContractInList(contract1, stateService)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}
@@ -33,7 +40,7 @@ func TestCheckContractInList(t *testing.T) {
 			t.Fatalf("got %v, expected true", b)
 		}
 
-		b, err = isContractInList("0x36CB70039FE1bd36b4659858d4c4D0cBcafd743A", repositoryService)
+		b, err = isContractInList(contract2, stateService)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}

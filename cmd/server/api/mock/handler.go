@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	api "github.com/freeverseio/laos-universal-node/cmd/server/api"
+	state "github.com/freeverseio/laos-universal-node/internal/state"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -99,6 +100,18 @@ func (m *MockRPCHandler) SetJsonRPCRequest(req api.JSONRPCRequest) {
 func (mr *MockRPCHandlerMockRecorder) SetJsonRPCRequest(req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetJsonRPCRequest", reflect.TypeOf((*MockRPCHandler)(nil).SetJsonRPCRequest), req)
+}
+
+// SetStateService mocks base method.
+func (m *MockRPCHandler) SetStateService(stateService state.Service) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetStateService", stateService)
+}
+
+// SetStateService indicates an expected call of SetStateService.
+func (mr *MockRPCHandlerMockRecorder) SetStateService(stateService any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStateService", reflect.TypeOf((*MockRPCHandler)(nil).SetStateService), stateService)
 }
 
 // UniversalMintingRPCHandler mocks base method.

@@ -41,11 +41,11 @@ const (
 
 // remoteMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
 var remoteMintingMethodSigs = map[string]Erc721method{
-	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):                      OwnerOf,
-	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):                    BalanceOf,
-	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                         TotalSupply,
-	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address, uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
-	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                 TokenByIndex,
+	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):                     OwnerOf,
+	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):                   BalanceOf,
+	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                        TotalSupply,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address,uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                TokenByIndex,
 }
 
 // Method returns if the calldata is a supported remote minting ERC721 method and the method.
@@ -93,7 +93,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	if len(argdata)%CallDataLength != 0 {
 		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
 	}
-	erc721Abi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
+	erc721Abi, err := abi.JSON(strings.NewReader(contract.EnumerableMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
