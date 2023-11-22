@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -33,6 +34,50 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		// Check the status code and response body
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
+	})
+
+	t.Run("Should execute OwnerOf with an error from ownerOf", func(t *testing.T) {
+		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+			storage.EXPECT().NewTransaction().Return(tx).Times(1)
+			tx.EXPECT().Discard().AnyTimes()
+			tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, nil).Times(1)
+			tx.EXPECT().SetTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil, nil, nil).Return(nil).Times(1)
+			tx.EXPECT().OwnerOf(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), gomock.Any()).Return(common.Address{}, fmt.Errorf("error")).Times(1)
+		})
+		defer ctrl.Finish()
+
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+
+		rr := runHandler(t, request, storage)
+
+		var response api.JSONRPCErrorResponse
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Errorf("Error unmarshalling response body: %v", err)
+		}
+
+		if response.Error.Code != api.ErrorCodeInvalidRequest {
+			t.Errorf("handler returned wrong status code: got %v want %v", response.Error.Code, api.ErrorCodeInvalidRequest)
+		}
+	})
+
+	t.Run("Should execute OwnerOf with an error from create contract", func(t *testing.T) {
+		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+			storage.EXPECT().NewTransaction().Return(tx).Times(1)
+			tx.EXPECT().Discard().AnyTimes()
+			tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, fmt.Errorf("error")).Times(1)
+		})
+		defer ctrl.Finish()
+
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		rr := runHandler(t, request, storage)
+		var response api.JSONRPCErrorResponse
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Errorf("Error unmarshalling response body: %v", err)
+		}
+
+		if response.Error.Code != api.ErrorCodeInvalidRequest {
+			t.Errorf("handler returned wrong status code: got %v want %v", response.Error.Code, api.ErrorCodeInvalidRequest)
 		}
 	})
 
