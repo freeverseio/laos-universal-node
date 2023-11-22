@@ -19,6 +19,8 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/state"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -38,7 +40,7 @@ func run() error {
 
 	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing storage: %w", err)
 	}
 	defer func() {
 		err = db.Close()
@@ -56,9 +58,7 @@ func run() error {
 
 	group, ctx := errgroup.WithContext(ctx)
 
-	if err != nil {
-		return fmt.Errorf("error initializing storage: %w", err)
-	}
+	stateService := v1.NewStateService(storageService)
 
 	// Badger DB garbage collection
 	group.Go(func() error {
@@ -95,7 +95,7 @@ func run() error {
 			return err
 		}
 		s := scan.NewScanner(client, c.Contracts...)
-		return scanUniversalChain(ctx, c, client, s, repositoryService)
+		return scanUniversalChain(ctx, c, client, s, repositoryService, stateService)
 	})
 
 	// Evolution chain scanner
@@ -163,7 +163,8 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 	return false, nil
 }
 
-func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
+	s scan.Scanner, repositoryService repository.Service, stateService state.Service) error {
 	startingBlockDB, err := repositoryService.GetCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -198,8 +199,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 
+			tx := stateService.NewTransaction()
 			var universalContracts []model.ERC721UniversalContract
-
 			if shouldDiscover {
 				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 				if err != nil {
@@ -207,12 +208,22 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 
-				if err = repositoryService.StoreERC721UniversalContracts(universalContracts); err != nil {
+				for i := range universalContracts {
+					ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(universalContracts[i].Address)
+					if err != nil {
+						slog.Error("error creating merkle trees", "err", err)
+						break
+					}
+					tx.SetTreesForContract(universalContracts[i].Address, ownership, enumerated, enumeratedTotal)
+				}
+
+				if err = tx.StoreERC721UniversalContracts(universalContracts); err != nil {
 					slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 					break
 				}
 			}
 
+			// for ... contracts = append (contracts, universalContracts[i].Address.String()) because `universalContracts` does not exist in the DB yet
 			var contracts []string
 			if len(c.Contracts) > 0 {
 				contracts = c.Contracts
@@ -225,11 +236,16 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 			var lastScannedBlock *big.Int
 			if len(contracts) > 0 {
+				// what if contracts come from flag but they do not exist in DB yet (i.e. their respective NewERC721Universal events haven't been found yet)?
+				// do we return an unrecoverable error? do we skip the scan for those contracts? do we scan and ignore the events?
 				_, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
+				// call getHeaderByNumber(event.BlockNumber), fetch timestamp and store it in the event struct
+
+				// fetch Mint EvoChain events from DB, order them by timestamp with Transfer events and update the state
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}
@@ -277,6 +293,10 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
+
+			// slice
+			// evo_contract_0x... -> [ mint1, mint2... ]
+
 			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {

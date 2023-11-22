@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
@@ -21,18 +22,19 @@ type Tx interface {
 	Commit() error
 
 	State
+	ContractState
 }
 
 // State interface defines functions to interact with state of the blockchain
 type State interface {
 	Discard()
-	Commit() error
+	Commit() error // TODO maybe Discard and Commit are not needed for State?
 
 	CreateTreesForContract(contract common.Address) (ownership.Tree, enumerated.Tree, enumeratedtotal.Tree, error)
 	SetTreesForContract(contract common.Address,
 		ownershipTree ownership.Tree,
 		enumeratedTree enumerated.Tree,
-		enumeratedTotalTree enumeratedtotal.Tree) error
+		enumeratedTotalTree enumeratedtotal.Tree)
 
 	OwnerOf(contract common.Address, tokenId *big.Int) (common.Address, error)
 	BalanceOf(contract, owner common.Address) (*big.Int, error)
@@ -41,4 +43,9 @@ type State interface {
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
 	Transfer(contract common.Address, eventTransfer scan.EventTransfer) error
 	Mint(contract common.Address, tokenId *big.Int) error
+	IsTreeSetForContract(contract common.Address) bool
+}
+
+type ContractState interface {
+	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
 }

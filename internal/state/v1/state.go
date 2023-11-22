@@ -9,6 +9,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
+	contractState "github.com/freeverseio/laos-universal-node/internal/state/contract"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
@@ -33,6 +34,7 @@ func (s *service) NewTransaction() state.Tx {
 		enumeratedTrees:      make(map[common.Address]enumerated.Tree),
 		enumeratedTotalTrees: make(map[common.Address]enumeratedtotal.Tree),
 		tx:                   storageTx,
+		ContractState:        contractState.NewService(storageTx),
 	}
 }
 
@@ -41,6 +43,7 @@ type tx struct {
 	ownershipTrees       map[common.Address]ownership.Tree
 	enumeratedTrees      map[common.Address]enumerated.Tree
 	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
+	state.ContractState
 }
 
 // IsTreeSetForContact returns true if the tree is set
@@ -82,14 +85,12 @@ func (t *tx) SetTreesForContract(
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
 	enumeratedTotalTree enumeratedtotal.Tree,
-) error {
+) {
 	slog.Debug("setting trees for contract %s", "contract", contract.String())
 
 	t.ownershipTrees[contract] = ownershipTree
 	t.enumeratedTrees[contract] = enumeratedTree
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
-
-	return nil
 }
 
 // OwnerOf returns the owner of the token
