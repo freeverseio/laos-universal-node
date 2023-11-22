@@ -417,7 +417,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin: 0,
 				EvoBlocksRange:  50,
 				WaitingTime:     1 * time.Second,
-				EvoContract:     "0x0",
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
@@ -434,7 +433,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin: 0,
 				EvoBlocksRange:  50,
 				WaitingTime:     1 * time.Second,
-				EvoContract:     "0x0",
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
@@ -451,7 +449,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin:  0,
 				EvoBlocksRange:   50,
 				WaitingTime:      1 * time.Second,
-				EvoContract:      "0x0",
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
@@ -467,7 +464,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin: 0,
 				EvoBlocksRange:  50,
 				WaitingTime:     1 * time.Second,
-				EvoContract:     "0x0",
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
@@ -483,7 +479,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin: 0,
 				EvoBlocksRange:  50,
 				WaitingTime:     1 * time.Second,
-				EvoContract:     "0x0",
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
@@ -500,7 +495,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin:  0,
 				EvoBlocksRange:   50,
 				WaitingTime:      1 * time.Second,
-				EvoContract:      "0x0",
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
@@ -519,7 +513,6 @@ func TestScanEvoChainOnce(t *testing.T) {
 				EvoBlocksMargin:  0,
 				EvoBlocksRange:   50,
 				WaitingTime:      1 * time.Second,
-				EvoContract:      "0x0",
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
@@ -550,7 +543,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Times(1)
 
 			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
-				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), []string{tt.c.EvoContract}).
+				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
 					Return(nil, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {

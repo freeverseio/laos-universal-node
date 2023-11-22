@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -29,9 +30,9 @@ var (
 	eventApprovalSigHash               = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
 	eventApprovalForAllSigHash         = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
-	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "uint64", "address")
-	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "uint64", "uint96", "address", "string", "uint256")
-	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint64", "uint256", "string")
+	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
+	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
+	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
 
@@ -83,26 +84,41 @@ type EventNewERC721Universal struct {
 	BaseURI            string
 }
 
+func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
+	// Define a regular expression pattern to match the desired content between parentheses
+	pattern := `AccountKey20\(([^)]+)\)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(pattern)
+
+	// Find the match in the input string
+	match := re.FindStringSubmatch(e.BaseURI)
+
+	if len(match) != 2 {
+		return common.Address{}, fmt.Errorf("no collection address found in base URI: %s", e.BaseURI)
+	}
+
+	return common.HexToAddress(match[1]), nil
+}
+
 // EventNewCollecion is the LaosEvolution event emitted when a new collection is created
 type EventNewCollecion struct {
-	CollectionId uint64
-	Owner        common.Address
+	CollectionAddress common.Address
+	Owner             common.Address
 }
 
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
-	CollectionId uint64
-	Slot         *big.Int
-	To           common.Address
-	TokenURI     string
-	TokenId      *big.Int
+	Slot     *big.Int
+	To       common.Address
+	TokenURI string
+	TokenId  *big.Int
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
 type EventEvolvedWithExternalURI struct {
-	CollectionId uint64
-	TokenId      *big.Int
-	TokenURI     string
+	TokenId  *big.Int
+	TokenURI string
 }
 
 func generateEventSignatureHash(event string, params ...string) string {
@@ -182,10 +198,10 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) {
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
 	var lastBlock *big.Int
 	lastBlock = fromBlock
-	addresses := make([]common.Address, 0)
+	var addresses []common.Address
 	for _, c := range contracts {
 		addresses = append(addresses, common.HexToAddress(c))
 	}
@@ -200,6 +216,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	}
 
 	erc721UniversalAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
+	if err != nil {
+		return nil, nil, fmt.Errorf("error instantiating ABI: %w", err)
+	}
+
+	collectionAbi, err := abi.JSON(strings.NewReader(contract.CollectionMetaData.ABI))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
@@ -254,9 +275,9 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					parsedEvents = append(parsedEvents, approvalForAll)
 					slog.Info("received event", eventApprovalForAllName, approvalForAll)
 				}
-			// Evolution events
+			// Collection event
 			case eventNewCollectionSigHash:
-				ev, err := parseNewCollection(&eventLogs[i], &evoAbi)
+				ev, err := parseNewCollection(&eventLogs[i], &collectionAbi)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -264,6 +285,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventNewCollection, ev)
 
+			// Evolution events
 			case eventMintedWithExternalURISigHash:
 				ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
 				if err != nil {

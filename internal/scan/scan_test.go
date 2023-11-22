@@ -20,9 +20,9 @@ const (
 	approveEventHash                = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
 	approveForAllEventHash          = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
 	newERC721UniversalEventHash     = "0x74b81bc88402765a52dad72d3d893684f472a679558f3641500e0ee14924a10a"
-	newCollectionEventHash          = "0x6eb24fd767a7bcfa417f3fe25a2cb245d2ae52293d3c4a8f8c6450a09795d289"
-	mintedWithExternalURIEventHash  = "0x4b3b5da28a351f8bb73b960d7c80b2cef3e3570cb03448234dee173942c74786"
-	evolvedWithExternalURIEventHash = "0x95c167d04a267f10e6b3f373c7a336dc65cf459caf048854dc32a2d37ab1607c"
+	newCollectionEventHash          = "0x5b84d9550adb7000df7bee717735ecd3af48ea3f66c6886d52e8227548fb228c"
+	mintedWithExternalURIEventHash  = "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348"
+	evolvedWithExternalURIEventHash = "0xdde18ad2fe10c12a694de65b920c02b851c382cf63115967ea6f7098902fa1c8"
 )
 
 func TestParseEvents(t *testing.T) {
@@ -115,10 +115,10 @@ func TestParseEvents(t *testing.T) {
 				{
 					Topics: []common.Hash{
 						common.HexToHash(newCollectionEventHash),
-						common.HexToHash("0x0000000000000000000000009c231bfb2dbbd2c92a9f7c710d51e0796c52dce5"),
+						common.HexToHash(" 0x000000000000000000000000c112bde959080c5b46e73749e3e170f47123e85a"),
 					},
+					Data:        common.Hex2Bytes("000000000000000000000000fffffffffffffffffffffffe00000000000000e5"),
 					BlockNumber: 100,
-					Data:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000094"),
 				},
 			},
 		},
@@ -131,10 +131,10 @@ func TestParseEvents(t *testing.T) {
 				{
 					Topics: []common.Hash{
 						common.HexToHash(mintedWithExternalURIEventHash),
-						common.HexToHash("0x000000000000000000000000684bc8f81250ad3f7f930b27586b799a4dda957b"),
+						common.HexToHash("0x000000000000000000000000c112bde959080c5b46e73749e3e170f47123e85a"),
 					},
+					Data:        common.Hex2Bytes("00000000000000000000000000000000000000003d5b1313de887a00000000003d5b1313de887a0000000000c112bde959080c5b46e73749e3e170f47123e85a0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002e516d4e5247426d7272724862754b4558375354544d326f68325077324d757438674863537048706a367a7a637375000000000000000000000000000000000000"),
 					BlockNumber: 100,
-					Data:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000080000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b000000000000000000000000000000000000000000000000000000000000000c6d795f66697273745f7572690000000000000000000000000000000000000000"),
 				},
 			},
 		},
@@ -147,10 +147,10 @@ func TestParseEvents(t *testing.T) {
 				{
 					Topics: []common.Hash{
 						common.HexToHash(evolvedWithExternalURIEventHash),
-						common.HexToHash("0x000000000000000000000002684bc8f81250ad3f7f930b27586b799a4dda957b"),
+						common.HexToHash("0x000000000000000000000001684bc8f81250ad3f7f930b27586b799a4dda957b"),
 					},
+					Data:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001674657374696e67315f63616c6164616e5f31376e6f7600000000000000000000"),
 					BlockNumber: 100,
-					Data:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000"),
 				},
 			},
 		},
@@ -385,7 +385,7 @@ func TestScanEvents(t *testing.T) {
 		cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
-			Addresses: []common.Address{},
+			Addresses: nil,
 		}).Return(nil, nil)
 
 		events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
@@ -568,6 +568,47 @@ func TestScanNewUniversalEvents(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBaseURI(t *testing.T) {
+	t.Parallel()
+	t.Run(`extract collection address from baseURI`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(gen)/Parachain(2900)/AccountKey20(0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b)/GeneralKey(666)"
+		expectedCollectionAddress := common.HexToAddress("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b")
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		address, err := e.CollectionAddress()
+		if err != nil {
+			t.Fatalf("got %s error, nil expected", err.Error())
+		}
+
+		if address != expectedCollectionAddress {
+			t.Fatalf("got %d collection address, %d expected", address, expectedCollectionAddress)
+		}
+	})
+	t.Run(`raise error when baseURI is malformed`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(gen)/Parachain(2900)/GeneralKey(666)"
+		expectedError := fmt.Errorf("no collection address found in base URI: %s", baseURI)
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		_, err := e.CollectionAddress()
+		if err == nil {
+			t.Fatalf("got nil error, %s expected", expectedError.Error())
+		}
+		if err.Error() != expectedError.Error() {
+			t.Fatalf("got %s error, %s expected", err.Error(), expectedError.Error())
+		}
+	})
 }
 
 func getMockEthClient(t *testing.T) *mock.MockEthClient {
