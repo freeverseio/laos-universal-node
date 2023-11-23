@@ -40,15 +40,6 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	var blockNumber string
-	if len(jsonRPCRequest.Params) == 2 {
-		if err := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); err != nil {
-			http.Error(w, "Error parsing block number", http.StatusBadRequest)
-			return
-		}
-	}
-	slog.Info("block number", "blockNumber", blockNumber)
-
 	calldata, err := erc721.NewCallData(params.Data)
 	if err != nil {
 		http.Error(w, "Error parsing calldata", http.StatusBadRequest)
