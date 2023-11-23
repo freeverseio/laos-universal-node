@@ -127,7 +127,7 @@ func isContractInList(contractAddress string, stateService state.Service) (bool,
 	}
 
 	if contract != nil {
-		lowerCaseContract := strings.ToLower(strings.TrimSpace(string(contract)))
+		lowerCaseContract := strings.ToLower(string(contract))
 		if lowerCaseContract != "" {
 			return true, nil
 		}
