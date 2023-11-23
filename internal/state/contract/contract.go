@@ -1,6 +1,8 @@
 package contract
 
 import (
+	"strings"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
@@ -21,7 +23,8 @@ func NewService(tx storage.Tx) *service {
 
 func (s *service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	for i := 0; i < len(universalContracts); i++ {
-		err := s.tx.Set([]byte(contractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
+		addressLowerCase := strings.ToLower(universalContracts[i].Address.String())
+		err := s.tx.Set([]byte(contractPrefix+addressLowerCase), []byte(universalContracts[i].BaseURI))
 		if err != nil {
 			return err
 		}
@@ -45,7 +48,9 @@ func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]str
 }
 
 func (s *service) hasERC721UniversalContract(contract string) (bool, error) {
-	value, err := s.tx.Get([]byte(contractPrefix + contract))
+	defer s.tx.Discard()
+	lowerCaseContractAddress := strings.ToLower(contract)
+	value, err := s.tx.Get([]byte(contractPrefix + lowerCaseContractAddress))
 	if err != nil {
 		return false, err
 	}

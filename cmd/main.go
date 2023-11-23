@@ -224,12 +224,19 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 
 			var contracts []string
-			// consider contracts that have been discovered but not yet stored, as the related transaction hasn't been committed yet
+			// consider contracts that have just been discovered but not yet stored, as the related transaction hasn't been committed yet
 			for i := range universalContracts {
 				contracts = append(contracts, universalContracts[i].Address.String())
 			}
 			if len(c.Contracts) > 0 {
-				contracts = c.Contracts // TODO change me! need to scan only contracts in DB and the ones coming from `universalContracts`
+				// if contracts come from flag, do not scan those that haven't been discovered yet
+				var existingContracts []string
+				existingContracts, err = tx.GetExistingERC721UniversalContracts(c.Contracts)
+				if err != nil {
+					slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
+					break
+				}
+				contracts = append(contracts, existingContracts...)
 			} else {
 				contracts, err = repositoryService.GetAllERC721UniversalContracts()
 				if err != nil {
@@ -239,8 +246,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 			var lastScannedBlock *big.Int
 			if len(contracts) > 0 {
-				// what if contracts come from flag but they do not exist in DB yet (i.e. their respective NewERC721Universal events haven't been found yet)?
-				// do we return an unrecoverable error? do we skip the scan for those contracts? do we scan and ignore the events?
 				_, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())

@@ -56,4 +56,5 @@ type State interface {
 
 type ContractState interface {
 	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
+	GetExistingERC721UniversalContracts(contracts []string) ([]string, error)
 }
