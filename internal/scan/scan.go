@@ -59,9 +59,10 @@ type Event interface{}
 
 // EventTransfer is the ERC721 Transfer event
 type EventTransfer struct {
-	From    common.Address
-	To      common.Address
-	TokenId *big.Int
+	From        common.Address
+	To          common.Address
+	TokenId     *big.Int
+	BlockNumber uint64
 }
 
 // EventApproval is the ERC721 Approval event
@@ -334,6 +335,7 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
+	transfer.BlockNumber = eL.BlockNumber
 
 	return transfer, nil
 }

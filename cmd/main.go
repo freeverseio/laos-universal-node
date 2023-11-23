@@ -248,14 +248,32 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 			var lastScannedBlock *big.Int
 			if len(contracts) > 0 {
-				_, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				var events []scan.Event
+				events, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
-				// call getHeaderByNumber(event.BlockNumber), fetch timestamp and store it in the event struct
+				var transferEvents []model.ERC721Transfer
+				for i := range events {
+					if event, ok := events[i].(scan.EventTransfer); ok {
+						header, headerErr := client.HeaderByNumber(ctx, big.NewInt(int64(event.BlockNumber)))
+						if headerErr != nil {
+							slog.Error("error fetching header information for block number", "err", err.Error())
+							break
+						}
+						transferEvents = append(transferEvents, model.ERC721Transfer{
+							From:        event.From,
+							To:          event.To,
+							TokenId:     event.TokenId,
+							BlockNumber: event.BlockNumber,
+							Timestamp:   header.Time,
+						})
+					}
+				}
 
 				// fetch Mint EvoChain events from DB, order them by timestamp with Transfer events and update the state
+				// to track down the already-processed EvoChain events, compare the ownership contract's evochain current block with each evochain event block number
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}
