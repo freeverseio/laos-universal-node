@@ -214,7 +214,7 @@ func sendErrorResponse(w http.ResponseWriter, err error) {
 
 	errorResponse := JSONRPCErrorResponse{
 		JSONRPC: "2.0",
-		ID:      ErrorId,
+		ID:      errorId,
 		Error: struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
