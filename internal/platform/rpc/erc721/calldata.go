@@ -93,7 +93,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	if len(argdata)%CallDataLength != 0 {
 		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
 	}
-	erc721Abi, err := abi.JSON(strings.NewReader(contract.EnumerableMetaData.ABI))
+	erc721EnumerableAbi, err := abi.JSON(strings.NewReader(contract.EnumerableMetaData.ABI))
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	method, err := erc721Abi.MethodById(id)
+	method, err := erc721EnumerableAbi.MethodById(id)
 	if err != nil {
 		return nil, err
 	}
