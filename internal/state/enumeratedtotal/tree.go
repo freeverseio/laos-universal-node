@@ -229,6 +229,7 @@ func (b *tree) TagRoot(blockNumber int64) error {
 }
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.
+// TODO: check is it possible to put some repetitive code in all trees in some separate file (utils)
 func (b *tree) Checkout(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
 	buf, err := b.store.Get([]byte(tagKey))
@@ -237,7 +238,7 @@ func (b *tree) Checkout(blockNumber int64) error {
 	}
 
 	if len(buf) == 0 {
-		return errors.New("no tog found for this block number " + strconv.FormatInt(blockNumber, 10))
+		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
 	}
 
 	newRoot := common.BytesToHash(buf)

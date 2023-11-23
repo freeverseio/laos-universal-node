@@ -289,7 +289,7 @@ func TestTag(t *testing.T) {
 		assert.NilError(t, err)
 
 		err = tr.Checkout(1)
-		assert.Error(t, err, "no tog found for this block number 1")
+		assert.Error(t, err, "no tag found for this block number 1")
 	})
 	t.Run(`Find the first tag that has the same state as current block number`, func(t *testing.T) {
 		t.Parallel()

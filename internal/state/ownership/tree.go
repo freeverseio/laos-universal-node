@@ -201,7 +201,7 @@ func (b *tree) Checkout(blockNumber int64) error {
 	}
 
 	if len(buf) == 0 {
-		return errors.New("no tog found for this block number " + strconv.FormatInt(blockNumber, 10))
+		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
 	}
 
 	newRoot := common.BytesToHash(buf)
