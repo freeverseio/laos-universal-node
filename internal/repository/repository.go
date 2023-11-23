@@ -25,6 +25,7 @@ func New(s storage.Service) Service {
 	}
 }
 
+// TODO I'm unused, remove me and move my tests to state
 func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
