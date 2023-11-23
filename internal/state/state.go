@@ -29,7 +29,8 @@ type Tx interface {
 	Commit() error
 
 	State
-	ContractState
+	OwnershipContractState
+	EvolutionContractState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -54,7 +55,11 @@ type State interface {
 	Get(key string) ([]byte, error)
 }
 
-type ContractState interface {
+type OwnershipContractState interface {
 	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
 	GetExistingERC721UniversalContracts(contracts []string) ([]string, error)
+}
+
+type EvolutionContractState interface {
+	GetEvoChainEvents(contract string) ([]model.MintedWithExternalURI, error)
 }
