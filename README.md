@@ -14,6 +14,9 @@ $ docker run -p 5001:5001 freeverseio/laos-universal-node:<release>
 ```
 The port is for the json-rpc interface.
 
+Please be aware that this version currently does not handle blockchain reorganizations (reorgs). As a precaution, we strongly encourage operating with a heightened safety margin in your ownership chain management.
+We are actively working to address this in future updates. Your understanding and cooperation are greatly appreciated as we strive to enhance the capabilities and security of the Universal Node.
+
 ## Contributing
 
 Contributions to the LAOS Universal Node project are welcome. When you work on this repo, you adhere to the following rules:
