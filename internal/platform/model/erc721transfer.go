@@ -12,4 +12,5 @@ type ERC721Transfer struct {
 	TokenId     *big.Int
 	BlockNumber uint64
 	Timestamp   uint64
+	Contract    common.Address
 }

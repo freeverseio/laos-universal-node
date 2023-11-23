@@ -63,6 +63,7 @@ type EventTransfer struct {
 	To          common.Address
 	TokenId     *big.Int
 	BlockNumber uint64
+	Contract    common.Address
 }
 
 // EventApproval is the ERC721 Approval event
@@ -184,9 +185,13 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 			}
 			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
 
+			collectionAddress, err := newERC721Universal.CollectionAddress()
+			if err != nil {
+				return nil, err
+			}
 			c := model.ERC721UniversalContract{
-				Address: newERC721Universal.NewContractAddress,
-				BaseURI: newERC721Universal.BaseURI,
+				Address:           newERC721Universal.NewContractAddress,
+				CollectionAddress: collectionAddress,
 			}
 			contracts = append(contracts, c)
 
@@ -336,6 +341,7 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
 	transfer.BlockNumber = eL.BlockNumber
+	transfer.Contract = eL.Address
 
 	return transfer, nil
 }

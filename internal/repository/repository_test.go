@@ -25,12 +25,12 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 
 		universalContracts := []model.ERC721UniversalContract{
 			{
-				Address: common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
-				BaseURI: "http://baseuri1.com",
+				Address:           common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
+				CollectionAddress: common.HexToAddress("http://baseuri1.com"),
 			},
 			{
-				Address: common.HexToAddress("0x0"),
-				BaseURI: "http://baseuri2.com",
+				Address:           common.HexToAddress("0x0"),
+				CollectionAddress: common.HexToAddress("http://baseuri2.com"),
 			},
 		}
 
@@ -41,7 +41,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 			addressLowerCase := strings.ToLower(contract.Address.String())
 			tx.EXPECT().Set(
 				[]byte("contract_"+addressLowerCase),
-				[]byte(contract.BaseURI),
+				contract.CollectionAddress.Bytes(),
 			).Return(nil)
 		}
 
@@ -63,12 +63,12 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 
 		universalContracts := []model.ERC721UniversalContract{
 			{
-				Address: common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
-				BaseURI: "http://baseuri1.com",
+				Address:           common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
+				CollectionAddress: common.HexToAddress("http://baseuri1.com"),
 			},
 			{
-				Address: common.HexToAddress("0x0"),
-				BaseURI: "http://baseuri2.com",
+				Address:           common.HexToAddress("0x0"),
+				CollectionAddress: common.HexToAddress("http://baseuri2.com"),
 			},
 		}
 
@@ -78,7 +78,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 		errExpected := fmt.Errorf("error")
 		tx.EXPECT().Set(
 			[]byte("contract_"+strings.ToLower(universalContracts[0].Address.String())),
-			[]byte(universalContracts[0].BaseURI),
+			universalContracts[0].CollectionAddress.Bytes(),
 		).Return(errExpected)
 
 		tx.EXPECT().Discard().Times(1)

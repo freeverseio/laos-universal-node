@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
@@ -248,32 +249,54 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 			var lastScannedBlock *big.Int
 			if len(contracts) > 0 {
-				var events []scan.Event
-				events, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				var scanEvents []scan.Event
+				scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
-				var transferEvents []model.ERC721Transfer
-				for i := range events {
-					if event, ok := events[i].(scan.EventTransfer); ok {
-						header, headerErr := client.HeaderByNumber(ctx, big.NewInt(int64(event.BlockNumber)))
+				// parse transfer events and get timestamp information
+				modelTransferEvents := make(map[string][]model.ERC721Transfer)
+				for i := range scanEvents {
+					if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
+						header, headerErr := client.HeaderByNumber(ctx, big.NewInt(int64(scanEvent.BlockNumber)))
 						if headerErr != nil {
 							slog.Error("error fetching header information for block number", "err", err.Error())
 							break
 						}
-						transferEvents = append(transferEvents, model.ERC721Transfer{
-							From:        event.From,
-							To:          event.To,
-							TokenId:     event.TokenId,
-							BlockNumber: event.BlockNumber,
+						contractString := scanEvent.Contract.String()
+						modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
+							From:        scanEvent.From,
+							To:          scanEvent.To,
+							TokenId:     scanEvent.TokenId,
+							BlockNumber: scanEvent.BlockNumber,
+							Contract:    scanEvent.Contract,
 							Timestamp:   header.Time,
 						})
 					}
 				}
 
-				// fetch Mint EvoChain events from DB, order them by timestamp with Transfer events and update the state
-				// to track down the already-processed EvoChain events, compare the ownership contract's evochain current block with each evochain event block number
+				// order mint events with transfer events
+				for i := range contracts {
+					var mintedEvents []model.MintedWithExternalURI
+					var collectionAddress common.Address
+					collectionAddress, err = tx.GetCollectionAddress(contracts[i]) // get collection address from ownership address
+					if err != nil {
+						slog.Error("error occurred retrieving the collection address from the ownership address",
+							"ownership_contract", contracts[i], "err", err.Error())
+						break
+					}
+					mintedEvents, err = tx.GetEvoChainEvents(collectionAddress.String())
+					if err != nil {
+						slog.Error("error occurred retrieving evochain minted events for ownership contract",
+							"ownership_contract", contracts[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
+						break
+					}
+					slog.Info("minted with external URI events", "minted_events", mintedEvents)
+
+					// to track down the already-processed EvoChain events, compare the ownership contract's evochain current block with each evochain event block number
+					// order evochain minted events with Transfer events by timestamp and update the state
+				}
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}

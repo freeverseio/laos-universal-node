@@ -43,8 +43,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -66,8 +66,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -90,8 +90,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -456,8 +456,8 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
 	contract := model.ERC721UniversalContract{
-		Address: address,
-		BaseURI: "evochain1/collectionId/",
+		Address:           address,
+		CollectionAddress: common.HexToAddress("evochain1/collectionId/"),
 	}
 
 	tests := []struct {

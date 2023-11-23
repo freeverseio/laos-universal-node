@@ -3,6 +3,7 @@ package ownership
 import (
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
@@ -24,12 +25,22 @@ func NewService(tx storage.Tx) *service {
 func (s *service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	for i := 0; i < len(universalContracts); i++ {
 		addressLowerCase := strings.ToLower(universalContracts[i].Address.String())
-		err := s.tx.Set([]byte(contractPrefix+addressLowerCase), []byte(universalContracts[i].BaseURI))
+		err := s.tx.Set([]byte(contractPrefix+addressLowerCase), universalContracts[i].CollectionAddress.Bytes())
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *service) GetCollectionAddress(contract string) (common.Address, error) {
+	defer s.tx.Discard()
+	contractLowerCase := strings.ToLower(contract)
+	value, err := s.tx.Get([]byte(contractPrefix + contractLowerCase))
+	if err != nil {
+		return common.Address{}, err
+	}
+	return common.BytesToAddress(value), nil
 }
 
 func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
