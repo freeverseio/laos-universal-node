@@ -100,14 +100,14 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 		return
 	}
 
-	// Check if contract is in the list.
+	// Check if contract is stored
 	contractExists, err := isContractStored(params.To, stateService)
 	if err != nil {
 		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// If contract is in the list, use the specific handler for ERC721 universal minting.
+	// If contract is stored, use the specific handler for ERC721 universal minting.
 	if contractExists {
 		universalMintingHandler.ServeHTTP(w, r)
 		return
