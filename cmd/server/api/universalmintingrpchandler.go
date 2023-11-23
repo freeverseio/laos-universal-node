@@ -157,13 +157,12 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stat
 }
 
 func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
-	indexParam, err := callData.GetParam("index")
+	index, err := getParamBigInt(callData, "index")
 	if err != nil {
-		slog.Error("Error getting owner", "err", err)
+		slog.Error("Error getting tokenId", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
-	index := indexParam.(*big.Int)
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
