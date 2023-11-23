@@ -96,6 +96,20 @@ func (mr *MockTxMockRecorder) BalanceOf(contract, owner any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BalanceOf", reflect.TypeOf((*MockTx)(nil).BalanceOf), contract, owner)
 }
 
+// Checkout mocks base method.
+func (m *MockTx) Checkout(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checkout", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checkout indicates an expected call of Checkout.
+func (mr *MockTxMockRecorder) Checkout(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTx)(nil).Checkout), contract, blockNumber)
+}
+
 // Commit mocks base method.
 func (m *MockTx) Commit() error {
 	m.ctrl.T.Helper()
@@ -197,6 +211,20 @@ func (mr *MockTxMockRecorder) SetTreesForContract(contract, ownershipTree, enume
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTreesForContract", reflect.TypeOf((*MockTx)(nil).SetTreesForContract), contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
 }
 
+// TagRoot mocks base method.
+func (m *MockTx) TagRoot(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TagRoot", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TagRoot indicates an expected call of TagRoot.
+func (mr *MockTxMockRecorder) TagRoot(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTx)(nil).TagRoot), contract, blockNumber)
+}
+
 // TokenByIndex mocks base method.
 func (m *MockTx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	m.ctrl.T.Helper()
@@ -292,6 +320,20 @@ func (m *MockState) BalanceOf(contract, owner common.Address) (*big.Int, error) 
 func (mr *MockStateMockRecorder) BalanceOf(contract, owner any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BalanceOf", reflect.TypeOf((*MockState)(nil).BalanceOf), contract, owner)
+}
+
+// Checkout mocks base method.
+func (m *MockState) Checkout(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checkout", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checkout indicates an expected call of Checkout.
+func (mr *MockStateMockRecorder) Checkout(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockState)(nil).Checkout), contract, blockNumber)
 }
 
 // Commit mocks base method.
@@ -393,6 +435,20 @@ func (m *MockState) SetTreesForContract(contract common.Address, ownershipTree o
 func (mr *MockStateMockRecorder) SetTreesForContract(contract, ownershipTree, enumeratedTree, enumeratedTotalTree any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTreesForContract", reflect.TypeOf((*MockState)(nil).SetTreesForContract), contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
+}
+
+// TagRoot mocks base method.
+func (m *MockState) TagRoot(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TagRoot", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TagRoot indicates an expected call of TagRoot.
+func (mr *MockStateMockRecorder) TagRoot(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockState)(nil).TagRoot), contract, blockNumber)
 }
 
 // TokenByIndex mocks base method.
