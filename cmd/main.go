@@ -224,10 +224,13 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 			}
 
-			// for ... contracts = append (contracts, universalContracts[i].Address.String()) because `universalContracts` does not exist in the DB yet
 			var contracts []string
+			// consider contracts that have been discovered but not yet stored, as the related transaction hasn't been committed yet
+			for i := range universalContracts {
+				contracts = append(contracts, universalContracts[i].Address.String())
+			}
 			if len(c.Contracts) > 0 {
-				contracts = c.Contracts
+				contracts = c.Contracts // TODO change me! need to scan only contracts in DB and the ones coming from `universalContracts`
 			} else {
 				contracts, err = repositoryService.GetAllERC721UniversalContracts()
 				if err != nil {

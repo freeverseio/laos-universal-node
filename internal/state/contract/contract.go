@@ -19,12 +19,35 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (c *service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
+func (s *service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	for i := 0; i < len(universalContracts); i++ {
-		err := c.tx.Set([]byte(contractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
+		err := s.tx.Set([]byte(contractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
+	defer s.tx.Discard()
+	var existingContracts []string
+	for _, k := range contracts {
+		hasContract, err := s.hasERC721UniversalContract(k)
+		if err != nil {
+			return nil, err
+		}
+		if hasContract {
+			existingContracts = append(existingContracts, k)
+		}
+	}
+	return existingContracts, nil
+}
+
+func (s *service) hasERC721UniversalContract(contract string) (bool, error) {
+	value, err := s.tx.Get([]byte(contractPrefix + contract))
+	if err != nil {
+		return false, err
+	}
+	return value != nil, nil
 }
