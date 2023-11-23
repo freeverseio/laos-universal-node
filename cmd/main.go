@@ -255,26 +255,14 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
-				// parse transfer events and get timestamp information
-				modelTransferEvents := make(map[string][]model.ERC721Transfer)
-				for i := range scanEvents {
-					if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
-						header, headerErr := client.HeaderByNumber(ctx, big.NewInt(int64(scanEvent.BlockNumber)))
-						if headerErr != nil {
-							slog.Error("error fetching header information for block number", "err", err.Error())
-							break
-						}
-						contractString := scanEvent.Contract.String()
-						modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
-							From:        scanEvent.From,
-							To:          scanEvent.To,
-							TokenId:     scanEvent.TokenId,
-							BlockNumber: scanEvent.BlockNumber,
-							Contract:    scanEvent.Contract,
-							Timestamp:   header.Time,
-						})
-					}
+
+				var modelTransferEvents map[string][]model.ERC721Transfer
+				modelTransferEvents, err = getModelTransferEvents(ctx, client, scanEvents)
+				if err != nil {
+					slog.Error("error parsing transfer events", "err", err.Error())
+					break
 				}
+				slog.Debug("transfer events", "transfer_events", modelTransferEvents) // TODO remove me?
 
 				// order mint events with transfer events
 				for i := range contracts {
@@ -292,7 +280,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 							"ownership_contract", contracts[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
 						break
 					}
-					slog.Info("minted with external URI events", "minted_events", mintedEvents)
+					slog.Debug("minted with external URI events", "minted_events", mintedEvents) // TODO remove me?
 
 					// to track down the already-processed EvoChain events, compare the ownership contract's evochain current block with each evochain event block number
 					// order evochain minted events with Transfer events by timestamp and update the state
@@ -358,6 +346,36 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func getModelTransferEvents(ctx context.Context, client scan.EthClient, scanEvents []scan.Event) (map[string][]model.ERC721Transfer, error) {
+	modelTransferEvents := make(map[string][]model.ERC721Transfer)
+	for i := range scanEvents {
+		if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
+			timestamp, err := getTimestampForBlockNumber(ctx, client, scanEvent.BlockNumber)
+			if err != nil {
+				return nil, fmt.Errorf("error retrieving timestamp for block number %d: %w", scanEvent.BlockNumber, err)
+			}
+			contractString := scanEvent.Contract.String()
+			modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
+				From:        scanEvent.From,
+				To:          scanEvent.To,
+				TokenId:     scanEvent.TokenId,
+				BlockNumber: scanEvent.BlockNumber,
+				Contract:    scanEvent.Contract,
+				Timestamp:   timestamp,
+			})
+		}
+	}
+	return modelTransferEvents, nil
+}
+
+func getTimestampForBlockNumber(ctx context.Context, client scan.EthClient, blockNumber uint64) (uint64, error) {
+	header, err := client.HeaderByNumber(ctx, big.NewInt(int64(blockNumber)))
+	if err != nil {
+		return 0, err
+	}
+	return header.Time, err
 }
 
 func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
