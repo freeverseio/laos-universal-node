@@ -11,6 +11,7 @@ import (
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
@@ -533,7 +534,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage, _ := getMocks(t)
+			client, scanner, storage, tx := getMocks(t)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
@@ -559,10 +560,13 @@ func TestScanEvoChainOnce(t *testing.T) {
 							cancel() // we cancel the loop since we only want one iteration
 						},
 					).Times(1)
+
+					storage.EXPECT().NewTransaction().Return(tx)
+					tx.EXPECT().Discard().Return()
 				}
 			}
 
-			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage))
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), v1.NewStateService(storage))
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
