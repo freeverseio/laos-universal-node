@@ -2,6 +2,8 @@ package api_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +12,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	apiMock "github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	"github.com/freeverseio/laos-universal-node/internal/repository"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
@@ -49,7 +51,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:      http.StatusOK,
 			expectedResponse:        "proxyHandler called",
 			proxyHandlerCalledTimes: 1,
-			storedContracts:         [][]byte{},
+			storedContracts: [][]byte{
+				[]byte(""),
+			},
 		},
 		{
 			name: "Good request with eth_call method",
@@ -89,6 +93,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			expectedStatusCode:      http.StatusOK,
 			expectedResponse:        "proxyHandler called",
 			proxyHandlerCalledTimes: 1,
+			storedContracts: [][]byte{
+				[]byte(""),
+			},
 		},
 		{
 			name:               "Bad request with GET method",
@@ -97,6 +104,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			method:             "GET",
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   "No JSON RPC call or invalid Content-Type\n",
+			storedContracts: [][]byte{
+				[]byte(""),
+			},
 		},
 		{
 			name:               "Bad request with jsonrpc 1.0",
@@ -105,6 +115,9 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			method:             "POST",
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   "Invalid JSON-RPC version\n",
+			storedContracts: [][]byte{
+				[]byte(""),
+			},
 		},
 	}
 
@@ -116,6 +129,10 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			storage := mockStorage.NewMockService(ctrl)
 
+			tx := mockStorage.NewMockTx(ctrl)
+			// TODO fix AnyTimes
+			storage.EXPECT().NewTransaction().Return(tx).AnyTimes()
+			tx.EXPECT().Discard().AnyTimes()
 			handlerMock := apiMock.NewMockRPCHandler(ctrl)
 			t.Cleanup(func() {
 				ctrl.Finish()
@@ -125,8 +142,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 
 			// Record responses
 			w := httptest.NewRecorder()
-			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).Return(tt.storedContracts, nil).AnyTimes()
-			repositoryService := repository.New(storage)
+			tx.EXPECT().Get(gomock.Any()).Return(tt.storedContracts[0], nil).AnyTimes()
+			stateService := v1.NewStateService(storage)
 
 			handlerMock.EXPECT().PostRPCProxyHandler(w, req).Do(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
@@ -143,8 +160,19 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 				}
 			}).Times(tt.ercUniversalMintingHandlerCalledTimes)
 
+			if tt.expectedStatusCode == http.StatusOK {
+				var req api.JSONRPCRequest
+				if err := json.Unmarshal([]byte(tt.body), &req); err != nil {
+					http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
+					slog.Error("error parsing JSON request", "err", err)
+					return
+				}
+				handlerMock.EXPECT().SetJsonRPCRequest(req).Times(1)
+				handlerMock.EXPECT().SetStateService(stateService).Times(1)
+			}
+
 			// Create the middleware and serve using the test handlers
-			middleware := api.PostRpcRequestMiddleware(handlerMock, repositoryService)
+			middleware := api.PostRpcRequestMiddleware(handlerMock, stateService)
 			middleware.ServeHTTP(w, req)
 
 			// Check the status code and body

@@ -50,15 +50,14 @@ func run() error {
 	}()
 
 	storageService := badgerStorage.NewService(db)
-
+	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
+	stateService := v1.NewStateService(storageService)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
-
-	stateService := v1.NewStateService(storageService)
 
 	// Badger DB garbage collection
 	group.Go(func() error {
@@ -117,7 +116,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, repositoryService)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, stateService)
 	})
 
 	if err := group.Wait(); err != nil {

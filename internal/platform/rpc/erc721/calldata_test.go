@@ -2,6 +2,7 @@ package erc721_test
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -72,6 +73,24 @@ func TestMethod(t *testing.T) {
 			err:           nil,
 		},
 		{
+			input:         hexutil.MustDecode("0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001"),
+			expected:      erc721.TokenByIndex,
+			remoteMinting: true,
+			err:           nil,
+		},
+		{
+			input:         hexutil.MustDecode("0x18160ddd"),
+			expected:      erc721.TotalSupply,
+			remoteMinting: true,
+			err:           nil,
+		},
+		{
+			input:         hexutil.MustDecode("0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001"),
+			expected:      erc721.TokenOfOwnerByIndex,
+			remoteMinting: true,
+			err:           nil,
+		},
+		{
 			expected:      0,
 			remoteMinting: false,
 			err:           nil,
@@ -112,8 +131,6 @@ func TestMethod(t *testing.T) {
 }
 
 func TestGetParam(t *testing.T) {
-	// This is a bit more complex since it requires correct ABI encoding.
-	// For the sake of example, I'll provide a simple framework.
 	tests := []struct {
 		input    erc721.CallData
 		param    string
@@ -126,15 +143,45 @@ func TestGetParam(t *testing.T) {
 			expected: common.HexToAddress("0xbD7931f025ecF360b21E1aB92ec34b49084bcA5B"),
 			err:      nil,
 		},
+		{
+			input:    hexutil.MustDecode("0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001"),
+			param:    "index",
+			expected: big.NewInt(1),
+			err:      nil,
+		},
+		{
+			input:    hexutil.MustDecode("0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001"),
+			param:    "index",
+			expected: big.NewInt(1),
+			err:      nil,
+		},
+		{
+			input:    hexutil.MustDecode("0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001"),
+			param:    "owner",
+			expected: common.HexToAddress("0x1B0b4a597C764400Ea157aB84358c8788A89cd28"),
+			err:      nil,
+		},
 	}
 
 	for _, test := range tests {
 		output, err := test.input.GetParam(test.param)
-		if output != test.expected {
-			t.Errorf("Expected: %v, got: %v", test.expected, output)
-		}
-		if err != test.err {
+		if err != nil {
 			t.Errorf("Expected error: %v, got: %v", test.err, err)
+			continue
+		}
+		switch expected := test.expected.(type) {
+		case common.Address:
+			if output, ok := output.(common.Address); !ok || output != expected {
+				t.Errorf("Expected: %v, got: %v", expected, output)
+			}
+		case *big.Int:
+			if output, ok := output.(*big.Int); !ok || output.Cmp(expected) != 0 {
+				t.Errorf("Expected: %v, got: %v", expected, output)
+			}
+		default:
+			if output != test.expected {
+				t.Errorf("Expected: %v, got: %v", test.expected, output)
+			}
 		}
 	}
 }

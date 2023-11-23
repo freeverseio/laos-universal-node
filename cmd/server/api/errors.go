@@ -10,5 +10,5 @@ const (
 // Define error codes related to JSON-RPC responses
 const (
 	ErrorCodeInvalidRequest = -32600 // Invalid Request
-	ErrorId                 = 1
+	errorId                 = 1
 )
