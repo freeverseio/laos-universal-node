@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
@@ -21,6 +22,7 @@ type Tx interface {
 	Commit() error
 
 	State
+	ContractState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -41,4 +43,10 @@ type State interface {
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
 	Transfer(contract common.Address, eventTransfer scan.EventTransfer) error
 	Mint(contract common.Address, tokenId *big.Int) error
+}
+
+type ContractState interface {
+	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
+	StoreEvoChainMintEvents(contract common.Address, events []model.EventMintedWithExternalURI) error
+	EvoChainMintEvents(contract common.Address) ([]model.EventMintedWithExternalURI, error)
 }

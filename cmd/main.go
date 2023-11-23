@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
@@ -19,6 +20,8 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/state"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,15 +53,12 @@ func run() error {
 	storageService := badgerStorage.NewService(db)
 
 	repositoryService := repository.New(storageService)
+	stateService := v1.NewStateService(storageService)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
-
-	if err != nil {
-		return fmt.Errorf("error initializing storage: %w", err)
-	}
 
 	// Badger DB garbage collection
 	group.Go(func() error {
@@ -106,7 +106,7 @@ func run() error {
 		}
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s, repositoryService)
+		return scanEvoChain(ctx, c, client, s, repositoryService, stateService)
 	})
 
 	// Universal node RPC server
@@ -243,7 +243,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service, stateService state.Service) error {
 	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -272,11 +272,48 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			_, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
+			events, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
+
+			groupMintEvents := make(map[common.Address][]model.EventMintedWithExternalURI, 0)
+			for _, event := range events {
+				if e, ok := event.(scan.EventMintedWithExternalURI); ok {
+					groupMintEvents[e.Contract] = append(groupMintEvents[e.Contract], model.EventMintedWithExternalURI{
+						Slot:        e.Slot,
+						To:          e.To,
+						TokenURI:    e.TokenURI,
+						TokenId:     e.TokenId,
+						BlockNumber: e.BlockNumber,
+						Timestamp:   e.Timestamp,
+					})
+				}
+			}
+
+			tx := stateService.NewTransaction()
+			// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+			defer tx.Discard()
+
+			for contract, scannedEvents := range groupMintEvents {
+				// fetch current storedEvents stord for this specific contract address
+				events := make([]model.EventMintedWithExternalURI, 0)
+				storedEvents, err := tx.EvoChainMintEvents(contract)
+				if err != nil {
+					slog.Error("error occurred while reading database", "err", err.Error())
+					break
+				}
+				if storedEvents != nil {
+					events = append(events, storedEvents...)
+				}
+				events = append(events, scannedEvents...)
+				if err := tx.StoreEvoChainMintEvents(contract, events); err != nil {
+					slog.Error("error occurred while writing events to database", "err", err.Error())
+					break
+				}
+			}
+
 			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
