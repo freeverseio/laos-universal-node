@@ -33,16 +33,16 @@ type JSONRPCErrorResponse struct {
 }
 
 func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
-	josonRPCRequest := h.GetJsonRPCRequest()
+	jsonRPCRequest := h.GetJsonRPCRequest()
 	var params ParamsRPCRequest
-	if len(josonRPCRequest.Params) == 0 || json.Unmarshal(josonRPCRequest.Params[0], &params) != nil {
+	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
 		return
 	}
 
 	var blockNumber string
-	if len(josonRPCRequest.Params) == 2 {
-		if err := json.Unmarshal(josonRPCRequest.Params[1], &blockNumber); err != nil {
+	if len(jsonRPCRequest.Params) == 2 {
+		if err := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); err != nil {
 			http.Error(w, "Error parsing block number", http.StatusBadRequest)
 			return
 		}
@@ -132,22 +132,18 @@ func totalSupply(params ParamsRPCRequest, stateService state.Service, w http.Res
 }
 
 func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
-	indexParam, err := callData.GetParam("index")
+	index, err := getParamBigInt(callData, "index")
+	if err != nil {
+		slog.Error("Error getting tokenId", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
-	index := indexParam.(*big.Int)
-
-	ownerAddressParam, err := callData.GetParam("owner")
-	if err != nil {
-		slog.Error("Error getting owner", "err", err)
-		sendErrorResponse(w, err)
-		return
-	}
-	ownerAddress := ownerAddressParam.(common.Address)
-
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
