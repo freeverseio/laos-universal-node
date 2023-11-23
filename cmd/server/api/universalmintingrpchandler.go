@@ -237,7 +237,6 @@ func sendErrorResponse(w http.ResponseWriter, err error) {
 	}
 }
 
-// getParamBigInt extracts a *big.Int parameter from callData.
 func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error) {
 	param, err := callData.GetParam(paramName)
 	if err != nil {
@@ -252,7 +251,6 @@ func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error
 	return bigIntParam, nil
 }
 
-// getParamAddress extracts a common.Address parameter from callData.
 func getParamAddress(callData erc721.CallData, paramName string) (common.Address, error) {
 	param, err := callData.GetParam(paramName)
 	if err != nil {
