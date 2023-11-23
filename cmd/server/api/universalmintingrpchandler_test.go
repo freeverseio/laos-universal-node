@@ -17,7 +17,9 @@ import (
 )
 
 func TestUniversalMintingRPCHandler(t *testing.T) {
+	t.Parallel()
 	t.Run("Should execute OwnerOf", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -38,6 +40,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute OwnerOf with an error from ownerOf", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -62,6 +65,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute OwnerOf with an error from create contract", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -82,6 +86,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute BalanceOf", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -102,6 +107,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute TokenOfOwnerByIndex", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -121,6 +127,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute TokenByIndex", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
@@ -141,6 +148,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 	})
 
 	t.Run("Should execute TotalSupply", func(t *testing.T) {
+		t.Parallel()
 		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 			storage.EXPECT().NewTransaction().Return(tx).Times(1)
 			tx.EXPECT().Discard().AnyTimes()
