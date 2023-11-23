@@ -19,6 +19,7 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
+	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,8 +49,9 @@ func run() error {
 	}()
 
 	storageService := badgerStorage.NewService(db)
-
+	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
+	stateService := v1.NewStateService(storageService)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer stop()
@@ -117,7 +119,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, repositoryService)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, stateService)
 	})
 
 	if err := group.Wait(); err != nil {
