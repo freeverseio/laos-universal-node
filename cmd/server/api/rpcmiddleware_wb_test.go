@@ -32,7 +32,7 @@ func TestCheckContractInList(t *testing.T) {
 		tx.EXPECT().Get([]byte("contract_"+strings.ToLower(contract2))).Return(nil, badger.ErrKeyNotFound).Times(1)
 		stateService := v1.NewStateService(storage)
 
-		b, err := isContractInList(contract1, stateService)
+		b, err := isContractStored(contract1, stateService)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}
@@ -40,7 +40,7 @@ func TestCheckContractInList(t *testing.T) {
 			t.Fatalf("got %v, expected true", b)
 		}
 
-		b, err = isContractInList(contract2, stateService)
+		b, err = isContractStored(contract2, stateService)
 		if err != nil {
 			t.Fatalf("got %T, expected nil error", err)
 		}

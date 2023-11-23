@@ -51,10 +51,6 @@ func (h *GlobalRPCHandler) GetJsonRPCRequest() JSONRPCRequest {
 	return h.jsonRPCRequest
 }
 
-func (h *GlobalRPCHandler) GetStateService() state.Service {
-	return h.stateService
-}
-
 func (h *GlobalRPCHandler) SetStateService(stateService state.Service) {
 	h.stateService = stateService
 }

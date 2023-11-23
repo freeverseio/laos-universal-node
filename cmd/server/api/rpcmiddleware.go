@@ -101,7 +101,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 
 	// Check if contract is in the list.
-	isInContractList, err := isContractInList(params.To, stateService)
+	isInContractList, err := isContractStored(params.To, stateService)
 	if err != nil {
 		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
 		return
@@ -117,7 +117,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 }
 
-func isContractInList(contractAddress string, stateService state.Service) (bool, error) {
+func isContractStored(contractAddress string, stateService state.Service) (bool, error) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	lowerCaseContractAddress := strings.ToLower(contractAddress)
