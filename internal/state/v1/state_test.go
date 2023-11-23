@@ -52,8 +52,7 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
 		eventTransfer := scan.EventTransfer{
 			From:    common.HexToAddress("0x1"),
@@ -66,7 +65,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -84,8 +83,7 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
 		eventTransfer := scan.EventTransfer{
 			From:    common.HexToAddress("0x1"),
@@ -99,7 +97,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -117,8 +115,7 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
 		eventTransfer := scan.EventTransfer{
 			From:    common.HexToAddress("0x1"),
@@ -140,7 +137,7 @@ func TestTransfer(t *testing.T) {
 		tokenData2.Idx = 0
 		ownershipTree.EXPECT().SetTokenData(&tokenData2, big.NewInt(10)).Return(nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
 		assert.NilError(t, err)
 	})
 }
@@ -161,8 +158,7 @@ func TestMinting(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
@@ -173,7 +169,7 @@ func TestMinting(t *testing.T) {
 
 		enumeratedTree.EXPECT().Mint(big.NewInt(1), tokenData.SlotOwner).Return(nil)
 
-		err = tx.Mint(common.HexToAddress("0x500"), big.NewInt(1))
+		err := tx.Mint(common.HexToAddress("0x500"), big.NewInt(1))
 		assert.NilError(t, err)
 	})
 }

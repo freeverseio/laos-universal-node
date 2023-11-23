@@ -7,7 +7,6 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
@@ -280,16 +279,6 @@ func (t *tx) Discard() {
 // Commits transaction
 func (t *tx) Commit() error {
 	return t.tx.Commit()
-}
-
-func (t *tx) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
-	for i := 0; i < len(universalContracts); i++ {
-		err := t.tx.Set([]byte(state.ContractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (t *tx) Get(key string) ([]byte, error) {

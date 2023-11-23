@@ -173,10 +173,7 @@ func createMerkleTrees(tx state.Tx, contactAddress common.Address) (state.Tx, er
 		return nil, err
 	}
 
-	err = tx.SetTreesForContract(contactAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
-	if err != nil {
-		return nil, err
-	}
+	tx.SetTreesForContract(contactAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
 	return tx, nil
 }
 
