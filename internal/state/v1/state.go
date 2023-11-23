@@ -56,6 +56,8 @@ func (t *tx) IsTreeSetForContract(contract common.Address) bool {
 	return ok
 }
 
+// TODO CreateTreesForContract should be GetTreesForContract
+
 // CreateTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
 func (t *tx) CreateTreesForContract(contract common.Address) (
 	ownershipTree ownership.Tree,
