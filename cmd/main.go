@@ -163,7 +163,8 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 }
 
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
-	s scan.Scanner, repositoryService repository.Service, stateService state.Service) error {
+	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
+) error {
 	startingBlockDB, err := repositoryService.GetCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -199,6 +200,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 
 			tx := stateService.NewTransaction()
+			// TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
 			defer tx.Discard()
 			var universalContracts []model.ERC721UniversalContract
 			if shouldDiscover {
@@ -209,9 +211,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 
 				for i := range universalContracts {
-					ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(universalContracts[i].Address)
-					if err != nil {
-						slog.Error("error creating merkle trees", "err", err)
+					ownership, enumerated, enumeratedTotal, treeErr := tx.CreateTreesForContract(universalContracts[i].Address)
+					if treeErr != nil {
+						slog.Error("error creating merkle trees", "err", treeErr)
 						break
 					}
 					tx.SetTreesForContract(universalContracts[i].Address, ownership, enumerated, enumeratedTotal)
@@ -257,6 +259,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}
+			// TODO set current block in the same Tx
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
