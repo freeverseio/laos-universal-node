@@ -200,6 +200,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 
 			tx := stateService.NewTransaction()
+			defer tx.Discard()
 			var universalContracts []model.ERC721UniversalContract
 			if shouldDiscover {
 				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
