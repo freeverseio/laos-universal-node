@@ -39,8 +39,8 @@ const (
 	TokenByIndex
 )
 
-// remoteMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
-var remoteMintingMethodSigs = map[string]Erc721method{
+// universalMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
+var universalMintingMethodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("ownerOf(uint256)"))[:ShortAddressLength]):                     OwnerOf,
 	hexutil.Encode(crypto.Keccak256([]byte("balanceOf(address)"))[:ShortAddressLength]):                   BalanceOf,
 	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                        TotalSupply,
@@ -55,7 +55,7 @@ func (b CallData) UniversalMintingMethod() (Erc721method, bool, error) {
 		return 0, false, err
 	}
 
-	if method, exists := remoteMintingMethodSigs[sig]; exists {
+	if method, exists := universalMintingMethodSigs[sig]; exists {
 		return method, exists, nil
 	}
 
