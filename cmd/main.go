@@ -262,7 +262,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					slog.Error("error parsing transfer events", "err", err.Error())
 					break
 				}
-				slog.Debug("transfer events", "transfer_events", modelTransferEvents) // TODO remove me?
 
 				// order mint events with transfer events
 				for i := range contracts {
@@ -280,10 +279,29 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 							"ownership_contract", contracts[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
 						break
 					}
-					slog.Debug("minted with external URI events", "minted_events", mintedEvents) // TODO remove me?
 
-					// to track down the already-processed EvoChain events, compare the ownership contract's evochain current block with each evochain event block number
-					// order evochain minted events with Transfer events by timestamp and update the state
+					var mintedIndex int
+					var transferIndex int
+					for {
+						// TODO probably "len checks" should be done separately: one slice's index could have reached the end while the other might have not
+						if mintedIndex < len(mintedEvents) && transferIndex < len(modelTransferEvents[contracts[i]]) {
+							// TODO if minted event's block number > ownership contract's evo chain current block => continue
+							if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[contracts[i]][transferIndex].Timestamp {
+								if err = tx.Mint(common.HexToAddress(contracts[i]), mintedEvents[mintedIndex].TokenId); err != nil {
+									slog.Error("msg string", "err", err)
+									break
+								}
+								mintedIndex++
+							} else {
+								if err = tx.Transfer(common.HexToAddress(contracts[i]), &modelTransferEvents[contracts[i]][transferIndex]); err != nil {
+									slog.Error("msg string", "err", err)
+									break
+								}
+								transferIndex++
+							}
+						}
+						// TODO don't forget to do: tx.SetEvoCurrentBlockForOwnershipContract(contracts[i], blockNumber), maybe it goes after the for?
+					}
 				}
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))

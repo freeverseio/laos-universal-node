@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 // Tree is used to store enumerated tokens of each owner
 type Tree interface {
 	Root() common.Hash
-	Transfer(minted bool, eventTransfer scan.EventTransfer) error
+	Transfer(minted bool, eventTransfer *model.ERC721Transfer) error
 	Mint(tokenId *big.Int, owner common.Address) error
 	TokensOf(owner common.Address) ([]big.Int, error)
 	TagRoot(blockNumber int64) error
@@ -80,7 +80,7 @@ func (b *tree) Mint(tokenId *big.Int, owner common.Address) error {
 }
 
 // Transfer adds TokenId to the new owner and removes it from the previous owner
-func (b *tree) Transfer(minted bool, eventTransfer scan.EventTransfer) error {
+func (b *tree) Transfer(minted bool, eventTransfer *model.ERC721Transfer) error {
 	if !minted {
 		return nil
 	}

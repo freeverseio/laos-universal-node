@@ -79,6 +79,7 @@ func (s *Service) SetChainID(chainIDValue string) error {
 	return s.storageService.Set([]byte(chainID), []byte(chainIDValue))
 }
 
+// TODO move block-related methods to state
 func (s *Service) GetCurrentBlock() (string, error) {
 	value, err := s.get(currentBlock)
 	if err != nil {

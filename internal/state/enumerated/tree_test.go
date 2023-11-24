@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"gotest.tools/assert"
 )
@@ -44,7 +44,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 
 		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
-		err = tr.Transfer(false, scan.EventTransfer{
+		err = tr.Transfer(false, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -70,7 +70,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 1)
 
-		err = tr.Transfer(false, scan.EventTransfer{
+		err = tr.Transfer(false, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(2),
@@ -155,7 +155,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 0)
 
-		err = tr.Transfer(true, scan.EventTransfer{
+		err = tr.Transfer(true, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -200,7 +200,7 @@ func TestTag(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 0)
 
-		err = tr.Transfer(true, scan.EventTransfer{
+		err = tr.Transfer(true, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),

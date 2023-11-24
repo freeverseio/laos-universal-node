@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 const ones160bits = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
@@ -36,7 +36,7 @@ type TokenData struct {
 // Tree defines interface for ownership tree
 type Tree interface {
 	Root() common.Hash
-	Transfer(eventTransfer scan.EventTransfer) error
+	Transfer(eventTransfer *model.ERC721Transfer) error
 	Mint(tokenId *big.Int, idx int) error
 	TokenData(tokenId *big.Int) (*TokenData, error)
 	SetTokenData(tokenData *TokenData, tokenId *big.Int) error
@@ -79,7 +79,7 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 }
 
 // Transfer updates the SlotOwner of the token
-func (b *tree) Transfer(eventTransfer scan.EventTransfer) error {
+func (b *tree) Transfer(eventTransfer *model.ERC721Transfer) error {
 	tokenData, err := b.TokenData(eventTransfer.TokenId)
 	if err != nil {
 		return err

@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
-	scan "github.com/freeverseio/laos-universal-node/internal/scan"
+	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	ownership "github.com/freeverseio/laos-universal-node/internal/state/ownership"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -157,7 +157,7 @@ func (mr *MockTreeMockRecorder) TokenData(tokenId any) *gomock.Call {
 }
 
 // Transfer mocks base method.
-func (m *MockTree) Transfer(eventTransfer scan.EventTransfer) error {
+func (m *MockTree) Transfer(eventTransfer *model.ERC721Transfer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Transfer", eventTransfer)
 	ret0, _ := ret[0].(error)

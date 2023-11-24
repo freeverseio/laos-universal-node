@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
@@ -31,6 +30,7 @@ type Tx interface {
 	State
 	OwnershipContractState
 	EvolutionContractState
+	OwnershipBlockState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -49,7 +49,7 @@ type State interface {
 	TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.Int, error)
 	TotalSupply(contract common.Address) (int64, error)
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
-	Transfer(contract common.Address, eventTransfer scan.EventTransfer) error
+	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, tokenId *big.Int) error
 	IsTreeSetForContract(contract common.Address) bool
 	Get(key string) ([]byte, error)
@@ -65,4 +65,9 @@ type OwnershipContractState interface {
 
 type EvolutionContractState interface {
 	GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error)
+}
+
+type OwnershipBlockState interface {
+	SetEvoCurrentBlockForOwnershipContract(contract string, blockNumber uint64) error
+	GetEvoCurrentBlockForOwnershipContract(contract string) (uint64, error)
 }

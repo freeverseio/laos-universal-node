@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	enumeratedTreeMock "github.com/freeverseio/laos-universal-node/internal/state/enumerated/mock"
 	enumeratedTotalTreeMock "github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal/mock"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
@@ -28,13 +28,13 @@ func TestTransfer(t *testing.T) {
 
 		tx := stateService.NewTransaction()
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
 		}
 
-		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.Error(t, err, "contract 0x0000000000000000000000000000000000000500 does not exist")
 	})
 
@@ -54,7 +54,7 @@ func TestTransfer(t *testing.T) {
 
 		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -65,7 +65,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 
-		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -85,7 +85,7 @@ func TestTransfer(t *testing.T) {
 
 		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -97,7 +97,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
 
-		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -117,7 +117,7 @@ func TestTransfer(t *testing.T) {
 
 		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.Address{},
 			TokenId: big.NewInt(1),
@@ -137,7 +137,7 @@ func TestTransfer(t *testing.T) {
 		tokenData2.Idx = 0
 		ownershipTree.EXPECT().SetTokenData(&tokenData2, big.NewInt(10)).Return(nil)
 
-		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 }

@@ -8,9 +8,10 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
+	ownershipBlockState "github.com/freeverseio/laos-universal-node/internal/state/block/ownership"
 	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/evolution"
 	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/ownership"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
@@ -39,6 +40,7 @@ func (s *service) NewTransaction() state.Tx {
 		tx:                     storageTx,
 		OwnershipContractState: ownershipContractState.NewService(storageTx),
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
+		OwnershipBlockState:    ownershipBlockState.NewService(storageTx),
 	}
 }
 
@@ -49,6 +51,7 @@ type tx struct {
 	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
 	state.OwnershipContractState
 	state.EvolutionContractState
+	state.OwnershipBlockState
 }
 
 // IsTreeSetForContact returns true if the tree is set
@@ -145,7 +148,7 @@ func (t *tx) TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.
 }
 
 // Transfer transfers ownership of the token. From, To, and TokenID are set in event
-func (t *tx) Transfer(contract common.Address, eventTransfer scan.EventTransfer) error {
+func (t *tx) Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error {
 	slog.Debug("Transfer ", "contract",
 		contract.String(),
 		"From", eventTransfer.From.String(),
