@@ -306,7 +306,7 @@ func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 // Checkout sets the current roots to those tagged for the block
 // If no tag for the block exists, it searches for the first block in the past that has the tag.
 func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
-	// TODO this transaction should be committed only if we want to permanently store the new root as the head 
+	// TODO this transaction should be committed only if we want to permanently store the new root as the head
 	// (when reorgs happens)
 	// If we just want to read the state at current root we should not commit this transaction
 	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
