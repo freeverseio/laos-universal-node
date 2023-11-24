@@ -3,13 +3,20 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
@@ -574,6 +581,98 @@ func TestScanEvoChainOnce(t *testing.T) {
 	}
 }
 
+func TestScanEvoChainWithEvents(t *testing.T) {
+	t.Parallel()
+	mintedWithExternalURIEventHash := "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348"
+	eventLog := &types.Log{
+		Topics: []common.Hash{
+			common.HexToHash(mintedWithExternalURIEventHash),
+			common.HexToHash("0x000000000000000000000000c112bde959080c5b46e73749e3e170f47123e85a"),
+		},
+		Data:        common.Hex2Bytes("00000000000000000000000000000000000000003d5b1313de887a00000000003d5b1313de887a0000000000c112bde959080c5b46e73749e3e170f47123e85a0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002e516d4e5247426d7272724862754b4558375354544d326f68325077324d757438674863537048706a367a7a637375000000000000000000000000000000000000"),
+		BlockNumber: 100,
+	}
+	evoAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
+	if err != nil {
+		t.Fatalf(`got error "%v", expected error: "%v"`, err, nil)
+	}
+	event, err := parseMintedWithExternalURI(eventLog, &evoAbi)
+	if err != nil {
+		t.Fatalf(`got error "%v", expected error: "%v"`, err, nil)
+	}
+	tests := []struct {
+		name                   string
+		c                      config.Config
+		l1LatestBlock          uint64
+		blockNumberDB          string
+		blockNumberTimes       int
+		scanEventsTimes        int
+		expectedFromBlock      uint64
+		expectedToBlock        uint64
+		expectedNewLatestBlock string
+		errorScanEvents        error
+		errorSaveBlockNumber   error
+		errorGetBlockNumber    error
+		errorGetL1LatestBlock  error
+		expectedError          error
+	}{
+		{
+			name: "scan evo chain OK",
+			c: config.Config{
+				StartingBlock:   0,
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "100",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: "151",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := getContext()
+			defer cancel()
+
+			client, scanner, storage, tx := getMocks(t)
+			client.EXPECT().BlockNumber(ctx).
+				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
+				Times(tt.blockNumberTimes)
+
+			storage.EXPECT().Get([]byte("evo_current_block")).
+				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
+				Times(1)
+
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
+				Return([]scan.Event{event}, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).Times(1)
+
+
+
+			storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
+				Return(tt.errorSaveBlockNumber).Do(
+				func(_ []byte, _ []byte) {
+					cancel() // we cancel the loop since we only want one iteration
+				},
+			).Times(1)
+
+			storage.EXPECT().NewTransaction().Return(tx)
+			tx.EXPECT().Discard().Return()
+
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), v1.NewStateService(storage))
+			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
+				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
+			}
+		})
+	}
+}
+
 func TestRunScanAndCancelContext(t *testing.T) {
 	t.Parallel()
 	c := config.Config{
@@ -623,4 +722,25 @@ func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorag
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
 		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
+}
+
+func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (scan.EventMintedWithExternalURI, error) {
+	var mintWithExternalURI scan.EventMintedWithExternalURI
+	eventMintedWithExternalURI := "MintedWithExternalURI"
+	err := unpackIntoInterface(&mintWithExternalURI, eventMintedWithExternalURI, contractAbi, eL)
+	if err != nil {
+		return mintWithExternalURI, err
+	}
+	mintWithExternalURI.To = common.HexToAddress(eL.Topics[1].Hex())
+
+	return mintWithExternalURI, nil
+}
+
+func unpackIntoInterface(e scan.Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
+	err := contractAbi.UnpackIntoInterface(e, eventName, eL.Data)
+	if err != nil {
+		return fmt.Errorf("error unpacking the event %s: %w", eventName, err)
+	}
+
+	return nil
 }
