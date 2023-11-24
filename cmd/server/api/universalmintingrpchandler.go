@@ -47,7 +47,7 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 			return
 		}
 	}
-	slog.Info("block number", "blockNumber", blockNumber)
+	slog.Debug("block number", "blockNumber", blockNumber)
 
 	calldata, err := erc721.NewCallData(params.Data)
 	if err != nil {
@@ -176,13 +176,13 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	sendResponse(w, tokenId.String(), err)
 }
 
-func loadMerkleTree(tx state.Tx, contactAddress common.Address, blockNumber string) (state.Tx, error) {
-	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contactAddress)
+func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
+	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	err = tx.SetTreesForContract(contactAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
+	err = tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +196,10 @@ func loadMerkleTree(tx state.Tx, contactAddress common.Address, blockNumber stri
 			return nil, err
 		}
 
-		err = tx.Checkout(contactAddress, num)
+		err = tx.Checkout(contractAddress, num)
 		if err != nil {
-			slog.Error("error happened when doing checkout for", "err", err)
+			slog.Error("error occurred checking out merkle tree at block number", "block_number", num,
+				"contract_address", contractAddress, "err", err)
 			return nil, err
 		}
 	}
