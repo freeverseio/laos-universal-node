@@ -166,6 +166,7 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
 	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
 ) error {
+	// TODO use tx.GetCurrentBlock and refactor getStartingBlock to accept "startingBlockDB" as uint64
 	startingBlockDB, err := repositoryService.GetCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -296,9 +297,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
 			}
-			// TODO set current block in the same Tx
+
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
+			if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}

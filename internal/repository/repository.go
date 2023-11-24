@@ -11,7 +11,7 @@ import (
 const (
 	contractPrefix  = "contract_"
 	chainID         = "chain_id"
-	currentBlock    = "current_block"
+	currentBlock    = "ownership_current_block"
 	evoCurrentBlock = "evo_current_block"
 )
 

@@ -9,6 +9,7 @@ import (
 
 const (
 	contractEvoCurrentBlockPrefix = "ownership_contract_evo_current_block_"
+	currentBlock                  = "ownership_current_block"
 )
 
 type service struct {
@@ -21,8 +22,8 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error {
-	return s.tx.Set([]byte(contractEvoCurrentBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(blockNumber, 10)))
+func (s *service) SetCurrentEvoBlockForOwnershipContract(contract string, number uint64) error {
+	return s.tx.Set([]byte(contractEvoCurrentBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(number, 10)))
 }
 
 func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
@@ -32,4 +33,17 @@ func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint6
 		return 0, err
 	}
 	return strconv.ParseUint(string(value), 10, 64)
+}
+
+func (s *service) GetCurrentOwnershipBlock() (uint64, error) {
+	defer s.tx.Discard()
+	value, err := s.tx.Get([]byte(currentBlock))
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseUint(string(value), 10, 64)
+}
+
+func (s *service) SetCurrentOwnershipBlock(number uint64) error {
+	return s.tx.Set([]byte(currentBlock), []byte(strconv.FormatUint(number, 10)))
 }
