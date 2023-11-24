@@ -68,6 +68,6 @@ type EvolutionContractState interface {
 }
 
 type OwnershipBlockState interface {
-	SetEvoCurrentBlockForOwnershipContract(contract string, blockNumber uint64) error
-	GetEvoCurrentBlockForOwnershipContract(contract string) (uint64, error)
+	SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error
+	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
 }

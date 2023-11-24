@@ -263,7 +263,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 
-				// order mint events with transfer events
 				for i := range contracts {
 					var mintedEvents []model.MintedWithExternalURI
 					var collectionAddress common.Address
@@ -280,27 +279,18 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 						break
 					}
 
-					var mintedIndex int
-					var transferIndex int
-					for {
-						// TODO probably "len checks" should be done separately: one slice's index could have reached the end while the other might have not
-						if mintedIndex < len(mintedEvents) && transferIndex < len(modelTransferEvents[contracts[i]]) {
-							// TODO if minted event's block number > ownership contract's evo chain current block => continue
-							if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[contracts[i]][transferIndex].Timestamp {
-								if err = tx.Mint(common.HexToAddress(contracts[i]), mintedEvents[mintedIndex].TokenId); err != nil {
-									slog.Error("msg string", "err", err)
-									break
-								}
-								mintedIndex++
-							} else {
-								if err = tx.Transfer(common.HexToAddress(contracts[i]), &modelTransferEvents[contracts[i]][transferIndex]); err != nil {
-									slog.Error("msg string", "err", err)
-									break
-								}
-								transferIndex++
-							}
-						}
-						// TODO don't forget to do: tx.SetEvoCurrentBlockForOwnershipContract(contracts[i], blockNumber), maybe it goes after the for?
+					var evoBlock uint64
+					evoBlock, err = updateState(mintedEvents, modelTransferEvents[contracts[i]], contracts[i], tx)
+					if err != nil {
+						slog.Error("error updating state", "err", err.Error())
+						break
+					}
+
+					if err = tx.SetCurrentEvoBlockForOwnershipContract(contracts[i], evoBlock); err != nil {
+						slog.Error("error updating current evochain block for ownership contract",
+							"evo_block", evoBlock, "ownership_contract", contracts[i],
+							"err", err.Error())
+						break
 					}
 				}
 			} else {
@@ -310,6 +300,10 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 			if err = repositoryService.SetCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
+			if err = tx.Commit(); err != nil {
+				slog.Error("error committing transaction", "err", err.Error())
 				break
 			}
 			startingBlock = nextStartingBlock
@@ -361,6 +355,74 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx) (uint64, error) {
+	ownershipContractEvoBlock, err := tx.GetCurrentEvoBlockForOwnershipContract(contract)
+	if err != nil {
+		return 0, err
+	}
+	var mintedIndex int
+	var transferIndex int
+	lastUpdatedBlock := ownershipContractEvoBlock
+	for {
+		switch {
+		case mintedIndex >= len(mintedEvents) && transferIndex >= len(modelTransferEvents):
+			return lastUpdatedBlock, nil
+		case mintedIndex >= len(mintedEvents):
+			if err := performTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
+				return 0, err
+			}
+			transferIndex++
+		case transferIndex >= len(modelTransferEvents):
+			block, err := performMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+			if err != nil {
+				return 0, err
+			}
+			lastUpdatedBlock = block
+			mintedIndex++
+		default:
+			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
+				block, err := performMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+				if err != nil {
+					return 0, err
+				}
+				lastUpdatedBlock = block
+				mintedIndex++
+			} else {
+				if err := performTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
+					return 0, err
+				}
+				transferIndex++
+			}
+		}
+	}
+}
+
+func performTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC721Transfer) error {
+	// TODO if transfer event's timestamp is ahead of global evo chain current block's timestamp => wait X seconds and read again the global evo chain current block from DB
+	// we must wait because there might have been mint events whose timestamp is < this transfer event
+	// maybe it is worth storing the global evo chain current block's timestamp also?!
+	if err := tx.Transfer(common.HexToAddress(contract), modelTransferEvent); err != nil {
+		return fmt.Errorf("error updating transfer state for contract %s and token id %d from %s, to %s: %w",
+			contract, modelTransferEvent.TokenId,
+			modelTransferEvent.From, modelTransferEvent.To, err)
+	}
+	return nil
+}
+
+func performMint(contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
+	updatedBlock := ownershipContractEvoBlock
+	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events at ownershipContractEvoBlock were not stored in the state?
+	// If so, on the next iteration, those events won't be stored in the state either because of the ">" comparison
+	if mintedEvent.BlockNumber > ownershipContractEvoBlock {
+		if err := tx.Mint(common.HexToAddress(contract), mintedEvent.TokenId); err != nil {
+			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
+				contract, mintedEvent.TokenId, err)
+		}
+		updatedBlock = mintedEvent.BlockNumber
+	}
+	return updatedBlock, nil
 }
 
 func getModelTransferEvents(ctx context.Context, client scan.EthClient, scanEvents []scan.Event) (map[string][]model.ERC721Transfer, error) {
