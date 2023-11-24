@@ -18,6 +18,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
+	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
@@ -640,20 +641,19 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			t.Parallel()
 			ctx, cancel := getContext()
 			defer cancel()
+			client, scanner, storage, _ := getMocks(t)
+			_, _, storage2, tx := getMocksFromState(t)
 
-			client, scanner, storage, tx := getMocks(t)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
 
-			storage.EXPECT().Get([]byte("evo_current_block")).
-				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
-				Times(1)
-
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
 				Return([]scan.Event{event}, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).Times(1)
 
-
+			storage.EXPECT().Get([]byte("evo_current_block")).
+				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
+				Times(1)
 
 			storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
 				Return(tt.errorSaveBlockNumber).Do(
@@ -662,10 +662,13 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 				},
 			).Times(1)
 
-			storage.EXPECT().NewTransaction().Return(tx)
+			tx.EXPECT().GetEvoChainEvents(gomock.Any()).Return(nil, nil).Times(1)
+			tx.EXPECT().StoreEvoChainMintEvents(common.HexToAddress("0x0000000000000000000000000000000000000000"), gomock.Any()).Return(nil).Times(1)
+
+			storage2.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().Discard().Return()
 
-			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), v1.NewStateService(storage))
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), storage2)
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
@@ -720,8 +723,17 @@ func getContext() (context.Context, context.CancelFunc) {
 func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService, *mockStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
+	mockTx.NewMockTx(ctrl)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
 		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
+}
+
+func getMocksFromState(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockTx.MockService, *mockTx.MockTx) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockTx.NewMockTx(ctrl)
+	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
+		mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl)
 }
 
 func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (scan.EventMintedWithExternalURI, error) {
