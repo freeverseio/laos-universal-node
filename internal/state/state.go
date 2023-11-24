@@ -49,4 +49,6 @@ type State interface {
 	Transfer(contract common.Address, eventTransfer scan.EventTransfer) error
 	Mint(contract common.Address, tokenId *big.Int) error
 	Get(key string) ([]byte, error)
+	TagRoot(contract common.Address, blockNumber int64) error
+	Checkout(contract common.Address, blockNumber int64) error
 }

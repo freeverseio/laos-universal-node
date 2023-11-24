@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strconv"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -269,6 +270,80 @@ func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	}
 
 	return enumeratedTotalTree.TokenByIndex(idx)
+}
+
+// TagRoot tags roots for all 3 merkle trees at the same block
+func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
+	slog.Debug("TagRoot ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.TagRoot(blockNumber)
+}
+
+// Checkout sets the current roots to those tagged for the block
+// If no tag for the block exists, it searches for the first block in the past that has the tag.
+func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
+	// TODO this transaction should be committed only if we want to permanently store the new root as the head
+	// (when reorgs happens)
+	// If we just want to read the state at current root we should not commit this transaction
+	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
+	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
+
+	slog.Debug("Checkout ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	blockNumber, err := enumeratedTree.FindBlockWithTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	err = enumeratedTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.Checkout(blockNumber)
 }
 
 // Discards transaction

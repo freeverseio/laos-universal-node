@@ -40,6 +40,35 @@ func (m *MockTree) EXPECT() *MockTreeMockRecorder {
 	return m.recorder
 }
 
+// Checkout mocks base method.
+func (m *MockTree) Checkout(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checkout", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checkout indicates an expected call of Checkout.
+func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
+}
+
+// FindBlockWithTag mocks base method.
+func (m *MockTree) FindBlockWithTag(blockNumber int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindBlockWithTag", blockNumber)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindBlockWithTag indicates an expected call of FindBlockWithTag.
+func (mr *MockTreeMockRecorder) FindBlockWithTag(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBlockWithTag", reflect.TypeOf((*MockTree)(nil).FindBlockWithTag), blockNumber)
+}
+
 // Mint mocks base method.
 func (m *MockTree) Mint(tokenId *big.Int, owner common.Address) error {
 	m.ctrl.T.Helper()
@@ -66,6 +95,20 @@ func (m *MockTree) Root() common.Hash {
 func (mr *MockTreeMockRecorder) Root() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Root", reflect.TypeOf((*MockTree)(nil).Root))
+}
+
+// TagRoot mocks base method.
+func (m *MockTree) TagRoot(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TagRoot", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TagRoot indicates an expected call of TagRoot.
+func (mr *MockTreeMockRecorder) TagRoot(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTree)(nil).TagRoot), blockNumber)
 }
 
 // TokensOf mocks base method.
