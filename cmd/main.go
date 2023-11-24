@@ -285,17 +285,16 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			for contract, scannedEvents := range groupedMintEvents {
 				// fetch current storedEvents stord for this specific contract address
 				events := make([]model.MintedWithExternalURI, 0)
-				fmt.Println("contract", contract)
-				storedEvents, err := tx.GetEvoChainEvents(contract)
-				if err != nil {
-					slog.Error("error occurred while reading database", "err", err.Error())
+				storedEvents, errGetEvents := tx.GetEvoChainEvents(contract)
+				if errGetEvents != nil {
+					slog.Error("error occurred while reading database", "err", errGetEvents.Error())
 					break
 				}
 				if storedEvents != nil {
 					events = append(events, storedEvents...)
 				}
 				events = append(events, scannedEvents...)
-				if err := tx.StoreEvoChainMintEvents(contract, events); err != nil {
+				if err = tx.StoreEvoChainMintEvents(contract, events); err != nil {
 					slog.Error("error occurred while writing events to database", "err", err.Error())
 					break
 				}
