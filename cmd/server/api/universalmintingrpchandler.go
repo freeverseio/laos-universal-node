@@ -76,7 +76,6 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 		case erc721.SupportsInterface:
 			supportsInterface(w)
 		}
-
 	}
 }
 

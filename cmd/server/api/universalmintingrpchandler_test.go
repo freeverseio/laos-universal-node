@@ -163,7 +163,6 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 		{
 			name: "Should execute SupportsInterface",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
-
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
