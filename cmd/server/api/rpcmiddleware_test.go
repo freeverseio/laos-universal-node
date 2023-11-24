@@ -76,6 +76,47 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "Good request with eth_call method supportsInterface 0x780e9d63",
+			body: `{
+		    "jsonrpc": "2.0",
+		    "method": "eth_call",
+		    "params": [{
+		        "to": "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A",
+		        "data": "0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"
+		    }, "latest"],
+		    "id": 1
+		}`,
+			contentType:                           "application/json",
+			method:                                "POST",
+			expectedStatusCode:                    http.StatusOK,
+			expectedResponse:                      "universalMintingHandler called",
+			ercUniversalMintingHandlerCalledTimes: 1,
+			storedContracts: [][]byte{
+				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+		},
+		{
+			name: "Good request with eth_call method supportsInterface 0x80ac58cd",
+			body: `{
+		    "jsonrpc": "2.0",
+		    "method": "eth_call",
+		    "params": [{
+		        "to": "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A",
+		        "data": "0x01ffc9a780ac58cd00000000000000000000000000000000000000000000000000000000"
+		    }, "latest"],
+		    "id": 1
+		}`,
+			contentType:                           "application/json",
+			method:                                "POST",
+			expectedStatusCode:                    http.StatusOK,
+			expectedResponse:                      "proxyHandler called",
+			ercUniversalMintingHandlerCalledTimes: 0,
+			proxyHandlerCalledTimes:               1,
+			storedContracts: [][]byte{
+				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+		},
+		{
 			name:                    "Good request with eth_call method but no remote minting method",
 			body:                    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
 			contentType:             "application/json",
