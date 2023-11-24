@@ -11,7 +11,7 @@ type ERC721UniversalContract struct {
 	BaseURI string         `json:"base_uri"`
 }
 
-type EventMintedWithExternalURI struct {
+type MintedWithExternalURI struct {
 	Slot        *big.Int
 	To          common.Address
 	TokenURI    string

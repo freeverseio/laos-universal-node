@@ -271,35 +271,22 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
-
 			events, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
 
-			groupMintEvents := make(map[common.Address][]model.EventMintedWithExternalURI, 0)
-			for _, event := range events {
-				if e, ok := event.(scan.EventMintedWithExternalURI); ok {
-					groupMintEvents[e.Contract] = append(groupMintEvents[e.Contract], model.EventMintedWithExternalURI{
-						Slot:        e.Slot,
-						To:          e.To,
-						TokenURI:    e.TokenURI,
-						TokenId:     e.TokenId,
-						BlockNumber: e.BlockNumber,
-						Timestamp:   e.Timestamp,
-					})
-				}
-			}
-
+			groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
 			tx := stateService.NewTransaction()
 			// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
 			defer tx.Discard()
 
-			for contract, scannedEvents := range groupMintEvents {
+			for contract, scannedEvents := range groupedMintEvents {
 				// fetch current storedEvents stord for this specific contract address
-				events := make([]model.EventMintedWithExternalURI, 0)
-				storedEvents, err := tx.EvoChainMintEvents(contract)
+				events := make([]model.MintedWithExternalURI, 0)
+				fmt.Println("contract", contract)
+				storedEvents, err := tx.GetEvoChainEvents(contract)
 				if err != nil {
 					slog.Error("error occurred while reading database", "err", err.Error())
 					break
@@ -323,6 +310,24 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+// groups events that are of type scan.EventMintedWithExternalURI by contract address
+func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.Address][]model.MintedWithExternalURI {
+	groupMintEvents := make(map[common.Address][]model.MintedWithExternalURI, 0)
+	for _, event := range events {
+		if e, ok := event.(scan.EventMintedWithExternalURI); ok {
+			groupMintEvents[e.Contract] = append(groupMintEvents[e.Contract], model.MintedWithExternalURI{
+				Slot:        e.Slot,
+				To:          e.To,
+				TokenURI:    e.TokenURI,
+				TokenId:     e.TokenId,
+				BlockNumber: e.BlockNumber,
+				Timestamp:   e.Timestamp,
+			})
+		}
+	}
+	return groupMintEvents
 }
 
 func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {

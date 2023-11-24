@@ -3,6 +3,8 @@ package contract
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -11,7 +13,7 @@ import (
 
 const (
 	contractPrefix = "contract_"
-	evoEvents      = "evo_events_"
+	eventsPrefix   = "evo_events_"
 )
 
 type service struct {
@@ -34,7 +36,7 @@ func (c *service) StoreERC721UniversalContracts(universalContracts []model.ERC72
 	return nil
 }
 
-func (c *service) StoreEvoChainMintEvents(contract common.Address, events []model.EventMintedWithExternalURI) error {
+func (c *service) StoreEvoChainMintEvents(contract common.Address, events []model.MintedWithExternalURI) error {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 
@@ -42,22 +44,19 @@ func (c *service) StoreEvoChainMintEvents(contract common.Address, events []mode
 		return err
 	}
 
-	return c.tx.Set([]byte(evoEvents+contract.String()), buf.Bytes())
+	return c.tx.Set([]byte(eventsPrefix+contract.String()), buf.Bytes())
 }
 
-func (c *service) EvoChainMintEvents(contract common.Address) ([]model.EventMintedWithExternalURI, error) {
-	value, err := c.tx.Get([]byte(evoEvents + contract.String()))
+func (s *service) GetEvoChainEvents(contract common.Address) ([]model.MintedWithExternalURI, error) {
+	defer s.tx.Discard()
+	value, err := s.tx.Get([]byte(eventsPrefix + strings.ToLower(contract.Hex())))
 	if err != nil {
 		return nil, err
 	}
-
-	buffer := bytes.NewBuffer(value)
-	decoder := gob.NewDecoder(buffer)
-
-	var events []model.EventMintedWithExternalURI
-	if err := decoder.Decode(&events); err != nil {
+	var mintedEvents []model.MintedWithExternalURI
+	err = json.Unmarshal(value, &mintedEvents) // TODO check what happens when value is nil
+	if err != nil {
 		return nil, err
 	}
-
-	return events, nil
+	return mintedEvents, nil
 }

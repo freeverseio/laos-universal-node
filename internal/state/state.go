@@ -57,6 +57,6 @@ type State interface {
 
 type ContractState interface {
 	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
-	StoreEvoChainMintEvents(contract common.Address, events []model.EventMintedWithExternalURI) error
-	EvoChainMintEvents(contract common.Address) ([]model.EventMintedWithExternalURI, error)
+	StoreEvoChainMintEvents(contract common.Address, events []model.MintedWithExternalURI) error
+	GetEvoChainEvents(contract common.Address) ([]model.MintedWithExternalURI, error)
 }
