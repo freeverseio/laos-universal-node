@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -40,6 +41,9 @@ type Tree interface {
 	TokenData(tokenId *big.Int) (*TokenData, error)
 	SetTokenData(tokenData *TokenData, tokenId *big.Int) error
 	OwnerOf(tokenId *big.Int) (common.Address, error)
+	TagRoot(blockNumber int64) error
+	Checkout(blockNumber int64) error
+	FindBlockWithTag(blockNumber int64) (int64, error)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each SlotOwner
@@ -181,4 +185,49 @@ func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
 
 func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
 	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
+}
+
+// TagRoot stores a root value for the block so that it can be checked later
+func (b *tree) TagRoot(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	root := b.Root()
+	return b.store.Set([]byte(tagKey), root.Bytes())
+}
+
+// Checkout sets the current root to the one that is tagged for a blockNumber.
+func (b *tree) Checkout(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	buf, err := b.store.Get([]byte(tagKey))
+	if err != nil {
+		return err
+	}
+
+	if len(buf) == 0 {
+		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
+	}
+
+	newRoot := common.BytesToHash(buf)
+	b.mt.SetRoot(newRoot)
+	return setHeadRoot(b.contract, b.store, newRoot)
+}
+
+// FindBlockWithTag returns the first previous blockNumber that has been tagged if the tag for the blockNumber does not
+// exist
+func (b *tree) FindBlockWithTag(blockNumber int64) (int64, error) {
+	for {
+		if blockNumber == 0 {
+			return 0, nil
+		}
+
+		buf, err := b.store.Get([]byte(tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)))
+		if err != nil {
+			return 0, err
+		}
+
+		if len(buf) != 0 {
+			return blockNumber, nil
+		}
+
+		blockNumber--
+	}
 }

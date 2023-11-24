@@ -18,26 +18,44 @@ import (
 
 func TestUniversalMintingRPCHandler(t *testing.T) {
 	t.Parallel()
-	t.Run("Should execute OwnerOf", func(t *testing.T) {
-		t.Parallel()
-		ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
-			storage.EXPECT().NewTransaction().Return(tx).Times(1)
-			tx.EXPECT().Discard().AnyTimes()
-			tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, nil).Times(1)
-			tx.EXPECT().SetTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil, nil, nil).Return(nil).Times(1)
-			tx.EXPECT().OwnerOf(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), gomock.Any()).Return(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil).Times(1)
+
+	tests := []struct {
+		name        string
+		requestBody string
+	}{
+		{
+			name:        "Should execute OwnerOf",
+			requestBody: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+		},
+		{
+			name:        "Should execute OwnerOf. if latest block is not present in the params it also is executed without error",
+			requestBody: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+		},
+	}
+
+	for _, ttest := range tests {
+		tt := ttest
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl, storage := setupMocks(t, func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+				storage.EXPECT().NewTransaction().Return(tx).Times(1)
+				tx.EXPECT().Discard().AnyTimes()
+				tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, nil).Times(1)
+				tx.EXPECT().SetTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil, nil, nil).Return(nil).Times(1)
+				tx.EXPECT().OwnerOf(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), gomock.Any()).Return(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil).Times(1)
+			})
+			defer ctrl.Finish()
+
+			request := createRequest(t, tt.requestBody)
+
+			rr := runHandler(t, request, storage)
+
+			// Check the status code and response body
+			if status := rr.Code; status != http.StatusOK {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+			}
 		})
-		defer ctrl.Finish()
-
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
-
-		rr := runHandler(t, request, storage)
-
-		// Check the status code and response body
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		}
-	})
+	}
 
 	t.Run("Should execute OwnerOf with an error from ownerOf", func(t *testing.T) {
 		t.Parallel()
@@ -50,7 +68,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		})
 		defer ctrl.Finish()
 
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`)
 
 		rr := runHandler(t, request, storage)
 
@@ -73,7 +91,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		})
 		defer ctrl.Finish()
 
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`)
 		rr := runHandler(t, request, storage)
 		var response api.JSONRPCErrorResponse
 		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
@@ -96,7 +114,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		})
 		defer ctrl.Finish()
 
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`)
 
 		rr := runHandler(t, request, storage)
 
@@ -116,7 +134,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 			tx.EXPECT().TokenOfOwnerByIndex(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), common.HexToAddress("0x1b0b4a597c764400ea157ab84358c8788a89cd28"), 1).Return(big.NewInt(1), nil).Times(1)
 		})
 		defer ctrl.Finish()
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`)
 
 		rr := runHandler(t, request, storage)
 
@@ -137,7 +155,7 @@ func TestUniversalMintingRPCHandler(t *testing.T) {
 		})
 		defer ctrl.Finish()
 
-		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`)
+		request := createRequest(t, `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`)
 
 		rr := runHandler(t, request, storage)
 

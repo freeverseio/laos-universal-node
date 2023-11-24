@@ -15,13 +15,14 @@ import (
 )
 
 const (
-	prefix            = "enumeratedtotal/"
-	treePrefix        = prefix + "tree/"
-	headRootKeyPrefix = prefix + "head/"
-	totalSupplyPrefix = prefix + "totalsupply/"
-	tokensPrefix      = prefix + "tokens/"
-	tagPrefix         = prefix + "tags/"
-	treeDepth         = 64
+	prefix               = "enumeratedtotal/"
+	treePrefix           = prefix + "tree/"
+	headRootKeyPrefix    = prefix + "head/"
+	totalSupplyPrefix    = prefix + "totalsupply/"
+	tokensPrefix         = prefix + "tokens/"
+	tagPrefix            = prefix + "tags/"
+	totalSupplyTagPrefix = prefix + "tags/totalsupply"
+	treeDepth            = 64
 )
 
 // Tree defines interface for enumerated total tree
@@ -31,6 +32,9 @@ type Tree interface {
 	Burn(idx int) error
 	TokenByIndex(idx int) (*big.Int, error)
 	TotalSupply() (int64, error)
+	TagRoot(blockNumber int64) error
+	Checkout(blockNumber int64) error
+	FindBlockWithTag(blockNumber int64) (int64, error)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each owner
@@ -205,4 +209,71 @@ func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
 
 func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
 	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
+}
+
+// TagRoot stores a root value for the block so that it can be checked later
+func (b *tree) TagRoot(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	root := b.Root()
+	err := b.store.Set([]byte(tagKey), root.Bytes())
+	if err != nil {
+		return err
+	}
+
+	totalSupply, err := b.TotalSupply()
+	if err != nil {
+		return err
+	}
+	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	return b.store.Set([]byte(tagTotalSupplyKey), []byte(strconv.FormatInt(totalSupply, 10)))
+}
+
+// Checkout sets the current root to the one that is tagged for a blockNumber.
+// TODO: check is it possible to put some repetitive code in all trees in some separate file (utils)
+func (b *tree) Checkout(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	buf, err := b.store.Get([]byte(tagKey))
+	if err != nil {
+		return err
+	}
+
+	if len(buf) == 0 {
+		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
+	}
+
+	newRoot := common.BytesToHash(buf)
+	b.mt.SetRoot(newRoot)
+	err = setHeadRoot(b.contract, b.store, newRoot)
+	if err != nil {
+		return err
+	}
+
+	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	buf, err = b.store.Get([]byte(tagTotalSupplyKey))
+	if err != nil {
+		return err
+	}
+
+	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), buf)
+}
+
+// FindBlockWithTag returns the first previous blockNumber that has been tagged if the tag for the blockNumber does not
+// exist
+func (b *tree) FindBlockWithTag(blockNumber int64) (int64, error) {
+	for {
+		if blockNumber == 0 {
+			return 0, nil
+		}
+
+		buf, err := b.store.Get([]byte(tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)))
+		if err != nil {
+			return 0, err
+		}
+
+		if len(buf) != 0 {
+			return blockNumber, nil
+		}
+
+		blockNumber--
+	}
 }

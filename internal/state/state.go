@@ -53,6 +53,8 @@ type State interface {
 	Mint(contract common.Address, tokenId *big.Int) error
 	IsTreeSetForContract(contract common.Address) bool
 	Get(key string) ([]byte, error)
+	TagRoot(contract common.Address, blockNumber int64) error
+	Checkout(contract common.Address, blockNumber int64) error
 }
 
 type OwnershipContractState interface {
