@@ -94,7 +94,10 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber stri
 	}
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
-	sendResponse(w, owner.Hex(), err)
+	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
+	// TODO check if there is a better way to do this
+	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
+	sendResponse(w, fullAddressString, err)
 }
 
 func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
@@ -115,7 +118,8 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber st
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	sendResponse(w, balance.String(), err)
+	// TODO check if there is a better way to format the balance
+	sendResponse(w, fmt.Sprintf("0x%064x", balance), err)
 }
 
 func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
@@ -128,7 +132,7 @@ func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state
 		return
 	}
 	totalSupply, err := tx.TotalSupply(common.HexToAddress(params.To))
-	sendResponse(w, strconv.FormatInt(totalSupply, 10), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", totalSupply), err)
 }
 
 func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
@@ -153,7 +157,7 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, bloc
 		return
 	}
 	tokenId, err := tx.TokenOfOwnerByIndex(common.HexToAddress(params.To), ownerAddress, int(index.Int64()))
-	sendResponse(w, tokenId.String(), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
 func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
@@ -173,7 +177,7 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 		return
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
-	sendResponse(w, tokenId.String(), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
@@ -233,7 +237,7 @@ func sendErrorResponse(w http.ResponseWriter, err error) {
 			Message string `json:"message"`
 		}{
 			Code:    ErrorCodeInvalidRequest,
-			Message: err.Error(),
+			Message: "execution reverted",
 		},
 	}
 
