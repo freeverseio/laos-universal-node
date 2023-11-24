@@ -272,7 +272,7 @@ func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	return enumeratedTotalTree.TokenByIndex(idx)
 }
 
-// TagRoot tags roots for all tree merkle trees at the same block
+// TagRoot tags roots for all 3 merkle trees at the same block
 func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 	slog.Debug("TagRoot ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
 	enumeratedTree, ok := t.enumeratedTrees[contract]
@@ -303,8 +303,8 @@ func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 	return ownershipTree.TagRoot(blockNumber)
 }
 
-// Checkout set current roots the one that are tagged for the block
-// if tag for the block does not exist it searches the first block in the past that has tag
+// Checkout sets the current roots to those tagged for the block
+//If no tag for the block exists, it searches for the first block in the past that has the tag.
 func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
 	slog.Debug("Checkout ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
 	enumeratedTree, ok := t.enumeratedTrees[contract]
