@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
@@ -674,6 +675,149 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		scannedEvents map[common.Address][]scan.Event
+		storedEvents  map[common.Address][]model.MintedWithExternalURI
+		expectedError error
+	}{
+		{
+			name:          "does not stored when no new events",
+			scannedEvents: map[common.Address][]scan.Event{},
+			expectedError: nil,
+		},
+		{
+			name: "Store new event to non stored contract",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Store  different contract events to existing contracts",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(3),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(43),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"),
+					},
+				},
+			},
+			storedEvents: map[common.Address][]model.MintedWithExternalURI{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(1),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(40),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Store  different contract events to existing and non existing contracts",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(3),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(43),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"),
+					},
+				},
+			},
+			storedEvents: map[common.Address][]model.MintedWithExternalURI{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(1),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, storage, tx := getMocksFromState(t)
+
+			storage.EXPECT().NewTransaction().Return(tx)
+			tx.EXPECT().Discard()
+
+			events := make([]scan.Event, 0)
+			eventsToStore := make(map[common.Address][]model.MintedWithExternalURI)
+			for contract, ev := range tt.scannedEvents {
+				events = append(events, ev...)
+				scanned := mintEventsToModel(ev)
+
+				tx.EXPECT().GetEvoChainEvents(contract).Return(tt.storedEvents[contract], nil)
+
+				eventsToStore[contract] = append(tt.storedEvents[contract], scanned...)
+				tx.EXPECT().StoreEvoChainMintEvents(contract, eventsToStore[contract]).Return(nil)
+			}
+			if err := storeMintedWithExternalURIEventsByContract(storage, events); err != nil {
+				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func mintEventsToModel(events []scan.Event) []model.MintedWithExternalURI {
+	modelMintEvents := make([]model.MintedWithExternalURI, 0)
+	for _, e := range events {
+		scanMintEvent := e.(scan.EventMintedWithExternalURI)
+		modelMintEvents = append(modelMintEvents, model.MintedWithExternalURI{
+			Slot:        scanMintEvent.Slot,
+			To:          scanMintEvent.To,
+			TokenId:     scanMintEvent.TokenId,
+			TokenURI:    scanMintEvent.TokenURI,
+			BlockNumber: scanMintEvent.BlockNumber,
+			Timestamp:   scanMintEvent.Timestamp,
+		})
+	}
+
+	return modelMintEvents
 }
 
 func TestRunScanAndCancelContext(t *testing.T) {

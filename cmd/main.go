@@ -277,27 +277,9 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
-			tx := stateService.NewTransaction()
-			// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
-			defer tx.Discard()
-
-			for contract, scannedEvents := range groupedMintEvents {
-				// fetch current storedEvents stord for this specific contract address
-				events := make([]model.MintedWithExternalURI, 0)
-				storedEvents, errGetEvents := tx.GetEvoChainEvents(contract)
-				if errGetEvents != nil {
-					slog.Error("error occurred while reading database", "err", errGetEvents.Error())
-					break
-				}
-				if storedEvents != nil {
-					events = append(events, storedEvents...)
-				}
-				events = append(events, scannedEvents...)
-				if err = tx.StoreEvoChainMintEvents(contract, events); err != nil {
-					slog.Error("error occurred while writing events to database", "err", err.Error())
-					break
-				}
+			if err := storeMintedWithExternalURIEventsByContract(stateService, events); err != nil {
+				slog.Error("error occurred while accessing database", "err", err.Error())
+				break
 			}
 
 			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
@@ -309,6 +291,32 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func storeMintedWithExternalURIEventsByContract(stateService state.Service, events []scan.Event) error {
+	groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
+	tx := stateService.NewTransaction()
+	// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+	defer tx.Discard()
+
+	for contract, scannedEvents := range groupedMintEvents {
+		// fetch current storedEvents stored for this specific contract address
+		storedEvents, err := tx.GetEvoChainEvents(contract)
+		if err != nil {
+			return err
+		}
+
+		ev := make([]model.MintedWithExternalURI, 0)
+		if storedEvents != nil {
+			ev = append(ev, storedEvents...)
+		}
+		ev = append(ev, scannedEvents...)
+		if err := tx.StoreEvoChainMintEvents(contract, ev); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // groups events that are of type scan.EventMintedWithExternalURI by contract address
