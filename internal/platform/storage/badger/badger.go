@@ -82,6 +82,7 @@ func (t Tx) Set(key, value []byte) error {
 }
 
 func (t Tx) Get(key []byte) ([]byte, error) {
+	// TODO maybe do "defer t.Discard()" here so the caller doesn't have to do it?
 	item, err := t.tx.Get(key)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {

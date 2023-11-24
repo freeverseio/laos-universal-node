@@ -274,7 +274,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 							"ownership_contract", contracts[i], "err", err.Error())
 						break
 					}
-					mintedEvents, err = tx.GetEvoChainEvents(collectionAddress.String())
+					mintedEvents, err = tx.GetMintedWithExternalURIEvents(collectionAddress.String())
 					if err != nil {
 						slog.Error("error occurred retrieving evochain minted events for ownership contract",
 							"ownership_contract", contracts[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
