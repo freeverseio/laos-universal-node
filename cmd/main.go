@@ -166,7 +166,7 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
 	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
 ) error {
-	// TODO use tx.GetCurrentBlock and refactor getStartingBlock to accept "startingBlockDB" as uint64
+	// TODO use tx.GetCurrentOwnershipBlock and refactor getStartingBlock to accept "startingBlockDB" as uint64
 	startingBlockDB, err := repositoryService.GetCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -414,8 +414,11 @@ func performTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC
 
 func performMint(contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
 	updatedBlock := ownershipContractEvoBlock
-	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events at ownershipContractEvoBlock were not stored in the state?
-	// If so, on the next iteration, those events won't be stored in the state either because of the ">" comparison
+	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events on ownershipContractEvoBlock are not stored in the state?
+	// if so, on the next iteration, those events won't be stored in the state because of the ">" comparison
+	// example:
+	// 2 events on block 10, you store the first, updatedBlock == 10. a ctrl + c comes, you don't store the second event and the method returns
+	// can it be that the transaction is committed?
 	if mintedEvent.BlockNumber > ownershipContractEvoBlock {
 		if err := tx.Mint(common.HexToAddress(contract), mintedEvent.TokenId); err != nil {
 			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
