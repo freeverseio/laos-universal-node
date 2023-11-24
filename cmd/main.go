@@ -371,12 +371,12 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 		case mintedIndex >= len(mintedEvents) && transferIndex >= len(modelTransferEvents):
 			return lastUpdatedBlock, nil
 		case mintedIndex >= len(mintedEvents):
-			if err := performTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
+			if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
 				return 0, err
 			}
 			transferIndex++
 		case transferIndex >= len(modelTransferEvents):
-			block, err := performMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+			block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 			if err != nil {
 				return 0, err
 			}
@@ -384,14 +384,14 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 			mintedIndex++
 		default:
 			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
-				block, err := performMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+				block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 				if err != nil {
 					return 0, err
 				}
 				lastUpdatedBlock = block
 				mintedIndex++
 			} else {
-				if err := performTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
+				if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
 					return 0, err
 				}
 				transferIndex++
@@ -400,7 +400,7 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 	}
 }
 
-func performTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC721Transfer) error {
+func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC721Transfer) error {
 	// TODO if transfer event's timestamp is ahead of global evo chain current block's timestamp => wait X seconds and read again the global evo chain current block from DB
 	// we must wait because there might have been mint events whose timestamp is < this transfer event
 	// maybe it is worth storing the global evo chain current block's timestamp also?!
@@ -412,7 +412,7 @@ func performTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC
 	return nil
 }
 
-func performMint(contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
+func updateStateWithMint(contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
 	updatedBlock := ownershipContractEvoBlock
 	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events on ownershipContractEvoBlock are not stored in the state?
 	// if so, on the next iteration, those events won't be stored in the state because of the ">" comparison
