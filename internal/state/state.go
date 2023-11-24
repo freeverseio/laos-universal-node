@@ -11,6 +11,13 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
 )
 
+const (
+	ContractPrefix  = "contract_"
+	ChainID         = "chain_id"
+	CurrentBlock    = "current_block"
+	EvoCurrentBlock = "evo_current_block"
+)
+
 // Service interface is used for initializing and terminating state transaction.
 type Service interface {
 	NewTransaction() Tx
@@ -43,6 +50,9 @@ type State interface {
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
 	Transfer(contract common.Address, eventTransfer scan.EventTransfer) error
 	Mint(contract common.Address, tokenId *big.Int) error
+	Get(key string) ([]byte, error)
+	TagRoot(contract common.Address, blockNumber int64) error
+	Checkout(contract common.Address, blockNumber int64) error
 }
 
 type ContractState interface {

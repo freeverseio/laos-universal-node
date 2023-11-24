@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strconv"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
@@ -133,7 +136,9 @@ func (t *tx) TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.
 	if err != nil {
 		return big.NewInt(0), err
 	}
-
+	if idx >= len(tokens) {
+		return big.NewInt(0), fmt.Errorf("index %d out of range", idx)
+	}
 	return &tokens[idx], nil
 }
 
@@ -270,6 +275,80 @@ func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	return enumeratedTotalTree.TokenByIndex(idx)
 }
 
+// TagRoot tags roots for all 3 merkle trees at the same block
+func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
+	slog.Debug("TagRoot ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.TagRoot(blockNumber)
+}
+
+// Checkout sets the current roots to those tagged for the block
+// If no tag for the block exists, it searches for the first block in the past that has the tag.
+func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
+	// TODO this transaction should be committed only if we want to permanently store the new root as the head
+	// (when reorgs happens)
+	// If we just want to read the state at current root we should not commit this transaction
+	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
+	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
+
+	slog.Debug("Checkout ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	blockNumber, err := enumeratedTree.FindBlockWithTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	err = enumeratedTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.Checkout(blockNumber)
+}
+
 // Discards transaction
 func (t *tx) Discard() {
 	t.tx.Discard()
@@ -278,4 +357,25 @@ func (t *tx) Discard() {
 // Commits transaction
 func (t *tx) Commit() error {
 	return t.tx.Commit()
+}
+
+func (t *tx) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
+	for i := 0; i < len(universalContracts); i++ {
+		err := t.tx.Set([]byte(state.ContractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *tx) Get(key string) ([]byte, error) {
+	value, err := t.tx.Get([]byte(key))
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return value, nil
 }

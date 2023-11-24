@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
-	"github.com/freeverseio/laos-universal-node/internal/repository"
+	"github.com/freeverseio/laos-universal-node/internal/state"
 )
 
 // JSONRPCRequest represents the expected structure of a JSON-RPC request.
@@ -27,14 +27,16 @@ type ParamsRPCRequest struct {
 	Value string `json:"value,omitempty"`
 }
 
-func PostRpcRequestMiddleware(h RPCHandler, repositoryService repository.Service) http.Handler {
+func PostRpcRequestMiddleware(h RPCHandler, stateService state.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// we pass both handlers and decide which one to call based on the request
 		proxyRPCHandler := http.HandlerFunc(h.PostRPCProxyHandler)                   // proxy handler for standard requests
 		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler) // handler for universal minting requests
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
-			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, repositoryService)
+			h.SetJsonRPCRequest(*body)
+			h.SetStateService(stateService)
+			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, stateService)
 		}
 	})
 }
@@ -69,16 +71,16 @@ func validateJSONRPCPostRequest(w http.ResponseWriter, r *http.Request) (valid b
 }
 
 // handleJSONRPCRequest processes the JSON-RPC request by forwarding to the appropriate handler.
-func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, repositoryService repository.Service) {
+func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, stateService state.Service) {
 	switch jsonRequest.Method {
 	case "eth_call":
-		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, repositoryService)
+		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, stateService)
 	default:
 		proxyRPCHandler.ServeHTTP(w, r)
 	}
 }
 
-func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, repositoryService repository.Service) {
+func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, stateService state.Service) {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
@@ -98,16 +100,15 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 		return
 	}
 
-	// Check if contract is in the list.
-	// TODO refactor isContractInList and use `repository.HasERC721UniversalContract()`
-	isInContractList, err := isContractInList(params.To, repositoryService)
+	// Check if contract is stored
+	contractExists, err := isContractStored(params.To, stateService)
 	if err != nil {
 		http.Error(w, "Error checking contract list: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// If contract is in the list, use the specific handler for ERC721 universal minting.
-	if isInContractList {
+	// If contract is stored, use the specific handler for ERC721 universal minting.
+	if contractExists {
 		universalMintingHandler.ServeHTTP(w, r)
 		return
 	} else {
@@ -116,16 +117,22 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 	}
 }
 
-func isContractInList(contractAddress string, repositoryService repository.Service) (bool, error) {
-	list, err := repositoryService.GetAllERC721UniversalContracts()
+func isContractStored(contractAddress string, stateService state.Service) (bool, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	lowerCaseContractAddress := strings.ToLower(contractAddress)
+	contract, err := tx.Get(state.ContractPrefix + lowerCaseContractAddress)
 	if err != nil {
 		return false, err
 	}
-	for _, contract := range list {
-		if strings.EqualFold(contract, contractAddress) {
+
+	if contract != nil {
+		lowerCaseContract := strings.ToLower(string(contract))
+		if lowerCaseContract != "" {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -138,5 +145,6 @@ func isUniversalMintingMethod(data string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return exists, nil
 }

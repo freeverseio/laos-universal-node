@@ -84,6 +84,9 @@ func (t Tx) Set(key, value []byte) error {
 func (t Tx) Get(key []byte) ([]byte, error) {
 	item, err := t.tx.Get(key)
 	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return item.ValueCopy(nil)
