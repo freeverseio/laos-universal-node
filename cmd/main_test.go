@@ -643,7 +643,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 			client, scanner, storage, _ := getMocks(t)
-			_, _, storage2, tx := getMocksFromState(t)
+			storage2, tx := getMocksFromState(t)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
@@ -779,8 +779,10 @@ func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, storage, tx := getMocksFromState(t)
+			t.Parallel()
+			storage, tx := getMocksFromState(t)
 
 			storage.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().Discard()
@@ -793,7 +795,8 @@ func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
 
 				tx.EXPECT().GetEvoChainEvents(contract).Return(tt.storedEvents[contract], nil)
 
-				eventsToStore[contract] = append(tt.storedEvents[contract], scanned...)
+				eventsToStore[contract] = append(eventsToStore[contract], tt.storedEvents[contract]...)
+				eventsToStore[contract] = append(eventsToStore[contract], scanned...)
 				tx.EXPECT().StoreEvoChainMintEvents(contract, eventsToStore[contract]).Return(nil)
 			}
 			if err := storeMintedWithExternalURIEventsByContract(storage, events); err != nil {
@@ -872,12 +875,11 @@ func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorag
 		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
 }
 
-func getMocksFromState(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockTx.MockService, *mockTx.MockTx) {
+func getMocksFromState(t *testing.T) (*mockTx.MockService, *mockTx.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mockTx.NewMockTx(ctrl)
-	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
-		mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl)
+	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl)
 }
 
 func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (scan.EventMintedWithExternalURI, error) {

@@ -277,7 +277,8 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			if err := storeMintedWithExternalURIEventsByContract(stateService, events); err != nil {
+			err = storeMintedWithExternalURIEventsByContract(stateService, events)
+			if err != nil {
 				slog.Error("error occurred while accessing database", "err", err.Error())
 				break
 			}
