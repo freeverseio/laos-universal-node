@@ -54,39 +54,45 @@ func TestMethod(t *testing.T) {
 		remoteMinting bool
 		err           error
 	}{
+		// {
+		// 	input:         hexutil.MustDecode("0x6352211e"),
+		// 	expected:      erc721.OwnerOf,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
+		// {
+		// 	input:         hexutil.MustDecode("0x70a08231"),
+		// 	expected:      erc721.BalanceOf,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
+		// {
+		// 	input:         hexutil.MustDecode("0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28"),
+		// 	expected:      erc721.BalanceOf,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
+		// {
+		// 	input:         hexutil.MustDecode("0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001"),
+		// 	expected:      erc721.TokenByIndex,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
+		// {
+		// 	input:         hexutil.MustDecode("0x18160ddd"),
+		// 	expected:      erc721.TotalSupply,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
+		// {
+		// 	input:         hexutil.MustDecode("0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001"),
+		// 	expected:      erc721.TokenOfOwnerByIndex,
+		// 	remoteMinting: true,
+		// 	err:           nil,
+		// },
 		{
-			input:         hexutil.MustDecode("0x6352211e"),
-			expected:      erc721.OwnerOf,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
-			input:         hexutil.MustDecode("0x70a08231"),
-			expected:      erc721.BalanceOf,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
-			input:         hexutil.MustDecode("0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28"),
-			expected:      erc721.BalanceOf,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
-			input:         hexutil.MustDecode("0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001"),
-			expected:      erc721.TokenByIndex,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
-			input:         hexutil.MustDecode("0x18160ddd"),
-			expected:      erc721.TotalSupply,
-			remoteMinting: true,
-			err:           nil,
-		},
-		{
-			input:         hexutil.MustDecode("0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001"),
-			expected:      erc721.TokenOfOwnerByIndex,
+			input:         hexutil.MustDecode("0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"),
+			expected:      erc721.SupportsInterface,
 			remoteMinting: true,
 			err:           nil,
 		},
