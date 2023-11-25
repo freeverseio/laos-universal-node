@@ -44,7 +44,9 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		timeStampTransferEvents      uint64
 		blocknumberMintedEvents      uint64
 		timeStampMintedEvents        uint64
+		expectedTxMintCalls          int
 	}{
+
 		{
 			c: config.Config{
 				StartingBlock: 1,
@@ -70,8 +72,37 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			scannedEvents:                createERC721TransferEvents(),
 			blockNumberTransferEvents:    1,
 			timeStampTransferEvents:      1000,
-			blocknumberMintedEvents:      0,
+			blocknumberMintedEvents:      1,
 			timeStampMintedEvents:        0,
+		},
+		{
+			c: config.Config{
+				StartingBlock: 1,
+				BlocksMargin:  0,
+				BlocksRange:   100,
+				WaitingTime:   1 * time.Second,
+			},
+			l1LatestBlock:               101,
+			expectedStartingBlock:       1,
+			name:                        "scan events one time with stored contracts and updateStateWithTransfer",
+			blockNumberTimes:            2,
+			scanEventsTimes:             1,
+			scanNewUniversalEventsTimes: 1,
+			txCommitTimes:               1,
+			txDiscardTimes:              1,
+			newLatestBlock:              "102",
+			storedContracts: [][]byte{
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000"},
+			expectedContracts:            []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			discoveredContracts:          getERC721UniversalContracts(),
+			scannedEvents:                createERC721TransferEvents(),
+			blockNumberTransferEvents:    1,
+			timeStampTransferEvents:      1000,
+			blocknumberMintedEvents:      101,
+			timeStampMintedEvents:        2000,
+			expectedTxMintCalls:          1,
 		},
 	}
 	for _, tt := range tests {
@@ -113,13 +144,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
 				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contractAddress).Return(uint64(1), nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, uint64(1)).Return(nil).Times(1)
+				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, uint64(tt.blocknumberMintedEvents)).Return(nil).Times(1)
 
 			}
 			if len(tt.scannedEvents) > 0 {
 				// TODO remove any
 				tx2.EXPECT().Transfer(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			}
+			//tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
+			tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
 
 			for _, contract := range tt.discoveredContracts {
 				tx2.EXPECT().CreateTreesForContract(contract.Address).Return(nil, nil, nil, nil).Times(1)
