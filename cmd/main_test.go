@@ -40,6 +40,10 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		expectedContracts            []string
 		discoveredContracts          []model.ERC721UniversalContract
 		scannedEvents                []scan.Event
+		blockNumberTransferEvents    uint64
+		timeStampTransferEvents      uint64
+		blocknumberMintedEvents      uint64
+		timeStampMintedEvents        uint64
 	}{
 		{
 			c: config.Config{
@@ -64,6 +68,10 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			expectedContracts:            []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			discoveredContracts:          getERC721UniversalContracts(),
 			scannedEvents:                createERC721TransferEvents(),
+			blockNumberTransferEvents:    1,
+			timeStampTransferEvents:      1000,
+			blocknumberMintedEvents:      0,
+			timeStampMintedEvents:        0,
 		},
 	}
 	for _, tt := range tests {
@@ -81,8 +89,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 
-			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(1))).Return(&types.Header{
-				Time: uint64(1000),
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.blockNumberTransferEvents))).Return(&types.Header{
+				Time: uint64(tt.timeStampTransferEvents),
 			}, nil).Times(1)
 
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
@@ -101,12 +109,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				// remove the prefix
 				contractAddress := string(contract[9:])
 				tx2.EXPECT().GetCollectionAddress(contractAddress).Return(common.HexToAddress(tt.collectionAddressForContract[i]), nil).Times(1)
-				tx2.EXPECT().GetMintedWithExternalURIEvents(tt.collectionAddressForContract[i]).Return(getMockMintedEvents(), nil).Times(1)
+				tx2.EXPECT().GetMintedWithExternalURIEvents(tt.collectionAddressForContract[i]).
+					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
+					Times(1)
 				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contractAddress).Return(uint64(1), nil).Times(1)
 				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, uint64(1)).Return(nil).Times(1)
 
 			}
 			if len(tt.scannedEvents) > 0 {
+				// TODO remove any
 				tx2.EXPECT().Transfer(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			}
 
@@ -279,7 +290,8 @@ func TestRunScanOk(t *testing.T) {
 			}
 
 			tx2.EXPECT().GetCollectionAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(common.HexToAddress("0x0"), nil).Times(1)
-			tx2.EXPECT().GetMintedWithExternalURIEvents("0x0000000000000000000000000000000000000000").Return(getMockMintedEvents(), nil).Times(1)
+			tx2.EXPECT().GetMintedWithExternalURIEvents("0x0000000000000000000000000000000000000000").
+				Return(getMockMintedEvents(uint64(0), uint64(0)), nil).Times(1)
 			tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(uint64(1), nil).Times(1)
 			tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", uint64(1)).Return(nil).Times(1)
 			tx2.EXPECT().SetCurrentOwnershipBlock(newLatestBlock).Return(nil).Times(1)
@@ -764,15 +776,15 @@ func getMocksFromState(t *testing.T) (*mockTx.MockService, *mockTx.MockTx) {
 	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl)
 }
 
-func getMockMintedEvents() []model.MintedWithExternalURI {
+func getMockMintedEvents(blockNumber, timestamp uint64) []model.MintedWithExternalURI {
 	return []model.MintedWithExternalURI{
 		{
 			Slot:        big.NewInt(1),
 			To:          common.HexToAddress("0x0"),
 			TokenURI:    "",
 			TokenId:     big.NewInt(1),
-			BlockNumber: 0,
-			Timestamp:   0,
+			BlockNumber: blockNumber,
+			Timestamp:   timestamp,
 		},
 	}
 }
