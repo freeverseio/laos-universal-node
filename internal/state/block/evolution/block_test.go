@@ -1,4 +1,4 @@
-package ownership_test
+package evolution_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestGetCurrentOwnershipBlock(t *testing.T) {
+func TestGetCurrentEvoBlock(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -20,9 +20,9 @@ func TestGetCurrentOwnershipBlock(t *testing.T) {
 	stateService := v1.NewStateService(mockStorage)
 	tx := stateService.NewTransaction()
 
-	mockStorageTransaction.EXPECT().Get([]byte("ownership_current_block")).Return([]byte("1"), nil)
+	mockStorageTransaction.EXPECT().Get([]byte("evo_current_block")).Return([]byte("1"), nil)
 
-	currentBlock, err := tx.GetCurrentOwnershipBlock()
+	currentBlock, err := tx.GetCurrentEvoBlock()
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
@@ -32,7 +32,7 @@ func TestGetCurrentOwnershipBlock(t *testing.T) {
 	}
 }
 
-func TestSetCurrentOwnershipBlock(t *testing.T) {
+func TestSetCurrentEvoBlock(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -44,9 +44,9 @@ func TestSetCurrentOwnershipBlock(t *testing.T) {
 	stateService := v1.NewStateService(mockStorage)
 	tx := stateService.NewTransaction()
 
-	mockStorageTransaction.EXPECT().Set([]byte("ownership_current_block"), []byte("1")).Return(nil)
+	mockStorageTransaction.EXPECT().Set([]byte("evo_current_block"), []byte("1")).Return(nil)
 
-	err := tx.SetCurrentOwnershipBlock(uint64(1))
+	err := tx.SetCurrentEvoBlock(uint64(1))
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
