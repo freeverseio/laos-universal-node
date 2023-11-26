@@ -182,7 +182,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			slog.Info("context canceled")
 			return nil
 		default:
-			tx = stateService.NewTransaction()
 			l1LatestBlock, err := getL1LatestBlock(ctx, client)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
@@ -203,6 +202,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 			var universalContracts []model.ERC721UniversalContract
+			tx = stateService.NewTransaction()
 			if shouldDiscover {
 				universalContracts, err = discoverContracts(ctx, s, startingBlock, lastBlock, tx)
 				if err != nil {

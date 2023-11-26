@@ -113,7 +113,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			client, scanner, storage := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
-			mockState.EXPECT().NewTransaction().Return(tx2)
+			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
@@ -282,7 +282,7 @@ func TestRunScanOk(t *testing.T) {
 			client, scanner, storage := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 
-			mockState.EXPECT().NewTransaction().Return(tx2)
+			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
@@ -524,7 +524,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		l1LatestBlock          uint64
 		blockNumberDB          uint64
 		blockNumberTimes       int
-		scanEventsTimes        int
+		txCreatedTimes         int
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
 		expectedNewLatestBlock uint64
@@ -544,6 +544,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         2,
 			blockNumberTimes:       1,
 			blockNumberDB:          100,
 			expectedFromBlock:      100,
@@ -560,6 +561,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         2,
 			blockNumberTimes:       2,
 			blockNumberDB:          0,
 			expectedFromBlock:      250,
@@ -576,6 +578,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         2,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
 			expectedFromBlock:      100,
@@ -591,6 +594,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
 			expectedNewLatestBlock: 151,
@@ -606,6 +610,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         1,
 			blockNumberTimes:       0,
 			blockNumberDB:          0,
 			expectedNewLatestBlock: 151,
@@ -622,6 +627,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         2,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
 			expectedFromBlock:      100,
@@ -640,6 +646,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
+			txCreatedTimes:         2,
 			blockNumberTimes:       1,
 			blockNumberDB:          100,
 			expectedFromBlock:      100,
@@ -659,7 +666,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 
 			client, scanner, _ := getMocks(t)
 			state, tx2 := getMocksFromState(t)
-			state.EXPECT().NewTransaction().Return(tx2)
+			state.EXPECT().NewTransaction().Return(tx2).Times(tt.txCreatedTimes)
 			tx2.EXPECT().Discard().Times(1)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
