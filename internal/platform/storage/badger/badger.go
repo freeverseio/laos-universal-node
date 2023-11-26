@@ -77,10 +77,12 @@ func (t Tx) Discard() {
 	t.tx.Discard()
 }
 
+// Set sets []byte value for []byte key
 func (t Tx) Set(key, value []byte) error {
 	return t.tx.Set(key, value)
 }
 
+// Get returns byte for the key
 func (t Tx) Get(key []byte) ([]byte, error) {
 	// TODO to use t.Discard here we must first give the possibility to have t as read-only (i.e. `NewTransaction(readOnly bool)`)
 	// so as a first thing, `Get` checks if t is read only, and, if it is, `defer t.Discard()`
@@ -92,4 +94,9 @@ func (t Tx) Get(key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return item.ValueCopy(nil)
+}
+
+// Delete deletes a key.
+func (t Tx) Delete(key []byte) error {
+	return t.tx.Delete(key)
 }

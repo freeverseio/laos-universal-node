@@ -141,6 +141,20 @@ func (mr *MockTxMockRecorder) CreateTreesForContract(contract any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTreesForContract", reflect.TypeOf((*MockTx)(nil).CreateTreesForContract), contract)
 }
 
+// DeleteRootTag mocks base method.
+func (m *MockTx) DeleteRootTag(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRootTag", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRootTag indicates an expected call of DeleteRootTag.
+func (mr *MockTxMockRecorder) DeleteRootTag(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTx)(nil).DeleteRootTag), contract, blockNumber)
+}
+
 // Discard mocks base method.
 func (m *MockTx) Discard() {
 	m.ctrl.T.Helper()
@@ -509,6 +523,20 @@ func (m *MockState) CreateTreesForContract(contract common.Address) (ownership.T
 func (mr *MockStateMockRecorder) CreateTreesForContract(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTreesForContract", reflect.TypeOf((*MockState)(nil).CreateTreesForContract), contract)
+}
+
+// DeleteRootTag mocks base method.
+func (m *MockState) DeleteRootTag(contract common.Address, blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRootTag", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRootTag indicates an expected call of DeleteRootTag.
+func (mr *MockStateMockRecorder) DeleteRootTag(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockState)(nil).DeleteRootTag), contract, blockNumber)
 }
 
 // Get mocks base method.
