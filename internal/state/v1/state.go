@@ -315,7 +315,7 @@ func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 }
 
 func (t *tx) GetLastTaggedBlock(contract common.Address)(int64, error) {
-	slog.Debug("GetLastTaggedBlock ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	slog.Debug("GetLastTaggedBlock ", "contract", contract.String())
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
 		return 0, fmt.Errorf("contract %s does not exist", contract.String())
