@@ -30,6 +30,7 @@ type Tx interface {
 
 	State
 	ContractState
+	EvolutionBlockState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -59,4 +60,9 @@ type ContractState interface {
 	StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error
 	StoreEvoChainMintEvents(contract common.Address, events []model.MintedWithExternalURI) error
 	GetEvoChainEvents(contract common.Address) ([]model.MintedWithExternalURI, error)
+}
+
+type EvolutionBlockState interface {
+	SetCurrentEvoBlock(number uint64) error
+	GetCurrentEvoBlock() (uint64, error)
 }

@@ -277,7 +277,11 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			err = storeMintedWithExternalURIEventsByContract(stateService, events)
+			tx := stateService.NewTransaction()
+			// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+			defer tx.Discard()
+
+			err = storeMintedWithExternalURIEventsByContract(tx, events)
 			if err != nil {
 				slog.Error("error occurred while accessing database", "err", err.Error())
 				break
@@ -285,20 +289,23 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 
 			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
+			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}
+
+			if err = tx.Commit(); err != nil {
+				slog.Error("error committing transaction", "err", err.Error())
+				break
+			}
+
 			startingBlock = nextStartingBlock
 		}
 	}
 }
 
-func storeMintedWithExternalURIEventsByContract(stateService state.Service, events []scan.Event) error {
+func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
 	groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
-	tx := stateService.NewTransaction()
-	// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
-	defer tx.Discard()
 
 	for contract, scannedEvents := range groupedMintEvents {
 		// fetch current storedEvents stored for this specific contract address
