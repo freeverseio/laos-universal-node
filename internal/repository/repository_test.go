@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
@@ -177,68 +176,6 @@ func TestGetChainID(t *testing.T) {
 		_, err := service.GetChainID()
 		if err == nil {
 			t.Fatalf("got no error, expecting en error %s", errExpected.Error())
-		}
-	})
-}
-
-func TestGetCurrentBlock(t *testing.T) {
-	t.Parallel()
-	t.Run("should execute GetCurrentBlock without error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		mockStorage.EXPECT().Get([]byte("ownership_current_block")).Return([]byte("1"), nil)
-
-		currentBlock, err := service.GetCurrentBlock()
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
-		}
-
-		if currentBlock != "1" {
-			t.Fatalf("got currentBlock %s, expecting 1", currentBlock)
-		}
-	})
-
-	t.Run("should execute GetCurrentBlock and handle ErrKeyNotFound error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		mockStorage.EXPECT().Get([]byte("ownership_current_block")).Return(nil, badger.ErrKeyNotFound)
-
-		currentBlock, err := service.GetCurrentBlock()
-		// no error expected since we handle ErrKeyNotFound internally
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
-		}
-		// currentBlock should be epmty
-		if currentBlock != "" {
-			t.Fatalf("got currentBlock %s, expecting empty current block", currentBlock)
-		}
-	})
-}
-
-func TestStoreCurrentBlock(t *testing.T) {
-	t.Parallel()
-	t.Run("should execute StoreCurrentBlock without error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-		mockStorage.EXPECT().Set([]byte("ownership_current_block"), []byte("2")).Return(nil)
-
-		err := service.SetCurrentBlock("2")
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	})
 }

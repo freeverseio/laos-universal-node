@@ -80,31 +80,6 @@ func (s *Service) SetChainID(chainIDValue string) error {
 	return s.storageService.Set([]byte(chainID), []byte(chainIDValue))
 }
 
-// TODO move block-related methods to state
-func (s *Service) GetCurrentBlock() (string, error) {
-	value, err := s.get(currentBlock)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
-}
-
-func (s *Service) GetEvoChainCurrentBlock() (string, error) {
-	value, err := s.get(evoCurrentBlock)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
-}
-
-func (s *Service) SetCurrentBlock(value string) error {
-	return s.storageService.Set([]byte(currentBlock), []byte(value))
-}
-
-func (s *Service) SetEvoChainCurrentBlock(value string) error {
-	return s.storageService.Set([]byte(evoCurrentBlock), []byte(value))
-}
-
 func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {
 	value, err := s.get(contractPrefix + contract)
 	if err != nil {
