@@ -114,8 +114,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			client, scanner, storage, _ := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
-
 			mockState.EXPECT().NewTransaction().Return(tx2)
+
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)

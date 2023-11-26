@@ -167,7 +167,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
 ) error {
 	// TODO use tx.GetCurrentOwnershipBlock and refactor getStartingBlock to accept "startingBlockDB" as uint64
-	// Can this go inside the loop after transaction is created
 	startingBlockDB, err := repositoryService.GetCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -183,11 +182,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			slog.Info("context canceled")
 			return nil
 		default:
-			// I would declare transaction before anything else and don't put defer tx.Discard(). 
-			// the rest of the code in the loop I would put in a function and if the function returns error do 
-			// tx.Discard(); otherwise tx.Commit()
-			tx := stateService.NewTransaction()
-
 			l1LatestBlock, err := getL1LatestBlock(ctx, client)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
@@ -200,6 +194,10 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
+
+			tx := stateService.NewTransaction()
+			// TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+			defer tx.Discard()
 
 			// discovering new contracts deployed on the ownership chain
 			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
