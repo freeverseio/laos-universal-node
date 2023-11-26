@@ -225,6 +225,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
 					break
 				}
+				// TODO potential bug: in case a contract has just been discovered, tx.Set will be called.
+				// after that, tx.Get, called by tx.GetExistingERC721UniversalContracts, will return that contract even if tx.Commit hasn't been called yet!
+				// this means that contractsAddress will hold that contract twice, as we append existingContracts and universalContracts to contractsAddress
 				contractsAddress = append(contractsAddress, existingContracts...)
 			} else {
 				var dbContracts []string
