@@ -25,6 +25,7 @@ import (
 )
 
 var version = "undefined"
+const historyLength = 256
 
 func main() {
 	if err := run(); err != nil {
@@ -283,7 +284,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					}
 
 					var evoBlock uint64
-					evoBlock, err = updateState(mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
+					evoBlock, err = updateState(client, mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
 					if err != nil {
 						slog.Error("error updating state", "err", err.Error())
 						break
@@ -393,7 +394,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 	}
 }
 
-func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx) (uint64, error) {
+func updateState(client scan.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx) (uint64, error) {
 	ownershipContractEvoBlock, err := tx.GetCurrentEvoBlockForOwnershipContract(contract)
 	if err != nil {
 		return 0, err
@@ -415,7 +416,7 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 			transferIndex++
 		// all transfer events have been processed => process remaining minted events
 		case transferIndex >= len(modelTransferEvents):
-			block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+			block, err := updateStateWithMint(client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 			if err != nil {
 				return 0, err
 			}
@@ -424,7 +425,7 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 		default:
 			// if minted event's timestamp is behind transfer event's timestamp => process minted event
 			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
-				block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+				block, err := updateStateWithMint(client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 				if err != nil {
 					return 0, err
 				}
@@ -450,10 +451,24 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 			contract, modelTransferEvent.TokenId,
 			modelTransferEvent.From, modelTransferEvent.To, err)
 	}
+
+	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
+	if err != nil {
+		return err
+	}
+	for block := lastTaggedBlock+1; block < int64(modelTransferEvent.BlockNumber); block++ {
+		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
+			return err
+		}
+
+		if err:= tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func updateStateWithMint(contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
+func updateStateWithMint(client scan.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
 	updatedBlock := ownershipContractEvoBlock
 	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events on ownershipContractEvoBlock are not stored in the state?
 	// if so, on the next iteration, those events won't be stored in the state because of the ">" comparison
@@ -468,6 +483,31 @@ func updateStateWithMint(contract string, tx state.Tx, mintedEvent *model.Minted
 		}
 		updatedBlock = mintedEvent.BlockNumber
 	}
+
+	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
+	if err != nil {
+		return 0, err
+	}
+	
+	for {
+		blockToTag := lastTaggedBlock + 1
+		
+		timestamp, err := getTimestampForBlockNumber(context.Background(), client, uint64(blockToTag))
+		if err != nil {
+			return 0, err
+		}
+		if timestamp > mintedEvent.Timestamp {
+			break
+		}
+		if err := tx.TagRoot(common.HexToAddress(contract), blockToTag); err != nil {
+			return 0, err
+		}
+		if err:= tx.DeleteRootTag(common.HexToAddress(contract), blockToTag-historyLength); err != nil {
+			return 0, err
+		}
+	}
+	
+
 	return updatedBlock, nil
 }
 
