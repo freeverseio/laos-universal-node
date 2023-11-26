@@ -182,6 +182,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			slog.Info("context canceled")
 			return nil
 		default:
+			tx = stateService.NewTransaction()
 			l1LatestBlock, err := getL1LatestBlock(ctx, client)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
@@ -346,6 +347,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			slog.Info("context canceled")
 			return nil
 		default:
+			tx = stateService.NewTransaction()
 			l1LatestBlock, err := getL1LatestBlock(ctx, client)
 			if err != nil {
 				slog.Error("error retrieving the latest block", "err", err.Error())
@@ -431,7 +433,7 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 	// we must wait because there might have been mint events whose timestamp is < this transfer event
 	// maybe it is worth storing the global evo chain current block's timestamp also?!
 	if err := tx.Transfer(common.HexToAddress(contract), modelTransferEvent); err != nil {
-		return fmt.Errorf("error updating transfer state for contract %s and token id %d from %s, to %s: %w",
+		return fmt.Errorf("error updating transfer state for contract %s and token id %d, from %s, to %s: %w",
 			contract, modelTransferEvent.TokenId,
 			modelTransferEvent.From, modelTransferEvent.To, err)
 	}
