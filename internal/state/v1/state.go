@@ -99,7 +99,7 @@ func (t *tx) SetTreesForContract(
 	enumeratedTree enumerated.Tree,
 	enumeratedTotalTree enumeratedtotal.Tree,
 ) {
-	slog.Debug("setting trees for contract %s", "contract", contract.String())
+	slog.Debug("setting trees for contract", "contract", contract.String())
 
 	t.ownershipTrees[contract] = ownershipTree
 	t.enumeratedTrees[contract] = enumeratedTree
