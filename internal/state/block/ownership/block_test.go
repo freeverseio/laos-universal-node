@@ -58,21 +58,3 @@ func TestSetCurrentOwnershipBlock(t *testing.T) {
 
 	})
 }
-
-// func TestStoreCurrentBlock(t *testing.T) {
-// 	t.Parallel()
-// 	t.Run("should execute StoreCurrentBlock without error", func(t *testing.T) {
-// 		t.Parallel()
-// 		mockCtrl := gomock.NewController(t)
-// 		defer mockCtrl.Finish()
-
-// 		mockStorage := mock.NewMockService(mockCtrl)
-// 		service := repository.New(mockStorage)
-// 		mockStorage.EXPECT().Set([]byte("current_block"), []byte("2")).Return(nil)
-
-// 		err := service.SetCurrentBlock("2")
-// 		if err != nil {
-// 			t.Fatalf("got error %s, expecting no error", err.Error())
-// 		}
-// 	})
-// }
