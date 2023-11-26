@@ -235,6 +235,13 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 				contractsAddress = append(contractsAddress, dbContracts...)
 			}
+
+			// load merkle trees for all contracts whose events have to be scanned for
+			if err = loadMerkleTrees(tx, contractsAddress); err != nil {
+				slog.Error("error creating merkle trees", "err", err)
+				break
+			}
+
 			// scanning contracts for events on the ownership chain
 			var lastScannedBlock *big.Int
 			if len(contractsAddress) > 0 {
@@ -304,20 +311,22 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
+func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
+	for i := range contractsAddress {
+		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(common.HexToAddress(contractsAddress[i]))
+		if err != nil {
+			return err
+		}
+		tx.SetTreesForContract(common.HexToAddress(contractsAddress[i]), ownership, enumerated, enumeratedTotal)
+	}
+	return nil
+}
+
 func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) ([]model.ERC721UniversalContract, error) {
 	universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
 		return nil, err
-	}
-
-	for i := range universalContracts {
-		ownership, enumerated, enumeratedTotal, treeErr := tx.CreateTreesForContract(universalContracts[i].Address)
-		if treeErr != nil {
-			slog.Error("error creating merkle trees", "err", treeErr)
-			return nil, err
-		}
-		tx.SetTreesForContract(universalContracts[i].Address, ownership, enumerated, enumeratedTotal)
 	}
 
 	if len(universalContracts) > 0 {

@@ -150,9 +150,9 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
 
-			for _, contract := range tt.discoveredContracts {
-				tx2.EXPECT().CreateTreesForContract(contract.Address).Return(nil, nil, nil, nil).Times(1)
-				tx2.EXPECT().SetTreesForContract(contract.Address, nil, nil, nil).Times(1)
+			for _, contract := range tt.expectedContracts {
+				tx2.EXPECT().CreateTreesForContract(common.HexToAddress(contract)).Return(nil, nil, nil, nil).Times(1)
+				tx2.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil).Times(1)
 			}
 			if len(tt.discoveredContracts) > 0 {
 				tx2.EXPECT().StoreERC721UniversalContracts(tt.discoveredContracts).Return(nil).Times(1)
@@ -312,6 +312,10 @@ func TestRunScanOk(t *testing.T) {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
 
+			for _, contract := range tt.expectedContracts {
+				tx2.EXPECT().CreateTreesForContract(common.HexToAddress(contract)).Return(nil, nil, nil, nil).Times(1)
+				tx2.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil).Times(1)
+			}
 			tx2.EXPECT().GetCollectionAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(common.HexToAddress("0x0"), nil).Times(1)
 			tx2.EXPECT().GetMintedWithExternalURIEvents("0x0000000000000000000000000000000000000000").
 				Return(getMockMintedEvents(uint64(0), uint64(0)), nil).Times(1)
