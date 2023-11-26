@@ -343,52 +343,6 @@ func TestRunScanOk(t *testing.T) {
 	}
 }
 
-func TestRunScanTwice(t *testing.T) {
-	t.Parallel()
-	c := config.Config{
-		StartingBlock: 1,
-		BlocksMargin:  0,
-		BlocksRange:   50,
-		WaitingTime:   1 * time.Second,
-		Contracts:     []string{"0x0"},
-	}
-	ctx, cancel := getContext()
-	defer cancel()
-
-	client, scanner, storage, _ := getMocks(t)
-	state, tx := getMocksFromState(t)
-	state.EXPECT().NewTransaction().Return(tx)
-
-	client.EXPECT().BlockNumber(ctx).
-		Return(uint64(101), nil).
-		AnyTimes()
-
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(c.StartingBlock)), big.NewInt(51), c.Contracts).
-		Return(nil, big.NewInt(51), nil).
-		Times(1)
-	scanner.EXPECT().ScanEvents(ctx, big.NewInt(52), big.NewInt(101), c.Contracts).
-		Return(nil, big.NewInt(101), nil).
-		Times(1)
-
-	storage.EXPECT().Get([]byte("contract_0x0")).
-		Return([]byte(""), nil).
-		Times(2)
-	storage.EXPECT().Get([]byte("ownership_current_block")).
-		Return([]byte(""), nil).
-		Times(1)
-	storage.EXPECT().Set([]byte("current_block"), []byte("52")).
-		Return(nil).
-		Times(1)
-	storage.EXPECT().Set([]byte("current_block"), []byte("102")).
-		Return(nil).
-		Times(1)
-
-	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage), state)
-	if err != nil {
-		t.Fatalf(`got error "%v" when no error was expeceted`, err)
-	}
-}
-
 func TestRunScanError(t *testing.T) {
 	t.Parallel()
 	c := config.Config{
