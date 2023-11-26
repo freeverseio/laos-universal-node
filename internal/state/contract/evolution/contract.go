@@ -27,8 +27,11 @@ func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.Minte
 	if err != nil {
 		return nil, err
 	}
+	if value == nil {
+		return nil, nil
+	}
 	var mintedEvents []model.MintedWithExternalURI
-	err = json.Unmarshal(value, &mintedEvents) // TODO check what happens when value is nil
+	err = json.Unmarshal(value, &mintedEvents)
 	if err != nil {
 		return nil, err
 	}
