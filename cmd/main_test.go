@@ -20,7 +20,8 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
+
+	// v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
@@ -413,7 +414,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		scanEventsTimes        int
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
-		expectedNewLatestBlock string
+		expectedNewLatestBlock uint64
 		errorScanEvents        error
 		errorSaveBlockNumber   error
 		errorGetBlockNumber    error
@@ -434,7 +435,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "100",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 		},
 		{
 			name: "scan evo chain OK with no starting block in DB and 0 in config",
@@ -450,7 +451,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "",
 			expectedFromBlock:      250,
 			expectedToBlock:        250,
-			expectedNewLatestBlock: "251",
+			expectedNewLatestBlock: 251,
 		},
 		{
 			name: "scan evo chain OK with no starting block in DB and 100 in config",
@@ -466,7 +467,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 		},
 		{
 			name: "scan evo chain with an error getting the block number from L1",
@@ -479,7 +480,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			l1LatestBlock:          250,
 			blockNumberTimes:       1,
 			blockNumberDB:          "",
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorGetL1LatestBlock:  errors.New("error getting block number from L1"),
 			expectedError:          errors.New("error retrieving the latest block from chain: error getting block number from L1"),
 		},
@@ -494,27 +495,9 @@ func TestScanEvoChainOnce(t *testing.T) {
 			l1LatestBlock:          250,
 			blockNumberTimes:       0,
 			blockNumberDB:          "",
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorGetBlockNumber:    errors.New("error getting block number from DB"),
 			expectedError:          errors.New("error retrieving the current block from storage: error getting block number from DB"),
-		},
-		{
-			name: "scan evo chain and getting an error saving the block number",
-			c: config.Config{
-				EvoStartingBlock: 100,
-				EvoBlocksMargin:  0,
-				EvoBlocksRange:   50,
-				WaitingTime:      1 * time.Second,
-				Contracts:        []string{},
-			},
-			l1LatestBlock:          250,
-			blockNumberTimes:       1,
-			blockNumberDB:          "",
-			expectedFromBlock:      100,
-			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
-			errorSaveBlockNumber:   errors.New("error saving block number"),
-			expectedError:          nil, // in this case we break the loop and don't return an error
 		},
 		{
 			name: "scan evo chain and getting an error from scan events",
@@ -530,7 +513,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "100",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorScanEvents:        errors.New("error scanning events"),
 			expectedError:          nil, // in this case we break the loop and don't return an error
 		},
@@ -543,7 +526,9 @@ func TestScanEvoChainOnce(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage, tx := getMocks(t)
+			client, scanner, storage, _ := getMocks(t)
+			storage2, tx := getMocksFromState(t)
+
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
@@ -563,19 +548,19 @@ func TestScanEvoChainOnce(t *testing.T) {
 					).Times(1)
 
 				if tt.errorScanEvents == nil {
-					storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
-						Return(tt.errorSaveBlockNumber).Do(
-						func(_ []byte, _ []byte) {
+					storage2.EXPECT().NewTransaction().Return(tx)
+					tx.EXPECT().Discard().Return()
+
+					tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber).Times(1)
+					tx.EXPECT().Commit().Return(nil).Do(
+						func() {
 							cancel() // we cancel the loop since we only want one iteration
 						},
 					).Times(1)
-
-					storage.EXPECT().NewTransaction().Return(tx)
-					tx.EXPECT().Discard().Return()
 				}
 			}
 
-			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), v1.NewStateService(storage))
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), storage2)
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
@@ -611,7 +596,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 		scanEventsTimes        int
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
-		expectedNewLatestBlock string
+		expectedNewLatestBlock uint64
 		errorScanEvents        error
 		errorSaveBlockNumber   error
 		errorGetBlockNumber    error
@@ -632,7 +617,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			blockNumberDB:          "100",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 		},
 	}
 
@@ -656,18 +641,18 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
 				Times(1)
 
-			storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
-				Return(tt.errorSaveBlockNumber).Do(
-				func(_ []byte, _ []byte) {
-					cancel() // we cancel the loop since we only want one iteration
-				},
-			).Times(1)
-
 			tx.EXPECT().GetEvoChainEvents(gomock.Any()).Return(nil, nil).Times(1)
 			tx.EXPECT().StoreEvoChainMintEvents(common.HexToAddress("0x0000000000000000000000000000000000000000"), gomock.Any()).Return(nil).Times(1)
 
 			storage2.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().Discard().Return()
+
+			tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber)
+			tx.EXPECT().Commit().Return(nil).Do(
+				func() {
+					cancel() // we cancel the loop since we only want one iteration
+				},
+			).Times(1)
 
 			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), storage2)
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
@@ -782,10 +767,7 @@ func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage, tx := getMocksFromState(t)
-
-			storage.EXPECT().NewTransaction().Return(tx)
-			tx.EXPECT().Discard()
+			_, tx := getMocksFromState(t)
 
 			events := make([]scan.Event, 0)
 			eventsToStore := make(map[common.Address][]model.MintedWithExternalURI)
@@ -799,7 +781,7 @@ func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
 				eventsToStore[contract] = append(eventsToStore[contract], scanned...)
 				tx.EXPECT().StoreEvoChainMintEvents(contract, eventsToStore[contract]).Return(nil)
 			}
-			if err := storeMintedWithExternalURIEventsByContract(storage, events); err != nil {
+			if err := storeMintedWithExternalURIEventsByContract(tx, events); err != nil {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
 		})
