@@ -31,6 +31,9 @@ func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint6
 	if err != nil {
 		return 0, err
 	}
+	if value == nil {
+		value = []byte("0")
+	}
 	return strconv.ParseUint(string(value), 10, 64)
 }
 
@@ -38,6 +41,9 @@ func (s *service) GetCurrentOwnershipBlock() (uint64, error) {
 	value, err := s.tx.Get([]byte(currentBlock))
 	if err != nil {
 		return 0, err
+	}
+	if value == nil {
+		value = []byte("0")
 	}
 	return strconv.ParseUint(string(value), 10, 64)
 }

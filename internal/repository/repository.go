@@ -67,6 +67,7 @@ func (s *Service) get(key string) ([]byte, error) {
 	return value, nil
 }
 
+// TODO move chain-related methods to state
 func (s *Service) GetChainID() (string, error) {
 	value, err := s.get(chainID)
 	if err != nil {

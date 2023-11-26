@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -106,7 +105,7 @@ func run() error {
 		}
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s, repositoryService)
+		return scanEvoChain(ctx, c, client, s, stateService)
 	})
 
 	// Universal node RPC server
@@ -166,8 +165,9 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
 	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
 ) error {
-	// TODO use tx.GetCurrentOwnershipBlock and refactor getStartingBlock to accept "startingBlockDB" as uint64
-	startingBlockDB, err := repositoryService.GetCurrentBlock()
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	startingBlockDB, err := tx.GetCurrentOwnershipBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
 	}
@@ -194,10 +194,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
-
-			tx := stateService.NewTransaction()
-			// TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
-			defer tx.Discard()
 
 			// discovering new contracts deployed on the ownership chain
 			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
@@ -300,7 +296,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 			if err = tx.Commit(); err != nil {
-				slog.Error("error committing transaction", "err", err.Error())
+				slog.Error("error occurred while committing transaction", "err", err.Error())
 				break
 			}
 			startingBlock = nextStartingBlock
@@ -333,8 +329,10 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 	return universalContracts, nil
 }
 
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
-	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	startingBlockDB, err := tx.GetCurrentEvoBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
 	}
@@ -368,10 +366,13 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
+			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
+			if err = tx.Commit(); err != nil {
+				slog.Error("error occurred while committing transaction", "err", err.Error())
 				break
 			}
 			startingBlock = nextStartingBlock
@@ -485,14 +486,11 @@ func getTimestampForBlockNumber(ctx context.Context, client scan.EthClient, bloc
 	return header.Time, err
 }
 
-func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
+func getStartingBlock(ctx context.Context, startingBlockDB, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
 	var startingBlock uint64
 	var err error
-	if startingBlockDB != "" {
-		startingBlock, err = strconv.ParseUint(startingBlockDB, 10, 64)
-		if err != nil {
-			return 0, fmt.Errorf("error parsing the current block from storage: %w", err)
-		}
+	if startingBlockDB != 0 {
+		startingBlock = startingBlockDB
 		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
 	}
 

@@ -11,10 +11,7 @@ import (
 )
 
 const (
-	ContractPrefix  = "contract_"
-	ChainID         = "chain_id"
-	CurrentBlock    = "current_block"
-	EvoCurrentBlock = "evo_current_block"
+	ContractPrefix = "contract_"
 )
 
 // Service interface is used for initializing and terminating state transaction.
@@ -31,6 +28,7 @@ type Tx interface {
 	OwnershipContractState
 	EvolutionContractState
 	OwnershipBlockState
+	EvolutionBlockState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -69,4 +67,9 @@ type OwnershipBlockState interface {
 	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
 	SetCurrentOwnershipBlock(number uint64) error
 	GetCurrentOwnershipBlock() (uint64, error)
+}
+
+type EvolutionBlockState interface {
+	SetCurrentEvoBlock(number uint64) error
+	GetCurrentEvoBlock() (uint64, error)
 }
