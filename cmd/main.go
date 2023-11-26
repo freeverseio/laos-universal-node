@@ -195,43 +195,31 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 
+			tx := stateService.NewTransaction()
+			// TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+			defer tx.Discard()
+
+			// discovering new contracts deployed on the ownership chain
 			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
 			if err != nil {
 				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
 			}
-
-			tx := stateService.NewTransaction()
-			// TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
-			defer tx.Discard()
 			var universalContracts []model.ERC721UniversalContract
 			if shouldDiscover {
-				universalContracts, err = s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+				universalContracts, err = discoverContracts(ctx, s, startingBlock, lastBlock, tx)
 				if err != nil {
-					slog.Error("error occurred while discovering new universal events", "err", err.Error())
-					break
-				}
-
-				for i := range universalContracts {
-					ownership, enumerated, enumeratedTotal, treeErr := tx.CreateTreesForContract(universalContracts[i].Address)
-					if treeErr != nil {
-						slog.Error("error creating merkle trees", "err", treeErr)
-						break
-					}
-					tx.SetTreesForContract(universalContracts[i].Address, ownership, enumerated, enumeratedTotal)
-				}
-
-				if err = tx.StoreERC721UniversalContracts(universalContracts); err != nil {
-					slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 					break
 				}
 			}
 
-			var contracts []string
+			var contractsAddress []string
 			// consider contracts that have just been discovered but not yet stored, as the related transaction hasn't been committed yet
 			for i := range universalContracts {
-				contracts = append(contracts, universalContracts[i].Address.String())
+				contractsAddress = append(contractsAddress, universalContracts[i].Address.String())
 			}
+
+			// choosing which contracts to scan
 			if len(c.Contracts) > 0 {
 				// if contracts come from flag, do not scan those that haven't been discovered yet
 				var existingContracts []string
@@ -240,23 +228,28 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
 					break
 				}
-				contracts = append(contracts, existingContracts...)
+				contractsAddress = append(contractsAddress, existingContracts...)
 			} else {
-				contracts, err = repositoryService.GetAllERC721UniversalContracts()
+				// TODO this is a small bug right now, as we are not considering the contracts that have just been discovered but not yet stored
+				// since the transaction hasn't been committed yet and repositryService uses a different transaction
+				// the fix will be to use the same transaction
+				contractsAddress, err = repositoryService.GetAllERC721UniversalContracts()
 				if err != nil {
 					slog.Error("error occurred reading contracts from storage", "err", err.Error())
 					break
 				}
 			}
+			// scanning contracts for events on the ownership chain
 			var lastScannedBlock *big.Int
-			if len(contracts) > 0 {
+			if len(contractsAddress) > 0 {
 				var scanEvents []scan.Event
-				scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
+				scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contractsAddress)
 				if err != nil {
 					slog.Error("error occurred while scanning events", "err", err.Error())
 					break
 				}
 
+				// getting transfer events from scan events
 				var modelTransferEvents map[string][]model.ERC721Transfer
 				modelTransferEvents, err = getModelTransferEvents(ctx, client, scanEvents)
 				if err != nil {
@@ -264,32 +257,35 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 
-				for i := range contracts {
+				// checking for minted events on the evolution chain
+				for i := range contractsAddress {
 					var mintedEvents []model.MintedWithExternalURI
 					var collectionAddress common.Address
-					collectionAddress, err = tx.GetCollectionAddress(contracts[i]) // get collection address from ownership address
+					collectionAddress, err = tx.GetCollectionAddress(contractsAddress[i]) // get collection address from ownership address
 					if err != nil {
 						slog.Error("error occurred retrieving the collection address from the ownership address",
-							"ownership_contract", contracts[i], "err", err.Error())
+							"ownership_contract", contractsAddress[i], "err", err.Error())
 						break
 					}
+
+					// now we get the minted events from the evolution chain for the collection address
 					mintedEvents, err = tx.GetMintedWithExternalURIEvents(collectionAddress.String())
 					if err != nil {
 						slog.Error("error occurred retrieving evochain minted events for ownership contract",
-							"ownership_contract", contracts[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
+							"ownership_contract", contractsAddress[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
 						break
 					}
 
 					var evoBlock uint64
-					evoBlock, err = updateState(mintedEvents, modelTransferEvents[contracts[i]], contracts[i], tx)
+					evoBlock, err = updateState(mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
 					if err != nil {
 						slog.Error("error updating state", "err", err.Error())
 						break
 					}
 
-					if err = tx.SetCurrentEvoBlockForOwnershipContract(contracts[i], evoBlock); err != nil {
+					if err = tx.SetCurrentEvoBlockForOwnershipContract(contractsAddress[i], evoBlock); err != nil {
 						slog.Error("error updating current evochain block for ownership contract",
-							"evo_block", evoBlock, "ownership_contract", contracts[i],
+							"evo_block", evoBlock, "ownership_contract", contractsAddress[i],
 							"err", err.Error())
 						break
 					}
@@ -310,6 +306,31 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) ([]model.ERC721UniversalContract, error) {
+	universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+	if err != nil {
+		slog.Error("error occurred while discovering new universal events", "err", err.Error())
+		return nil, err
+	}
+
+	for i := range universalContracts {
+		ownership, enumerated, enumeratedTotal, treeErr := tx.CreateTreesForContract(universalContracts[i].Address)
+		if treeErr != nil {
+			slog.Error("error creating merkle trees", "err", treeErr)
+			return nil, err
+		}
+		tx.SetTreesForContract(universalContracts[i].Address, ownership, enumerated, enumeratedTotal)
+	}
+
+	if len(universalContracts) > 0 {
+		if err = tx.StoreERC721UniversalContracts(universalContracts); err != nil {
+			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
+			return nil, err
+		}
+	}
+	return universalContracts, nil
 }
 
 func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
@@ -366,15 +387,19 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 	var mintedIndex int
 	var transferIndex int
 	lastUpdatedBlock := ownershipContractEvoBlock
+
 	for {
 		switch {
+		// all events have been processed => return
 		case mintedIndex >= len(mintedEvents) && transferIndex >= len(modelTransferEvents):
 			return lastUpdatedBlock, nil
+		// all minted events have been processed => process remaining transfer events
 		case mintedIndex >= len(mintedEvents):
 			if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
 				return 0, err
 			}
 			transferIndex++
+		// all transfer events have been processed => process remaining minted events
 		case transferIndex >= len(modelTransferEvents):
 			block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 			if err != nil {
@@ -383,6 +408,7 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 			lastUpdatedBlock = block
 			mintedIndex++
 		default:
+			// if minted event's timestamp is behind transfer event's timestamp => process minted event
 			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
 				block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 				if err != nil {

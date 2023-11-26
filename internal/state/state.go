@@ -35,9 +35,6 @@ type Tx interface {
 
 // State interface defines functions to interact with state of the blockchain
 type State interface {
-	Discard()
-	Commit() error // TODO maybe Discard and Commit are not needed for State?
-
 	CreateTreesForContract(contract common.Address) (ownership.Tree, enumerated.Tree, enumeratedtotal.Tree, error)
 	SetTreesForContract(contract common.Address,
 		ownershipTree ownership.Tree,

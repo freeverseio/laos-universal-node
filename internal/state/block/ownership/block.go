@@ -36,7 +36,6 @@ func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint6
 }
 
 func (s *service) GetCurrentOwnershipBlock() (uint64, error) {
-	defer s.tx.Discard()
 	value, err := s.tx.Get([]byte(currentBlock))
 	if err != nil {
 		return 0, err

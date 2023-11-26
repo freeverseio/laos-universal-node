@@ -191,7 +191,7 @@ func TestGetCurrentBlock(t *testing.T) {
 		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
-		mockStorage.EXPECT().Get([]byte("current_block")).Return([]byte("1"), nil)
+		mockStorage.EXPECT().Get([]byte("ownership_current_block")).Return([]byte("1"), nil)
 
 		currentBlock, err := service.GetCurrentBlock()
 		if err != nil {
@@ -211,7 +211,7 @@ func TestGetCurrentBlock(t *testing.T) {
 		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
 
-		mockStorage.EXPECT().Get([]byte("current_block")).Return(nil, badger.ErrKeyNotFound)
+		mockStorage.EXPECT().Get([]byte("ownership_current_block")).Return(nil, badger.ErrKeyNotFound)
 
 		currentBlock, err := service.GetCurrentBlock()
 		// no error expected since we handle ErrKeyNotFound internally
@@ -234,7 +234,7 @@ func TestStoreCurrentBlock(t *testing.T) {
 
 		mockStorage := mock.NewMockService(mockCtrl)
 		service := repository.New(mockStorage)
-		mockStorage.EXPECT().Set([]byte("current_block"), []byte("2")).Return(nil)
+		mockStorage.EXPECT().Set([]byte("ownership_current_block"), []byte("2")).Return(nil)
 
 		err := service.SetCurrentBlock("2")
 		if err != nil {

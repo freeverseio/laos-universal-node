@@ -62,7 +62,7 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: false, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 
 		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
@@ -93,9 +93,9 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: true, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
-		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
+		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
 
 		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
@@ -125,9 +125,9 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: true, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
-		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
+		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15), nil)
 		enumeratedTotalTree.EXPECT().TokenByIndex(14).Return(big.NewInt(10), nil)
 		enumeratedTotalTree.EXPECT().Burn(int(0)).Return(nil)
