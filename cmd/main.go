@@ -226,14 +226,13 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 				contractsAddress = append(contractsAddress, existingContracts...)
 			} else {
-				// TODO this is a small bug right now, as we are not considering the contracts that have just been discovered but not yet stored
-				// since the transaction hasn't been committed yet and repositryService uses a different transaction
-				// the fix will be to use the same transaction
-				contractsAddress, err = repositoryService.GetAllERC721UniversalContracts()
+				var dbContracts []string
+				dbContracts, err = repositoryService.GetAllERC721UniversalContracts()
 				if err != nil {
 					slog.Error("error occurred reading contracts from storage", "err", err.Error())
 					break
 				}
+				contractsAddress = append(contractsAddress, dbContracts...)
 			}
 			// scanning contracts for events on the ownership chain
 			var lastScannedBlock *big.Int

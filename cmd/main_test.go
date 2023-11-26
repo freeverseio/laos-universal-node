@@ -65,8 +65,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
-			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000"},
-			expectedContracts:            []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
+			expectedContracts:            []string{"0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			discoveredContracts:          getERC721UniversalContracts(),
 			scannedEvents:                createERC721TransferEvents(),
 			blockNumberTransferEvents:    1,
@@ -93,15 +93,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
-			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000"},
-			expectedContracts:            []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
+			expectedContracts:            []string{"0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			discoveredContracts:          getERC721UniversalContracts(),
 			scannedEvents:                createERC721TransferEvents(),
 			blockNumberTransferEvents:    1,
 			timeStampTransferEvents:      1000,
 			blocknumberMintedEvents:      101,
 			timeStampMintedEvents:        2000,
-			expectedTxMintCalls:          1,
+			expectedTxMintCalls:          2,
 		},
 	}
 	for _, tt := range tests {
@@ -135,15 +135,13 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.storedContracts, nil).
 				Times(1)
 
-			for i, contract := range tt.storedContracts {
-				// remove the prefix
-				contractAddress := string(contract[9:])
-				tx2.EXPECT().GetCollectionAddress(contractAddress).Return(common.HexToAddress(tt.collectionAddressForContract[i]), nil).Times(1)
+			for i, contract := range tt.expectedContracts {
+				tx2.EXPECT().GetCollectionAddress(contract).Return(common.HexToAddress(tt.collectionAddressForContract[i]), nil).Times(1)
 				tx2.EXPECT().GetMintedWithExternalURIEvents(tt.collectionAddressForContract[i]).
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
-				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contractAddress).Return(uint64(1), nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, tt.blocknumberMintedEvents).Return(nil).Times(1)
+				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contract).Return(uint64(1), nil).Times(1)
+				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contract, tt.blocknumberMintedEvents).Return(nil).Times(1)
 			}
 			if len(tt.scannedEvents) > 0 {
 				// TODO remove any
@@ -735,7 +733,7 @@ func getMockMintedEvents(blockNumber, timestamp uint64) []model.MintedWithExtern
 func getERC721UniversalContracts() []model.ERC721UniversalContract {
 	return []model.ERC721UniversalContract{
 		{
-			Address:           common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			Address:           common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
 			CollectionAddress: common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		},
 	}
