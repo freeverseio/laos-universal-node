@@ -83,6 +83,21 @@ func (mr *MockTreeMockRecorder) FindBlockWithTag(blockNumber any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBlockWithTag", reflect.TypeOf((*MockTree)(nil).FindBlockWithTag), blockNumber)
 }
 
+// GetLastTaggedBlock mocks base method.
+func (m *MockTree) GetLastTaggedBlock() (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastTaggedBlock")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
+func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
+}
+
 // Mint mocks base method.
 func (m *MockTree) Mint(tokenId *big.Int, owner common.Address) error {
 	m.ctrl.T.Helper()

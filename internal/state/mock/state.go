@@ -257,6 +257,21 @@ func (mr *MockTxMockRecorder) GetExistingERC721UniversalContracts(contracts any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExistingERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).GetExistingERC721UniversalContracts), contracts)
 }
 
+// GetLastTaggedBlock mocks base method.
+func (m *MockTx) GetLastTaggedBlock(contract common.Address) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastTaggedBlock", contract)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
+func (mr *MockTxMockRecorder) GetLastTaggedBlock(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTx)(nil).GetLastTaggedBlock), contract)
+}
+
 // GetMintedWithExternalURIEvents mocks base method.
 func (m *MockTx) GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error) {
 	m.ctrl.T.Helper()
@@ -552,6 +567,21 @@ func (m *MockState) Get(key string) ([]byte, error) {
 func (mr *MockStateMockRecorder) Get(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockState)(nil).Get), key)
+}
+
+// GetLastTaggedBlock mocks base method.
+func (m *MockState) GetLastTaggedBlock(contract common.Address) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastTaggedBlock", contract)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
+func (mr *MockStateMockRecorder) GetLastTaggedBlock(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockState)(nil).GetLastTaggedBlock), contract)
 }
 
 // IsTreeSetForContract mocks base method.

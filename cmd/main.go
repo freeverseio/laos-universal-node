@@ -444,6 +444,7 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 	// TODO if transfer event's timestamp is ahead of global evo chain current block's timestamp => wait X seconds and read again the global evo chain current block from DB
 	// we must wait because there might have been mint events whose timestamp is < this transfer event
 	// maybe it is worth storing the global evo chain current block's timestamp also?!
+	// TODO before we update state we should tag all blocks since the last tagged block
 	if err := tx.Transfer(common.HexToAddress(contract), modelTransferEvent); err != nil {
 		return fmt.Errorf("error updating transfer state for contract %s and token id %d, from %s, to %s: %w",
 			contract, modelTransferEvent.TokenId,
@@ -459,6 +460,7 @@ func updateStateWithMint(contract string, tx state.Tx, mintedEvent *model.Minted
 	// example:
 	// 2 events on block 10, you store the first, updatedBlock == 10. a ctrl + c comes, you don't store the second event and the method returns
 	// can it be that the transaction is committed?
+	// TODO before we update state we should tag all blocks since the last tagged block
 	if mintedEvent.BlockNumber > ownershipContractEvoBlock {
 		if err := tx.Mint(common.HexToAddress(contract), mintedEvent.TokenId); err != nil {
 			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
