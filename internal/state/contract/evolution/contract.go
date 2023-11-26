@@ -23,7 +23,6 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error) {
-	defer s.tx.Discard()
 	value, err := s.tx.Get([]byte(eventsPrefix + strings.ToLower(contract)))
 	if err != nil {
 		return nil, err

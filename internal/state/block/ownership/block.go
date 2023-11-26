@@ -27,7 +27,6 @@ func (s *service) SetCurrentEvoBlockForOwnershipContract(contract string, number
 }
 
 func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
-	defer s.tx.Discard()
 	value, err := s.tx.Get([]byte(contractEvoCurrentBlockPrefix + strings.ToLower(contract)))
 	if err != nil {
 		return 0, err

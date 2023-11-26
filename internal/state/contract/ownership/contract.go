@@ -34,7 +34,6 @@ func (s *service) StoreERC721UniversalContracts(universalContracts []model.ERC72
 }
 
 func (s *service) GetCollectionAddress(contract string) (common.Address, error) {
-	defer s.tx.Discard()
 	contractLowerCase := strings.ToLower(contract)
 	value, err := s.tx.Get([]byte(contractPrefix + contractLowerCase))
 	if err != nil {
@@ -44,7 +43,6 @@ func (s *service) GetCollectionAddress(contract string) (common.Address, error) 
 }
 
 func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
-	defer s.tx.Discard()
 	var existingContracts []string
 	for _, k := range contracts {
 		hasContract, err := s.hasERC721UniversalContract(k)
@@ -59,7 +57,6 @@ func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]str
 }
 
 func (s *service) hasERC721UniversalContract(contract string) (bool, error) {
-	defer s.tx.Discard()
 	lowerCaseContractAddress := strings.ToLower(contract)
 	value, err := s.tx.Get([]byte(contractPrefix + lowerCaseContractAddress))
 	if err != nil {

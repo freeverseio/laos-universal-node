@@ -82,7 +82,8 @@ func (t Tx) Set(key, value []byte) error {
 }
 
 func (t Tx) Get(key []byte) ([]byte, error) {
-	// TODO maybe do "defer t.Discard()" here so the caller doesn't have to do it?
+	// TODO to use t.Discard here we must first give the possibility to have t as read-only (i.e. `NewTransaction(readOnly bool)`)
+	// so as a first thing, `Get` checks if t is read only, and, if it is, `defer t.Discard()`
 	item, err := t.tx.Get(key)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
