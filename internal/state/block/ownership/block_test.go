@@ -55,6 +55,5 @@ func TestSetCurrentOwnershipBlock(t *testing.T) {
 		if err != nil {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
-
 	})
 }

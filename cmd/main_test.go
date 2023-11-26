@@ -46,7 +46,6 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		timeStampMintedEvents        uint64
 		expectedTxMintCalls          int
 	}{
-
 		{
 			c: config.Config{
 				StartingBlock: 1,
@@ -112,7 +111,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage, _ := getMocks(t)
+			client, scanner, storage := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 			mockState.EXPECT().NewTransaction().Return(tx2)
 
@@ -121,7 +120,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Times(tt.blockNumberTimes)
 
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.blockNumberTransferEvents))).Return(&types.Header{
-				Time: uint64(tt.timeStampTransferEvents),
+				Time: tt.timeStampTransferEvents,
 			}, nil).Times(1)
 
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
@@ -144,14 +143,13 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
 				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contractAddress).Return(uint64(1), nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, uint64(tt.blocknumberMintedEvents)).Return(nil).Times(1)
-
+				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contractAddress, tt.blocknumberMintedEvents).Return(nil).Times(1)
 			}
 			if len(tt.scannedEvents) > 0 {
 				// TODO remove any
 				tx2.EXPECT().Transfer(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			}
-			//tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
+
 			tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
 
 			for _, contract := range tt.discoveredContracts {
@@ -289,7 +287,7 @@ func TestRunScanOk(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage, _ := getMocks(t)
+			client, scanner, storage := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 
 			mockState.EXPECT().NewTransaction().Return(tx2)
@@ -351,7 +349,7 @@ func TestRunScanError(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner, storage, _ := getMocks(t)
+	client, scanner, storage := getMocks(t)
 	state, _ := getMocksFromState(t)
 
 	expectedErr := errors.New("block number error")
@@ -504,7 +502,7 @@ func TestCompareChainIDs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			mockClient, _, storage, _ := getMocks(t)
+			mockClient, _, storage := getMocks(t)
 			repositoryService := repository.New(storage)
 			ctx := context.Background()
 
@@ -666,7 +664,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage, _ := getMocks(t)
+			client, scanner, storage := getMocks(t)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
@@ -707,11 +705,11 @@ func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }
 
-func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService, *mockStorage.MockTx) {
+func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
-		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
+		mockStorage.NewMockService(ctrl)
 }
 
 func getMocksFromState(t *testing.T) (*mockTx.MockService, *mockTx.MockTx) {

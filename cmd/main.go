@@ -308,7 +308,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock uint64, lastBlock uint64, tx state.Tx) ([]model.ERC721UniversalContract, error) {
+func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) ([]model.ERC721UniversalContract, error) {
 	universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
@@ -390,16 +390,16 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 
 	for {
 		switch {
-		// all events have been processed then return
+		// all events have been processed => return
 		case mintedIndex >= len(mintedEvents) && transferIndex >= len(modelTransferEvents):
 			return lastUpdatedBlock, nil
-			// all minted events have been processed, process remaining transfer events
+		// all minted events have been processed => process remaining transfer events
 		case mintedIndex >= len(mintedEvents):
 			if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
 				return 0, err
 			}
 			transferIndex++
-			// all transfer events have been processed, process remaining minted events
+		// all transfer events have been processed => process remaining minted events
 		case transferIndex >= len(modelTransferEvents):
 			block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 			if err != nil {
@@ -408,7 +408,7 @@ func updateState(mintedEvents []model.MintedWithExternalURI, modelTransferEvents
 			lastUpdatedBlock = block
 			mintedIndex++
 		default:
-			// if minted event's timestamp is ahead of transfer event's timestamp, process minted event
+			// if minted event's timestamp is behind transfer event's timestamp => process minted event
 			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
 				block, err := updateStateWithMint(contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
 				if err != nil {
