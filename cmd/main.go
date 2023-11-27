@@ -280,6 +280,116 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	startingBlockDB, err := tx.GetCurrentEvoBlock()
+	if err != nil {
+		return fmt.Errorf("error retrieving the current block from storage: %w", err)
+	}
+	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.EvoStartingBlock, client)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("context canceled")
+			return nil
+		default:
+			tx = stateService.NewTransaction()
+			l1LatestBlock, err := getL1LatestBlock(ctx, client)
+			if err != nil {
+				slog.Error("error retrieving the latest block", "err", err.Error())
+				break
+			}
+			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.EvoBlocksRange, c.EvoBlocksMargin)
+			if lastBlock < startingBlock {
+				slog.Debug("last calculated block is behind starting block, waiting...",
+					"last_block", lastBlock, "starting_block", startingBlock)
+				waitBeforeNextScan(ctx, c.WaitingTime)
+				break
+			}
+
+			_, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
+			if err != nil {
+				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
+				break
+			}
+
+			nextStartingBlock := lastScannedBlock.Uint64() + 1
+			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
+				slog.Error("error occurred while storing current block", "err", err.Error())
+				break
+			}
+			if err = tx.Commit(); err != nil {
+				slog.Error("error occurred while committing transaction", "err", err.Error())
+				break
+			}
+			startingBlock = nextStartingBlock
+		}
+	}
+}
+
+func getStartingBlock(ctx context.Context, startingBlockDB, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
+	var startingBlock uint64
+	var err error
+	if startingBlockDB != 0 {
+		startingBlock = startingBlockDB
+		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
+	}
+
+	if startingBlock == 0 {
+		startingBlock = configStartingBlock
+		if startingBlock == 0 {
+			startingBlock, err = getL1LatestBlock(ctx, client)
+			if err != nil {
+				return 0, fmt.Errorf("error retrieving the latest block from chain: %w", err)
+			}
+			slog.Debug("latest block found", "latest_block", startingBlock)
+		}
+	}
+	return startingBlock, nil
+}
+
+func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
+	timer := time.NewTimer(waitingTime)
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+	case <-timer.C:
+	}
+}
+
+func getL1LatestBlock(ctx context.Context, client scan.EthClient) (uint64, error) {
+	l1LatestBlock, err := client.BlockNumber(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return l1LatestBlock, nil
+}
+
+func calculateLastBlock(startingBlock, l1LatestBlock uint64, blocksRange, blocksMargin uint) uint64 {
+	return min(startingBlock+uint64(blocksRange), l1LatestBlock-uint64(blocksMargin))
+}
+
+func setLogger(debug bool) {
+	// Default slog.Level is Info (0)
+	var level slog.Level
+	if debug {
+		level = slog.LevelDebug
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true,
+	}).WithAttrs([]slog.Attr{
+		slog.String("version", version),
+	}))
+	slog.SetDefault(logger)
+}
+
 func readEventsAndUpdateState(client scan.EthClient, contractsAddress []string, modelTransferEvents map[string][]model.ERC721Transfer, tx state.Tx) error {
 	for i := range contractsAddress {
 		var mintedEvents []model.MintedWithExternalURI
@@ -375,58 +485,6 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
 		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
 	}
 	return nil
-}
-
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {
-	tx := stateService.NewTransaction()
-	defer tx.Discard()
-	startingBlockDB, err := tx.GetCurrentEvoBlock()
-	if err != nil {
-		return fmt.Errorf("error retrieving the current block from storage: %w", err)
-	}
-	startingBlock, err := getStartingBlock(ctx, startingBlockDB, c.EvoStartingBlock, client)
-	if err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("context canceled")
-			return nil
-		default:
-			tx = stateService.NewTransaction()
-			l1LatestBlock, err := getL1LatestBlock(ctx, client)
-			if err != nil {
-				slog.Error("error retrieving the latest block", "err", err.Error())
-				break
-			}
-			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.EvoBlocksRange, c.EvoBlocksMargin)
-			if lastBlock < startingBlock {
-				slog.Debug("last calculated block is behind starting block, waiting...",
-					"last_block", lastBlock, "starting_block", startingBlock)
-				waitBeforeNextScan(ctx, c.WaitingTime)
-				break
-			}
-
-			_, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
-			if err != nil {
-				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
-				break
-			}
-
-			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
-				slog.Error("error occurred while storing current block", "err", err.Error())
-				break
-			}
-			if err = tx.Commit(); err != nil {
-				slog.Error("error occurred while committing transaction", "err", err.Error())
-				break
-			}
-			startingBlock = nextStartingBlock
-		}
-	}
 }
 
 func updateState(client scan.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx) (uint64, error) {
@@ -573,62 +631,4 @@ func getTimestampForBlockNumber(ctx context.Context, client scan.EthClient, bloc
 		return 0, err
 	}
 	return header.Time, err
-}
-
-func getStartingBlock(ctx context.Context, startingBlockDB, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
-	var startingBlock uint64
-	var err error
-	if startingBlockDB != 0 {
-		startingBlock = startingBlockDB
-		slog.Debug("ignoring user provided starting block, using last updated block from storage", "starting_block", startingBlock)
-	}
-
-	if startingBlock == 0 {
-		startingBlock = configStartingBlock
-		if startingBlock == 0 {
-			startingBlock, err = getL1LatestBlock(ctx, client)
-			if err != nil {
-				return 0, fmt.Errorf("error retrieving the latest block from chain: %w", err)
-			}
-			slog.Debug("latest block found", "latest_block", startingBlock)
-		}
-	}
-	return startingBlock, nil
-}
-
-func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
-	timer := time.NewTimer(waitingTime)
-	select {
-	case <-ctx.Done():
-		timer.Stop()
-	case <-timer.C:
-	}
-}
-
-func getL1LatestBlock(ctx context.Context, client scan.EthClient) (uint64, error) {
-	l1LatestBlock, err := client.BlockNumber(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return l1LatestBlock, nil
-}
-
-func calculateLastBlock(startingBlock, l1LatestBlock uint64, blocksRange, blocksMargin uint) uint64 {
-	return min(startingBlock+uint64(blocksRange), l1LatestBlock-uint64(blocksMargin))
-}
-
-func setLogger(debug bool) {
-	// Default slog.Level is Info (0)
-	var level slog.Level
-	if debug {
-		level = slog.LevelDebug
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     level,
-		AddSource: true,
-	}).WithAttrs([]slog.Attr{
-		slog.String("version", version),
-	}))
-	slog.SetDefault(logger)
 }
