@@ -3,14 +3,25 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
+	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
+	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
+
+	// v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
@@ -403,7 +414,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		scanEventsTimes        int
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
-		expectedNewLatestBlock string
+		expectedNewLatestBlock uint64
 		errorScanEvents        error
 		errorSaveBlockNumber   error
 		errorGetBlockNumber    error
@@ -424,7 +435,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "100",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 		},
 		{
 			name: "scan evo chain OK with no starting block in DB and 0 in config",
@@ -440,7 +451,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "",
 			expectedFromBlock:      250,
 			expectedToBlock:        250,
-			expectedNewLatestBlock: "251",
+			expectedNewLatestBlock: 251,
 		},
 		{
 			name: "scan evo chain OK with no starting block in DB and 100 in config",
@@ -456,7 +467,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 		},
 		{
 			name: "scan evo chain with an error getting the block number from L1",
@@ -469,7 +480,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			l1LatestBlock:          250,
 			blockNumberTimes:       1,
 			blockNumberDB:          "",
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorGetL1LatestBlock:  errors.New("error getting block number from L1"),
 			expectedError:          errors.New("error retrieving the latest block from chain: error getting block number from L1"),
 		},
@@ -484,27 +495,9 @@ func TestScanEvoChainOnce(t *testing.T) {
 			l1LatestBlock:          250,
 			blockNumberTimes:       0,
 			blockNumberDB:          "",
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorGetBlockNumber:    errors.New("error getting block number from DB"),
 			expectedError:          errors.New("error retrieving the current block from storage: error getting block number from DB"),
-		},
-		{
-			name: "scan evo chain and getting an error saving the block number",
-			c: config.Config{
-				EvoStartingBlock: 100,
-				EvoBlocksMargin:  0,
-				EvoBlocksRange:   50,
-				WaitingTime:      1 * time.Second,
-				Contracts:        []string{},
-			},
-			l1LatestBlock:          250,
-			blockNumberTimes:       1,
-			blockNumberDB:          "",
-			expectedFromBlock:      100,
-			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
-			errorSaveBlockNumber:   errors.New("error saving block number"),
-			expectedError:          nil, // in this case we break the loop and don't return an error
 		},
 		{
 			name: "scan evo chain and getting an error from scan events",
@@ -520,7 +513,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			blockNumberDB:          "100",
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
-			expectedNewLatestBlock: "151",
+			expectedNewLatestBlock: 151,
 			errorScanEvents:        errors.New("error scanning events"),
 			expectedError:          nil, // in this case we break the loop and don't return an error
 		},
@@ -534,6 +527,8 @@ func TestScanEvoChainOnce(t *testing.T) {
 			defer cancel()
 
 			client, scanner, storage, _ := getMocks(t)
+			storage2, tx := getMocksFromState(t)
+
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
@@ -553,21 +548,261 @@ func TestScanEvoChainOnce(t *testing.T) {
 					).Times(1)
 
 				if tt.errorScanEvents == nil {
-					storage.EXPECT().Set([]byte("evo_current_block"), []byte(tt.expectedNewLatestBlock)).
-						Return(tt.errorSaveBlockNumber).Do(
-						func(_ []byte, _ []byte) {
+					storage2.EXPECT().NewTransaction().Return(tx)
+					tx.EXPECT().Discard().Return()
+
+					tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber).Times(1)
+					tx.EXPECT().Commit().Return(nil).Do(
+						func() {
 							cancel() // we cancel the loop since we only want one iteration
 						},
 					).Times(1)
 				}
 			}
 
-			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage))
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), storage2)
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
 		})
 	}
+}
+
+func TestScanEvoChainWithEvents(t *testing.T) {
+	t.Parallel()
+	mintedWithExternalURIEventHash := "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348"
+	eventLog := &types.Log{
+		Topics: []common.Hash{
+			common.HexToHash(mintedWithExternalURIEventHash),
+			common.HexToHash("0x000000000000000000000000c112bde959080c5b46e73749e3e170f47123e85a"),
+		},
+		Data:        common.Hex2Bytes("00000000000000000000000000000000000000003d5b1313de887a00000000003d5b1313de887a0000000000c112bde959080c5b46e73749e3e170f47123e85a0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002e516d4e5247426d7272724862754b4558375354544d326f68325077324d757438674863537048706a367a7a637375000000000000000000000000000000000000"),
+		BlockNumber: 100,
+	}
+	evoAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
+	if err != nil {
+		t.Fatalf(`got error "%v", expected error: "%v"`, err, nil)
+	}
+	event, err := parseMintedWithExternalURI(eventLog, &evoAbi)
+	if err != nil {
+		t.Fatalf(`got error "%v", expected error: "%v"`, err, nil)
+	}
+	tests := []struct {
+		name                   string
+		c                      config.Config
+		l1LatestBlock          uint64
+		blockNumberDB          string
+		blockNumberTimes       int
+		scanEventsTimes        int
+		expectedFromBlock      uint64
+		expectedToBlock        uint64
+		expectedNewLatestBlock uint64
+		errorScanEvents        error
+		errorSaveBlockNumber   error
+		errorGetBlockNumber    error
+		errorGetL1LatestBlock  error
+		expectedError          error
+	}{
+		{
+			name: "scan evo chain OK",
+			c: config.Config{
+				StartingBlock:   0,
+				EvoBlocksMargin: 0,
+				EvoBlocksRange:  50,
+				WaitingTime:     1 * time.Second,
+				Contracts:       []string{},
+			},
+			l1LatestBlock:          250,
+			blockNumberTimes:       1,
+			blockNumberDB:          "100",
+			expectedFromBlock:      100,
+			expectedToBlock:        150,
+			expectedNewLatestBlock: 151,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := getContext()
+			defer cancel()
+			client, scanner, storage, _ := getMocks(t)
+			storage2, tx := getMocksFromState(t)
+
+			client.EXPECT().BlockNumber(ctx).
+				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
+				Times(tt.blockNumberTimes)
+
+			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
+				Return([]scan.Event{event}, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).Times(1)
+
+			storage.EXPECT().Get([]byte("evo_current_block")).
+				Return([]byte(tt.blockNumberDB), tt.errorGetBlockNumber).
+				Times(1)
+
+			tx.EXPECT().GetEvoChainEvents(gomock.Any()).Return(nil, nil).Times(1)
+			tx.EXPECT().StoreEvoChainMintEvents(common.HexToAddress("0x0000000000000000000000000000000000000000"), gomock.Any()).Return(nil).Times(1)
+
+			storage2.EXPECT().NewTransaction().Return(tx)
+			tx.EXPECT().Discard().Return()
+
+			tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber)
+			tx.EXPECT().Commit().Return(nil).Do(
+				func() {
+					cancel() // we cancel the loop since we only want one iteration
+				},
+			).Times(1)
+
+			err := scanEvoChain(ctx, &tt.c, client, scanner, repository.New(storage), storage2)
+			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
+				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func TestStoreMintedWithExternalURIEventsByContract(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		scannedEvents map[common.Address][]scan.Event
+		storedEvents  map[common.Address][]model.MintedWithExternalURI
+		expectedError error
+	}{
+		{
+			name:          "does not stored when no new events",
+			scannedEvents: map[common.Address][]scan.Event{},
+			expectedError: nil,
+		},
+		{
+			name: "Store new event to non stored contract",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Store  different contract events to existing contracts",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(3),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(43),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"),
+					},
+				},
+			},
+			storedEvents: map[common.Address][]model.MintedWithExternalURI{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(1),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(40),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Store  different contract events to existing and non existing contracts",
+			scannedEvents: map[common.Address][]scan.Event{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(2),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(3),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"),
+					},
+				},
+				common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"): {
+					scan.EventMintedWithExternalURI{
+						Slot:     big.NewInt(43),
+						To:       common.HexToAddress("0x789abcdCf9bE02C6EF7e6F840BF0F0E2FC45c123"),
+						Contract: common.HexToAddress("0xeabcd86cd26373efbF15d0ec69F39c9E77Beff91"),
+					},
+				},
+			},
+			storedEvents: map[common.Address][]model.MintedWithExternalURI{
+				common.HexToAddress("0xeB28886cd26373efbF15d0ec69F39c9E77Be54A5"): {
+					model.MintedWithExternalURI{
+						Slot: big.NewInt(1),
+						To:   common.HexToAddress("0xc52293dCf9bE02C6EF7e6F840BF0F0E2FC45c646"),
+					},
+				},
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, tx := getMocksFromState(t)
+
+			events := make([]scan.Event, 0)
+			eventsToStore := make(map[common.Address][]model.MintedWithExternalURI)
+			for contract, ev := range tt.scannedEvents {
+				events = append(events, ev...)
+				scanned := mintEventsToModel(ev)
+
+				tx.EXPECT().GetEvoChainEvents(contract).Return(tt.storedEvents[contract], nil)
+
+				eventsToStore[contract] = append(eventsToStore[contract], tt.storedEvents[contract]...)
+				eventsToStore[contract] = append(eventsToStore[contract], scanned...)
+				tx.EXPECT().StoreEvoChainMintEvents(contract, eventsToStore[contract]).Return(nil)
+			}
+			if err := storeMintedWithExternalURIEventsByContract(tx, events); err != nil {
+				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func mintEventsToModel(events []scan.Event) []model.MintedWithExternalURI {
+	modelMintEvents := make([]model.MintedWithExternalURI, 0)
+	for _, e := range events {
+		scanMintEvent := e.(scan.EventMintedWithExternalURI)
+		modelMintEvents = append(modelMintEvents, model.MintedWithExternalURI{
+			Slot:        scanMintEvent.Slot,
+			To:          scanMintEvent.To,
+			TokenId:     scanMintEvent.TokenId,
+			TokenURI:    scanMintEvent.TokenURI,
+			BlockNumber: scanMintEvent.BlockNumber,
+			Timestamp:   scanMintEvent.Timestamp,
+		})
+	}
+
+	return modelMintEvents
 }
 
 func TestRunScanAndCancelContext(t *testing.T) {
@@ -617,6 +852,35 @@ func getContext() (context.Context, context.CancelFunc) {
 func getMocks(t *testing.T) (*mock.MockEthClient, *mock.MockScanner, *mockStorage.MockService, *mockStorage.MockTx) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
+	mockTx.NewMockTx(ctrl)
 	return mock.NewMockEthClient(ctrl), mock.NewMockScanner(ctrl),
 		mockStorage.NewMockService(ctrl), mockStorage.NewMockTx(ctrl)
+}
+
+func getMocksFromState(t *testing.T) (*mockTx.MockService, *mockTx.MockTx) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockTx.NewMockTx(ctrl)
+	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl)
+}
+
+func parseMintedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (scan.EventMintedWithExternalURI, error) {
+	var mintWithExternalURI scan.EventMintedWithExternalURI
+	eventMintedWithExternalURI := "MintedWithExternalURI"
+	err := unpackIntoInterface(&mintWithExternalURI, eventMintedWithExternalURI, contractAbi, eL)
+	if err != nil {
+		return mintWithExternalURI, err
+	}
+	mintWithExternalURI.To = common.HexToAddress(eL.Topics[1].Hex())
+
+	return mintWithExternalURI, nil
+}
+
+func unpackIntoInterface(e scan.Event, eventName string, contractAbi *abi.ABI, eL *types.Log) error {
+	err := contractAbi.UnpackIntoInterface(e, eventName, eL.Data)
+	if err != nil {
+		return fmt.Errorf("error unpacking the event %s: %w", eventName, err)
+	}
+
+	return nil
 }

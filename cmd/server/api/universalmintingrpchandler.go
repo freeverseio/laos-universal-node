@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
@@ -203,7 +204,7 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 	// if block is not latest we should checkout tree for that tag
 	// it is important that this transaction is not commit which is always the case for this transaction
 	if blockNumber != "latest" {
-		num, err := strconv.ParseInt(blockNumber, 10, 64)
+		num, err := strconv.ParseInt(strings.Replace(blockNumber, "0x", "", 1), 16, 64)
 		if err != nil {
 			slog.Error("wrong block number", "err", err)
 			return nil, err
