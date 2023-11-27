@@ -59,6 +59,7 @@ type OwnershipContractState interface {
 	GetExistingERC721UniversalContracts(contracts []string) ([]string, error)
 	GetCollectionAddress(contract string) (common.Address, error)
 	GetAllERC721UniversalContracts() []string
+	HasERC721UniversalContract(contract string) (bool, error)
 }
 
 type EvolutionContractState interface {

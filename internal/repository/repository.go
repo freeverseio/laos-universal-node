@@ -82,6 +82,7 @@ func (s *Service) SetChainID(chainIDValue string) error {
 }
 
 func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {
+	// TODO remove me and move my tests to state
 	value, err := s.get(contractPrefix + contract)
 	if err != nil {
 		return false, err

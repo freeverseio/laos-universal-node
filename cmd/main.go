@@ -96,7 +96,7 @@ func run() error {
 			return err
 		}
 		s := scan.NewScanner(client, c.Contracts...)
-		return scanUniversalChain(ctx, c, client, s, repositoryService, stateService)
+		return scanUniversalChain(ctx, c, client, s, stateService)
 	})
 
 	// Evolution chain scanner
@@ -148,12 +148,12 @@ func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryServi
 	return nil
 }
 
-func shouldDiscover(repositoryService repository.Service, contracts []string) (bool, error) {
+func shouldDiscover(tx state.Tx, contracts []string) (bool, error) {
 	if len(contracts) == 0 {
 		return true, nil
 	}
 	for i := 0; i < len(contracts); i++ {
-		hasContract, err := repositoryService.HasERC721UniversalContract(contracts[i])
+		hasContract, err := tx.HasERC721UniversalContract(contracts[i])
 		if err != nil {
 			return false, err
 		}
@@ -165,7 +165,7 @@ func shouldDiscover(repositoryService repository.Service, contracts []string) (b
 }
 
 func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthClient,
-	s scan.Scanner, repositoryService repository.Service, stateService state.Service,
+	s scan.Scanner, stateService state.Service,
 ) error {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
@@ -197,14 +197,14 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 
+			tx = stateService.NewTransaction()
+
 			// discovering new contracts deployed on the ownership chain
-			shouldDiscover, err := shouldDiscover(repositoryService, c.Contracts)
+			shouldDiscover, err := shouldDiscover(tx, c.Contracts)
 			if err != nil {
 				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
 			}
-
-			tx = stateService.NewTransaction()
 			if shouldDiscover {
 				if err = discoverContracts(ctx, s, startingBlock, lastBlock, tx); err != nil {
 					break

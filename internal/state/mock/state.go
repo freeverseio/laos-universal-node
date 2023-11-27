@@ -301,6 +301,21 @@ func (mr *MockTxMockRecorder) GetMintedWithExternalURIEvents(contract any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMintedWithExternalURIEvents", reflect.TypeOf((*MockTx)(nil).GetMintedWithExternalURIEvents), contract)
 }
 
+// HasERC721UniversalContract mocks base method.
+func (m *MockTx) HasERC721UniversalContract(contract string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasERC721UniversalContract", contract)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasERC721UniversalContract indicates an expected call of HasERC721UniversalContract.
+func (mr *MockTxMockRecorder) HasERC721UniversalContract(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasERC721UniversalContract", reflect.TypeOf((*MockTx)(nil).HasERC721UniversalContract), contract)
+}
+
 // IsTreeSetForContract mocks base method.
 func (m *MockTx) IsTreeSetForContract(contract common.Address) bool {
 	m.ctrl.T.Helper()
@@ -791,6 +806,21 @@ func (m *MockOwnershipContractState) GetExistingERC721UniversalContracts(contrac
 func (mr *MockOwnershipContractStateMockRecorder) GetExistingERC721UniversalContracts(contracts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExistingERC721UniversalContracts", reflect.TypeOf((*MockOwnershipContractState)(nil).GetExistingERC721UniversalContracts), contracts)
+}
+
+// HasERC721UniversalContract mocks base method.
+func (m *MockOwnershipContractState) HasERC721UniversalContract(contract string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasERC721UniversalContract", contract)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasERC721UniversalContract indicates an expected call of HasERC721UniversalContract.
+func (mr *MockOwnershipContractStateMockRecorder) HasERC721UniversalContract(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasERC721UniversalContract", reflect.TypeOf((*MockOwnershipContractState)(nil).HasERC721UniversalContract), contract)
 }
 
 // StoreERC721UniversalContracts mocks base method.

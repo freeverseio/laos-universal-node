@@ -45,7 +45,7 @@ func (s *service) GetCollectionAddress(contract string) (common.Address, error) 
 func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
 	var existingContracts []string
 	for _, k := range contracts {
-		hasContract, err := s.hasERC721UniversalContract(k)
+		hasContract, err := s.HasERC721UniversalContract(k)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func (s *service) GetAllERC721UniversalContracts() []string {
 	return contracts
 }
 
-func (s *service) hasERC721UniversalContract(contract string) (bool, error) {
+func (s *service) HasERC721UniversalContract(contract string) (bool, error) {
 	lowerCaseContractAddress := strings.ToLower(contract)
 	value, err := s.tx.Get([]byte(contractPrefix + lowerCaseContractAddress))
 	if err != nil {

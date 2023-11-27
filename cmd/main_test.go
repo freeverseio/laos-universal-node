@@ -104,7 +104,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage := getMocks(t)
+			client, scanner, _ := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
 
@@ -175,7 +175,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.blockNumberDB, nil).
 				Times(1)
 
-			err := scanUniversalChain(ctx, &tt.c, client, scanner, repository.New(storage), mockState)
+			err := scanUniversalChain(ctx, &tt.c, client, scanner, mockState)
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -285,7 +285,7 @@ func TestRunScanOk(t *testing.T) {
 			ctx, cancel := getContext()
 			defer cancel()
 
-			client, scanner, storage := getMocks(t)
+			client, scanner, _ := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 
 			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
@@ -339,7 +339,7 @@ func TestRunScanOk(t *testing.T) {
 				Time: 3000,
 			}, nil).AnyTimes()
 
-			err = scanUniversalChain(ctx, &tt.c, client, scanner, repository.New(storage), mockState)
+			err = scanUniversalChain(ctx, &tt.c, client, scanner, mockState)
 			if err != nil {
 				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
@@ -355,7 +355,7 @@ func TestRunScanError(t *testing.T) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	client, scanner, storage := getMocks(t)
+	client, scanner, _ := getMocks(t)
 	state, tx2 := getMocksFromState(t)
 
 	expectedErr := errors.New("block number error")
@@ -368,7 +368,7 @@ func TestRunScanError(t *testing.T) {
 		Return(uint64(0), nil).
 		Times(1)
 
-	err := scanUniversalChain(ctx, &c, client, scanner, repository.New(storage), state)
+	err := scanUniversalChain(ctx, &c, client, scanner, state)
 	if err == nil {
 		t.Fatalf(`got no error when error "%v" was expected`, expectedErr)
 	}
@@ -417,27 +417,19 @@ func TestShouldDiscover(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockService(ctrl)
-			repositoryService := repository.New(storage)
+			_, tx2 := getMocksFromState(t)
 			for _, contract := range tt.contracts {
-				var returnValue []byte
-				if tt.mockReturn {
-					returnValue = []byte("1")
-				} else {
-					returnValue = nil
-				}
-				storage.EXPECT().Get([]byte("contract_"+contract)).Return(returnValue, tt.mockReturnErr).Times(1)
+				tx2.EXPECT().HasERC721UniversalContract(contract).Return(tt.mockReturn, tt.mockReturnErr).Times(1)
 				if !tt.mockReturn {
 					break // break because we only need to check one contract
 				}
 			}
 
-			result, err := shouldDiscover(repositoryService, tt.contracts)
+			result, err := shouldDiscover(tx2, tt.contracts)
 
 			if tt.expectingError {
 				if err == nil {
-					t.Errorf("got no error nut expected an error")
+					t.Errorf("got no error when an error was expected")
 				}
 			} else {
 				if err != nil {
