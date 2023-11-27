@@ -166,10 +166,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Time: 3000,
 			}, nil).AnyTimes()
 
-			if tt.expectedTxMintCalls > 0 {
-				tx2.EXPECT().TagRoot(gomock.Any(), gomock.Any()).Return(nil).Times(2)
-				tx2.EXPECT().DeleteRootTag(gomock.Any(), gomock.Any()).Return(nil).Times(2)
-			}
+			tx2.EXPECT().TagRoot(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			tx2.EXPECT().DeleteRootTag(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 			tx2.EXPECT().SetCurrentOwnershipBlock(tt.newLatestBlock).Return(nil).Times(1)
 			tx2.EXPECT().Commit().Return(nil).Times(tt.txCommitTimes)
@@ -341,6 +339,8 @@ func TestRunScanOk(t *testing.T) {
 				Return(tt.blockNumberDB, nil).
 				Times(1)
 			tx2.EXPECT().GetLastTaggedBlock(gomock.Any()).Return(int64(0), nil).AnyTimes()
+			tx2.EXPECT().TagRoot(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			tx2.EXPECT().DeleteRootTag(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 			client.EXPECT().HeaderByNumber(gomock.Any(), big.NewInt(int64(1))).Return(&types.Header{
 				Time: 3000,
 			}, nil).AnyTimes()
