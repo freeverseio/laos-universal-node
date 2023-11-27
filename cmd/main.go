@@ -303,6 +303,14 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
+
+			for i := range contractsAddress {
+				if err = tagRootsUntilBlock(tx, contractsAddress[i], nextStartingBlock); err != nil {
+					slog.Error("error occurred while tagging roots", "err", err.Error())
+					break
+				}
+			}
+			
 			if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
@@ -314,6 +322,26 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+
+func tagRootsUntilBlock(tx state.Tx, contract string, blockNumber uint64) error {
+
+	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
+	if err != nil {
+		return err
+	}
+	for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
+		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
+			return err
+		}
+
+		if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
