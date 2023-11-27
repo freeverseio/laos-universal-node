@@ -74,8 +74,17 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 			tokenOfOwnerByIndex(calldata, params, blockNumber, h.stateService, w)
 		case erc721.TokenByIndex:
 			tokenByIndex(calldata, params, blockNumber, h.stateService, w)
+		case erc721.SupportsInterface:
+			supportsInterface(w)
 		}
 	}
+}
+
+func supportsInterface(w http.ResponseWriter) {
+	// calldata already checked for SupportsInterface 0x780e9d63
+	// if we are here it means that the calldata is SupportsInterface(0x780e9d63)
+	// so we can return true
+	sendResponse(w, "0x0000000000000000000000000000000000000000000000000000000000000001", nil)
 }
 
 func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
