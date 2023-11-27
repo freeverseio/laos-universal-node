@@ -344,11 +344,9 @@ func tagRootsUntilBlock(tx state.Tx, contractsAddress []string, blockNumber uint
 
 func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	for i := range contractsAddress {
-		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(common.HexToAddress(contractsAddress[i]))
-		if err != nil {
+		if err := loadMerkleTree(tx, common.HexToAddress(contractsAddress[i])); err != nil {
 			return err
 		}
-		tx.SetTreesForContract(common.HexToAddress(contractsAddress[i]), ownership, enumerated, enumeratedTotal)
 	}
 	return nil
 }
@@ -366,7 +364,31 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 			return nil, err
 		}
 	}
+
+	for i := range universalContracts {
+		if err = loadMerkleTree(tx, universalContracts[i].Address); err != nil {
+			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
+			return nil, err
+		}
+
+		if err = tx.TagRoot(universalContracts[i].Address, int64(universalContracts[i].BlockNumber)); err != nil {
+			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
+			return nil, err
+		}
+	}
+
 	return universalContracts, nil
+}
+
+func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
+	if !tx.IsTreeSetForContract(contractAddress) {
+		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(contractAddress)
+		if err != nil {
+			return err
+		}
+		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
+	}
+	return nil
 }
 
 func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {

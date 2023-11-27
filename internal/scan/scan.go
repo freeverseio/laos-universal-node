@@ -84,6 +84,7 @@ type EventApprovalForAll struct {
 type EventNewERC721Universal struct {
 	NewContractAddress common.Address
 	BaseURI            string
+	BlockNumber        uint64
 }
 
 func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
@@ -192,6 +193,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 			c := model.ERC721UniversalContract{
 				Address:           newERC721Universal.NewContractAddress,
 				CollectionAddress: collectionAddress,
+				BlockNumber:       newERC721Universal.BlockNumber,
 			}
 			contracts = append(contracts, c)
 
@@ -383,6 +385,7 @@ func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC72
 	if err != nil {
 		return newERC721Universal, err
 	}
+	newERC721Universal.BlockNumber = eL.BlockNumber
 
 	return newERC721Universal, nil
 }

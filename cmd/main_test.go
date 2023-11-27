@@ -151,9 +151,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(tt.expectedTxMintCalls)
 
 			for _, contract := range tt.expectedContracts {
+				tx2.EXPECT().IsTreeSetForContract(common.HexToAddress(contract)).Return(false).Times(1)
 				tx2.EXPECT().CreateTreesForContract(common.HexToAddress(contract)).Return(nil, nil, nil, nil).Times(1)
 				tx2.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil).Times(1)
 			}
+
+			for i := range tt.discoveredContracts {
+				tx2.EXPECT().IsTreeSetForContract(tt.discoveredContracts[i].Address).Return(true).Times(1)
+			}
+
 			if len(tt.discoveredContracts) > 0 {
 				tx2.EXPECT().StoreERC721UniversalContracts(tt.discoveredContracts).Return(nil).Times(1)
 			}
@@ -324,6 +330,7 @@ func TestRunScanOk(t *testing.T) {
 			}
 
 			for _, contract := range tt.expectedContracts {
+				tx2.EXPECT().IsTreeSetForContract(common.HexToAddress(contract)).Return(false).Times(1)
 				tx2.EXPECT().CreateTreesForContract(common.HexToAddress(contract)).Return(nil, nil, nil, nil).Times(1)
 				tx2.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil).Times(1)
 			}
