@@ -49,7 +49,7 @@ func (b *service) Set(key, value []byte) error {
 	return nil
 }
 
-//Delete deletes a key
+// Delete deletes a key
 func (b *service) Delete(key []byte) error {
 	delete(b.committed.data, string(key))
 	return nil

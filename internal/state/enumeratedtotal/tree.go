@@ -35,7 +35,7 @@ type Tree interface {
 	TotalSupply() (int64, error)
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
-	DeleteRootTag(blockNumber int64) error 
+	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 	FindBlockWithTag(blockNumber int64) (int64, error)
 }
@@ -243,7 +243,7 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if len(buf) == 0{
+	if len(buf) == 0 {
 		return 0, nil
 	}
 
@@ -260,7 +260,6 @@ func (b *tree) DeleteRootTag(blockNumber int64) error {
 
 	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
 	return b.store.Delete([]byte(tagTotalSupplyKey))
-
 }
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.

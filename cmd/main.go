@@ -265,38 +265,10 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 					break
 				}
 
-				// checking for minted events on the evolution chain
-				for i := range contractsAddress {
-					var mintedEvents []model.MintedWithExternalURI
-					var collectionAddress common.Address
-					collectionAddress, err = tx.GetCollectionAddress(contractsAddress[i]) // get collection address from ownership address
-					if err != nil {
-						slog.Error("error occurred retrieving the collection address from the ownership address",
-							"ownership_contract", contractsAddress[i], "err", err.Error())
-						break
-					}
-
-					// now we get the minted events from the evolution chain for the collection address
-					mintedEvents, err = tx.GetMintedWithExternalURIEvents(collectionAddress.String())
-					if err != nil {
-						slog.Error("error occurred retrieving evochain minted events for ownership contract",
-							"ownership_contract", contractsAddress[i], "evolution_contract", collectionAddress.String(), "err", err.Error())
-						break
-					}
-
-					var evoBlock uint64
-					evoBlock, err = updateState(client, mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
-					if err != nil {
-						slog.Error("error updating state", "err", err.Error())
-						break
-					}
-
-					if err = tx.SetCurrentEvoBlockForOwnershipContract(contractsAddress[i], evoBlock); err != nil {
-						slog.Error("error updating current evochain block for ownership contract",
-							"evo_block", evoBlock, "ownership_contract", contractsAddress[i],
-							"err", err.Error())
-						break
-					}
+				// retrieving minted events and update the state accordingly
+				if err = readEventsAndUpdateState(client, contractsAddress, modelTransferEvents, tx); err != nil {
+					slog.Error("error occurred", "err", err.Error())
+					break
 				}
 			} else {
 				lastScannedBlock = big.NewInt(int64(lastBlock))
@@ -304,13 +276,11 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
 
-			for i := range contractsAddress {
-				if err = tagRootsUntilBlock(tx, contractsAddress[i], nextStartingBlock); err != nil {
-					slog.Error("error occurred while tagging roots", "err", err.Error())
-					break
-				}
+			if err = tagRootsUntilBlock(tx, contractsAddress, nextStartingBlock); err != nil {
+				slog.Error("error occurred while tagging roots", "err", err.Error())
+				break
 			}
-			
+
 			if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
@@ -324,20 +294,48 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-
-func tagRootsUntilBlock(tx state.Tx, contract string, blockNumber uint64) error {
-
-	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
-	if err != nil {
-		return err
-	}
-	for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
-		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
-			return err
+func readEventsAndUpdateState(client scan.EthClient, contractsAddress []string, modelTransferEvents map[string][]model.ERC721Transfer, tx state.Tx) error {
+	for i := range contractsAddress {
+		var mintedEvents []model.MintedWithExternalURI
+		collectionAddress, err := tx.GetCollectionAddress(contractsAddress[i]) // get collection address from ownership address
+		if err != nil {
+			return fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contractsAddress[i], err)
 		}
 
-		if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+		// now we get the minted events from the evolution chain for the collection address
+		mintedEvents, err = tx.GetMintedWithExternalURIEvents(collectionAddress.String())
+		if err != nil {
+			return fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
+				contractsAddress[i], collectionAddress.String(), err)
+		}
+
+		var evoBlock uint64
+		evoBlock, err = updateState(client, mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
+		if err != nil {
+			return fmt.Errorf("error updating state: %w", err)
+		}
+
+		if err = tx.SetCurrentEvoBlockForOwnershipContract(contractsAddress[i], evoBlock); err != nil {
+			return fmt.Errorf("error updating current evochain block %d for ownership contract %s: %w", evoBlock, contractsAddress[i], err)
+		}
+	}
+	return nil
+}
+
+func tagRootsUntilBlock(tx state.Tx, contractsAddress []string, blockNumber uint64) error {
+	for i := range contractsAddress {
+		lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contractsAddress[i]))
+		if err != nil {
 			return err
+		}
+		for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
+			if err := tx.TagRoot(common.HexToAddress(contractsAddress[i]), block); err != nil {
+				return err
+			}
+
+			if err := tx.DeleteRootTag(common.HexToAddress(contractsAddress[i]), block-historyLength); err != nil {
+				return err
+			}
 		}
 	}
 

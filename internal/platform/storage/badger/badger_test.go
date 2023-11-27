@@ -118,7 +118,6 @@ func TestSetGetDeleteOnTransaction(t *testing.T) {
 	if !bytes.Equal(buf, []byte("")) {
 		t.Fatalf("got %v, expected %v", string(buf), "value")
 	}
-
 }
 
 func TestStorageGetNoKeysWithPrefix(t *testing.T) {

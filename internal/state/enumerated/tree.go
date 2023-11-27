@@ -33,7 +33,7 @@ type Tree interface {
 	TokensOf(owner common.Address) ([]big.Int, error)
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
-	DeleteRootTag(blockNumber int64) error 
+	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 	FindBlockWithTag(blockNumber int64) (int64, error)
 }
@@ -184,7 +184,7 @@ func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) er
 func (b *tree) TagRoot(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
 	root := b.Root()
-	
+
 	err := b.store.Set([]byte(tagKey), root.Bytes())
 	if err != nil {
 		return err
@@ -200,12 +200,13 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if len(buf) == 0{
+	if len(buf) == 0 {
 		return 0, nil
 	}
 
 	return strconv.ParseInt(string(buf), 10, 64)
 }
+
 // DeleteRootTag deletes root tag
 func (b *tree) DeleteRootTag(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
