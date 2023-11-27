@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,12 +30,13 @@ func TestParseEvents(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		fromBlock *big.Int
-		toBlock   *big.Int
-		address   common.Address
-		contracts []model.ERC721UniversalContract
-		eventLogs []types.Log
+		name                string
+		fromBlock           *big.Int
+		toBlock             *big.Int
+		address             common.Address
+		contracts           []model.ERC721UniversalContract
+		eventLogs           []types.Log
+		headerByNumberTimes int
 	}{
 		{
 			name:      "it should parse Transfer events",
@@ -137,6 +139,7 @@ func TestParseEvents(t *testing.T) {
 					BlockNumber: 100,
 				},
 			},
+			headerByNumberTimes: 1,
 		},
 		{
 			name:      "it should parse EvolvedWithExternalURIevents",
@@ -170,6 +173,8 @@ func TestParseEvents(t *testing.T) {
 				ToBlock:   tt.toBlock,
 				Addresses: []common.Address{tt.address},
 			}).Return(tt.eventLogs, nil)
+
+			cli.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(tt.eventLogs[0].BlockNumber))).Return(&types.Header{Time: uint64(time.Now().Unix())}, nil).Times(tt.headerByNumberTimes)
 
 			events, lastScannedBlock, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
 			if err != nil {

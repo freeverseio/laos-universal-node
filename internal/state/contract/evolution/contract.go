@@ -1,7 +1,8 @@
 package evolution
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/gob"
 	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -22,6 +23,17 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
+func (s *service) StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	if err := encoder.Encode(events); err != nil {
+		return err
+	}
+
+	return s.tx.Set([]byte(eventsPrefix+strings.ToLower(contract)), buf.Bytes())
+}
+
 func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error) {
 	value, err := s.tx.Get([]byte(eventsPrefix + strings.ToLower(contract)))
 	if err != nil {
@@ -30,9 +42,10 @@ func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.Minte
 	if value == nil {
 		return nil, nil
 	}
+
 	var mintedEvents []model.MintedWithExternalURI
-	err = json.Unmarshal(value, &mintedEvents)
-	if err != nil {
+	decoder := gob.NewDecoder(bytes.NewBuffer(value))
+	if err := decoder.Decode(&mintedEvents); err != nil {
 		return nil, err
 	}
 	return mintedEvents, nil

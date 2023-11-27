@@ -41,7 +41,6 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a")
 			},
 		},
-
 		{
 			name: "Should execute OwnerOf with an error from ownerOf",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
@@ -157,6 +156,15 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().TotalSupply(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(int64(1), nil).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x18160ddd","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				validateResponse(t, rr, http.StatusOK, hexStringOne)
+			},
+		},
+		{
+			name: "Should execute SupportsInterface",
+			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+			},
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				validateResponse(t, rr, http.StatusOK, hexStringOne)
 			},

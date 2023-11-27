@@ -427,6 +427,20 @@ func (mr *MockTxMockRecorder) StoreERC721UniversalContracts(universalContracts a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).StoreERC721UniversalContracts), universalContracts)
 }
 
+// StoreMintedWithExternalURIEvents mocks base method.
+func (m *MockTx) StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreMintedWithExternalURIEvents", contract, events)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreMintedWithExternalURIEvents indicates an expected call of StoreMintedWithExternalURIEvents.
+func (mr *MockTxMockRecorder) StoreMintedWithExternalURIEvents(contract, events any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreMintedWithExternalURIEvents", reflect.TypeOf((*MockTx)(nil).StoreMintedWithExternalURIEvents), contract, events)
+}
+
 // TagRoot mocks base method.
 func (m *MockTx) TagRoot(contract common.Address, blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -873,6 +887,20 @@ func (m *MockEvolutionContractState) GetMintedWithExternalURIEvents(contract str
 func (mr *MockEvolutionContractStateMockRecorder) GetMintedWithExternalURIEvents(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMintedWithExternalURIEvents", reflect.TypeOf((*MockEvolutionContractState)(nil).GetMintedWithExternalURIEvents), contract)
+}
+
+// StoreMintedWithExternalURIEvents mocks base method.
+func (m *MockEvolutionContractState) StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreMintedWithExternalURIEvents", contract, events)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreMintedWithExternalURIEvents indicates an expected call of StoreMintedWithExternalURIEvents.
+func (mr *MockEvolutionContractStateMockRecorder) StoreMintedWithExternalURIEvents(contract, events any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreMintedWithExternalURIEvents", reflect.TypeOf((*MockEvolutionContractState)(nil).StoreMintedWithExternalURIEvents), contract, events)
 }
 
 // MockOwnershipBlockState is a mock of OwnershipBlockState interface.

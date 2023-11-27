@@ -64,6 +64,7 @@ type OwnershipContractState interface {
 
 type EvolutionContractState interface {
 	GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error)
+	StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error
 }
 
 type OwnershipBlockState interface {
