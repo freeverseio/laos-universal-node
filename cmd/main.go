@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
@@ -19,6 +20,7 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
+	"github.com/freeverseio/laos-universal-node/internal/state"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"golang.org/x/sync/errgroup"
 )
@@ -57,10 +59,6 @@ func run() error {
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
-
-	if err != nil {
-		return fmt.Errorf("error initializing storage: %w", err)
-	}
 
 	// Badger DB garbage collection
 	group.Go(func() error {
@@ -108,7 +106,7 @@ func run() error {
 		}
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s, repositoryService)
+		return scanEvoChain(ctx, c, client, s, repositoryService, stateService)
 	})
 
 	// Universal node RPC server
@@ -245,7 +243,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service) error {
+func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, repositoryService repository.Service, stateService state.Service) error {
 	startingBlockDB, err := repositoryService.GetEvoChainCurrentBlock()
 	if err != nil {
 		return fmt.Errorf("error retrieving the current block from storage: %w", err)
@@ -273,21 +271,78 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
-
-			_, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
+			events, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
+
+			tx := stateService.NewTransaction()
+			// nolint: gocritic // TODO to address this linting suggestion (deferInLoop), probably the whole body of the "default" case must be moved to a separate function
+			defer tx.Discard()
+
+			err = storeMintedWithExternalURIEventsByContract(tx, events)
+			if err != nil {
+				slog.Error("error occurred while accessing database", "err", err.Error())
+				break
+			}
+
 			// TODO remember to handle SetEvoChainCurrentBlock and the future SetState of the merkle tree in the same TX
 			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = repositoryService.SetEvoChainCurrentBlock(strconv.FormatUint(nextStartingBlock, 10)); err != nil {
+			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
 				slog.Error("error occurred while storing current block", "err", err.Error())
 				break
 			}
+
+			if err = tx.Commit(); err != nil {
+				slog.Error("error committing transaction", "err", err.Error())
+				break
+			}
+
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
+	groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
+
+	for contract, scannedEvents := range groupedMintEvents {
+		// fetch current storedEvents stored for this specific contract address
+		storedEvents, err := tx.GetEvoChainEvents(contract)
+		if err != nil {
+			return err
+		}
+
+		ev := make([]model.MintedWithExternalURI, 0)
+		if storedEvents != nil {
+			ev = append(ev, storedEvents...)
+		}
+		ev = append(ev, scannedEvents...)
+		if err := tx.StoreEvoChainMintEvents(contract, ev); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// groups events that are of type scan.EventMintedWithExternalURI by contract address
+func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.Address][]model.MintedWithExternalURI {
+	groupMintEvents := make(map[common.Address][]model.MintedWithExternalURI, 0)
+	for _, event := range events {
+		if e, ok := event.(scan.EventMintedWithExternalURI); ok {
+			groupMintEvents[e.Contract] = append(groupMintEvents[e.Contract], model.MintedWithExternalURI{
+				Slot:        e.Slot,
+				To:          e.To,
+				TokenURI:    e.TokenURI,
+				TokenId:     e.TokenId,
+				BlockNumber: e.BlockNumber,
+				Timestamp:   e.Timestamp,
+			})
+		}
+	}
+	return groupMintEvents
 }
 
 func getStartingBlock(ctx context.Context, startingBlockDB string, configStartingBlock uint64, client scan.EthClient) (uint64, error) {

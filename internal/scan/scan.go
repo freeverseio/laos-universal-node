@@ -109,10 +109,13 @@ type EventNewCollecion struct {
 
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
-	Slot     *big.Int
-	To       common.Address
-	TokenURI string
-	TokenId  *big.Int
+	Slot        *big.Int
+	To          common.Address
+	TokenURI    string
+	TokenId     *big.Int
+	Contract    common.Address
+	BlockNumber uint64
+	Timestamp   uint64
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
@@ -293,6 +296,17 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				}
 
 				parsedEvents = append(parsedEvents, ev)
+
+				blockNum := eventLogs[i].BlockNumber
+				h, err := s.client.HeaderByNumber(ctx, big.NewInt(int64(blockNum)))
+				if err != nil {
+					return nil, nil, err
+				}
+
+				ev.Contract = eventLogs[i].Address
+				ev.BlockNumber = blockNum
+				ev.Timestamp = h.Time
+
 				slog.Info("received event", eventMintedWithExternalURI, ev)
 
 			case eventEvolvedWithExternalURISigHash:
