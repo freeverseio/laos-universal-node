@@ -5,6 +5,7 @@ type Tx interface {
 	Discard()
 	Set(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
+	Delete(key []byte) error
 }
 
 type Service interface {

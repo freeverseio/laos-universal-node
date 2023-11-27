@@ -314,6 +314,45 @@ func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 	return ownershipTree.TagRoot(blockNumber)
 }
 
+func (t *tx) GetLastTaggedBlock(contract common.Address)(int64, error) {
+	slog.Debug("GetLastTaggedBlock ", "contract", contract.String())
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return 0, fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return enumeratedTree.GetLastTaggedBlock()
+}
+func (t *tx) DeleteRootTag(contract common.Address, blockNumber int64) error {
+	slog.Debug("DeleteRootTag ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTree.DeleteRootTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.DeleteRootTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.DeleteRootTag(blockNumber)
+}
+
 // Checkout sets the current roots to those tagged for the block
 // If no tag for the block exists, it searches for the first block in the past that has the tag.
 func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
