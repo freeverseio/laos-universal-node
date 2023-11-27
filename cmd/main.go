@@ -25,6 +25,7 @@ import (
 )
 
 var version = "undefined"
+
 const historyLength = 256
 
 func main() {
@@ -456,12 +457,12 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 	if err != nil {
 		return err
 	}
-	for block := lastTaggedBlock+1; block < int64(modelTransferEvent.BlockNumber); block++ {
+	for block := lastTaggedBlock + 1; block < int64(modelTransferEvent.BlockNumber); block++ {
 		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
 			return err
 		}
 
-		if err:= tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+		if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
 			return err
 		}
 	}
@@ -488,10 +489,9 @@ func updateStateWithMint(client scan.EthClient, contract string, tx state.Tx, mi
 	if err != nil {
 		return 0, err
 	}
-	
+
 	for {
 		blockToTag := lastTaggedBlock + 1
-		
 		timestamp, err := getTimestampForBlockNumber(context.Background(), client, uint64(blockToTag))
 		if err != nil {
 			return 0, err
@@ -502,11 +502,12 @@ func updateStateWithMint(client scan.EthClient, contract string, tx state.Tx, mi
 		if err := tx.TagRoot(common.HexToAddress(contract), blockToTag); err != nil {
 			return 0, err
 		}
-		if err:= tx.DeleteRootTag(common.HexToAddress(contract), blockToTag-historyLength); err != nil {
+		if err := tx.DeleteRootTag(common.HexToAddress(contract), blockToTag-historyLength); err != nil {
 			return 0, err
 		}
+		// update lastTaggedBlock
+		lastTaggedBlock = blockToTag
 	}
-	
 
 	return updatedBlock, nil
 }
