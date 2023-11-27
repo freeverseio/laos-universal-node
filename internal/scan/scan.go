@@ -191,7 +191,9 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 			collectionAddress, err := newERC721Universal.CollectionAddress()
 			if err != nil {
-				return nil, err
+				slog.Warn("error parsing collection address for contract", "contract", newERC721Universal.NewContractAddress,
+					"base_uri", newERC721Universal.BaseURI)
+				continue
 			}
 			c := model.ERC721UniversalContract{
 				Address:           newERC721Universal.NewContractAddress,
@@ -303,8 +305,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					return nil, nil, err
 				}
 
-				parsedEvents = append(parsedEvents, ev)
-
 				blockNum := eventLogs[i].BlockNumber
 				h, err := s.client.HeaderByNumber(ctx, big.NewInt(int64(blockNum)))
 				if err != nil {
@@ -315,6 +315,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				ev.BlockNumber = blockNum
 				ev.Timestamp = h.Time
 
+				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventMintedWithExternalURI, ev)
 
 			case eventEvolvedWithExternalURISigHash:
