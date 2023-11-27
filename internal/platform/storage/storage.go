@@ -6,6 +6,7 @@ type Tx interface {
 	Set(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
+	GetKeysWithPrefix(prefix []byte) [][]byte
 }
 
 type Service interface {

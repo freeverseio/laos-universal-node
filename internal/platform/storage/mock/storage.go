@@ -93,6 +93,20 @@ func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTx)(nil).Get), key)
 }
 
+// GetKeysWithPrefix mocks base method.
+func (m *MockTx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
+	ret0, _ := ret[0].([][]byte)
+	return ret0
+}
+
+// GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
+func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), prefix)
+}
+
 // Set mocks base method.
 func (m *MockTx) Set(key, value []byte) error {
 	m.ctrl.T.Helper()

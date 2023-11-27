@@ -79,6 +79,12 @@ func (b tx) Get(key []byte) ([]byte, error) {
 	return value, nil
 }
 
+// GetKeysWithPrefix added for interface compatibility
+func (b tx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	// TODO implement this if we have to use it for testing purposes
+	return nil
+}
+
 // Delete deletes a key.
 func (b tx) Delete(key []byte) error {
 	delete(b.temp.data, string(key))

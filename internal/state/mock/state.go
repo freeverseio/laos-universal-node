@@ -182,6 +182,20 @@ func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTx)(nil).Get), key)
 }
 
+// GetAllERC721UniversalContracts mocks base method.
+func (m *MockTx) GetAllERC721UniversalContracts() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllERC721UniversalContracts")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetAllERC721UniversalContracts indicates an expected call of GetAllERC721UniversalContracts.
+func (mr *MockTxMockRecorder) GetAllERC721UniversalContracts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).GetAllERC721UniversalContracts))
+}
+
 // GetCollectionAddress mocks base method.
 func (m *MockTx) GetCollectionAddress(contract string) (common.Address, error) {
 	m.ctrl.T.Helper()
@@ -733,6 +747,20 @@ func NewMockOwnershipContractState(ctrl *gomock.Controller) *MockOwnershipContra
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockOwnershipContractState) EXPECT() *MockOwnershipContractStateMockRecorder {
 	return m.recorder
+}
+
+// GetAllERC721UniversalContracts mocks base method.
+func (m *MockOwnershipContractState) GetAllERC721UniversalContracts() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllERC721UniversalContracts")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetAllERC721UniversalContracts indicates an expected call of GetAllERC721UniversalContracts.
+func (mr *MockOwnershipContractStateMockRecorder) GetAllERC721UniversalContracts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllERC721UniversalContracts", reflect.TypeOf((*MockOwnershipContractState)(nil).GetAllERC721UniversalContracts))
 }
 
 // GetCollectionAddress mocks base method.

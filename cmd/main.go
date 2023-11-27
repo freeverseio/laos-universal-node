@@ -203,41 +203,27 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				slog.Error("error occurred reading contracts from storage", "err", err.Error())
 				break
 			}
-			var universalContracts []model.ERC721UniversalContract
+
 			tx = stateService.NewTransaction()
 			if shouldDiscover {
-				universalContracts, err = discoverContracts(ctx, s, startingBlock, lastBlock, tx)
-				if err != nil {
+				if err = discoverContracts(ctx, s, startingBlock, lastBlock, tx); err != nil {
 					break
 				}
 			}
 
 			var contractsAddress []string
-			// consider contracts that have just been discovered but not yet stored, as the related transaction hasn't been committed yet
-			for i := range universalContracts {
-				contractsAddress = append(contractsAddress, universalContracts[i].Address.String())
-			}
-
 			// choosing which contracts to scan
 			if len(c.Contracts) > 0 {
-				// if contracts come from flag, do not scan those that haven't been discovered yet
+				// if contracts come from flag, consider only those that have been discovered (whether in this iteration or previously)
 				var existingContracts []string
 				existingContracts, err = tx.GetExistingERC721UniversalContracts(c.Contracts)
 				if err != nil {
 					slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
 					break
 				}
-				// TODO potential bug: in case a contract has just been discovered, tx.Set will be called.
-				// after that, tx.Get, called by tx.GetExistingERC721UniversalContracts, will return that contract even if tx.Commit hasn't been called yet!
-				// this means that contractsAddress will hold that contract twice, as we append existingContracts and universalContracts to contractsAddress
 				contractsAddress = append(contractsAddress, existingContracts...)
 			} else {
-				var dbContracts []string
-				dbContracts, err = repositoryService.GetAllERC721UniversalContracts()
-				if err != nil {
-					slog.Error("error occurred reading contracts from storage", "err", err.Error())
-					break
-				}
+				dbContracts := tx.GetAllERC721UniversalContracts()
 				contractsAddress = append(contractsAddress, dbContracts...)
 			}
 
@@ -351,33 +337,33 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) ([]model.ERC721UniversalContract, error) {
-	universalContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
+	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
-		return nil, err
+		return err
 	}
 
-	if len(universalContracts) > 0 {
-		if err = tx.StoreERC721UniversalContracts(universalContracts); err != nil {
+	if len(contracts) > 0 {
+		if err = tx.StoreERC721UniversalContracts(contracts); err != nil {
 			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
-			return nil, err
+			return err
 		}
 	}
 
-	for i := range universalContracts {
-		if err = loadMerkleTree(tx, universalContracts[i].Address); err != nil {
+	for i := range contracts {
+		if err = loadMerkleTree(tx, contracts[i].Address); err != nil {
 			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
-			return nil, err
+			return err
 		}
 
-		if err = tx.TagRoot(universalContracts[i].Address, int64(universalContracts[i].BlockNumber)); err != nil {
+		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
 			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
-			return nil, err
+			return err
 		}
 	}
 
-	return universalContracts, nil
+	return nil
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {

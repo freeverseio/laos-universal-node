@@ -100,3 +100,19 @@ func (t Tx) Get(key []byte) ([]byte, error) {
 func (t Tx) Delete(key []byte) error {
 	return t.tx.Delete(key)
 }
+
+// GetKeysWithPrefix looks for all the keys with the specified prefix and returns them. It doesn't return values
+func (t Tx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	var keys [][]byte
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := t.tx.NewIterator(opts)
+	defer iterator.Close()
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		var key []byte
+		key = item.KeyCopy(key)
+		keys = append(keys, key)
+	}
+	return keys
+}

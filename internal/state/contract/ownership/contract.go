@@ -56,6 +56,16 @@ func (s *service) GetExistingERC721UniversalContracts(contracts []string) ([]str
 	return existingContracts, nil
 }
 
+func (s *service) GetAllERC721UniversalContracts() []string {
+	var contracts []string
+	keys := s.tx.GetKeysWithPrefix([]byte(contractPrefix))
+	for i := range keys {
+		contract := strings.TrimPrefix(string(keys[i]), contractPrefix)
+		contracts = append(contracts, contract)
+	}
+	return contracts
+}
+
 func (s *service) hasERC721UniversalContract(contract string) (bool, error) {
 	lowerCaseContractAddress := strings.ToLower(contract)
 	value, err := s.tx.Get([]byte(contractPrefix + lowerCaseContractAddress))

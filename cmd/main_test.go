@@ -35,7 +35,6 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		txDiscardTimes               int
 		expectedStartingBlock        uint64
 		newLatestBlock               uint64
-		storedContracts              [][]byte
 		collectionAddressForContract []string
 		expectedContracts            []string
 		discoveredContracts          []model.ERC721UniversalContract
@@ -53,18 +52,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				BlocksRange:   100,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:               101,
-			expectedStartingBlock:       1,
-			name:                        "scan events one time with stored contracts and updateStateWithTransfer",
-			blockNumberTimes:            2,
-			scanEventsTimes:             1,
-			scanNewUniversalEventsTimes: 1,
-			txCommitTimes:               1,
-			txDiscardTimes:              1,
-			newLatestBlock:              102,
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			l1LatestBlock:                101,
+			expectedStartingBlock:        1,
+			name:                         "scan events one time with stored contracts and updateStateWithTransfer",
+			blockNumberTimes:             2,
+			scanEventsTimes:              1,
+			scanNewUniversalEventsTimes:  1,
+			txCommitTimes:                1,
+			txDiscardTimes:               1,
+			newLatestBlock:               102,
 			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
 			expectedContracts:            []string{"0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			discoveredContracts:          getERC721UniversalContracts(),
@@ -81,18 +77,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				BlocksRange:   100,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:               101,
-			expectedStartingBlock:       1,
-			name:                        "scan events one time with stored contracts and updateStateWithTransfer",
-			blockNumberTimes:            2,
-			scanEventsTimes:             1,
-			scanNewUniversalEventsTimes: 1,
-			txCommitTimes:               1,
-			txDiscardTimes:              1,
-			newLatestBlock:              102,
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			l1LatestBlock:                101,
+			expectedStartingBlock:        1,
+			name:                         "scan events one time with stored contracts and updateStateWithTransfer",
+			blockNumberTimes:             2,
+			scanEventsTimes:              1,
+			scanNewUniversalEventsTimes:  1,
+			txCommitTimes:                1,
+			txDiscardTimes:               1,
+			newLatestBlock:               102,
 			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
 			expectedContracts:            []string{"0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 			discoveredContracts:          getERC721UniversalContracts(),
@@ -131,8 +124,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.scannedEvents, big.NewInt(int64(tt.l1LatestBlock)), nil).
 				Times(tt.scanEventsTimes)
 
-			storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
-				Return(tt.storedContracts, nil).
+			tx2.EXPECT().GetAllERC721UniversalContracts().
+				Return(tt.expectedContracts).
 				Times(1)
 
 			for i, contract := range tt.expectedContracts {
@@ -204,7 +197,6 @@ func TestRunScanOk(t *testing.T) {
 		txDiscardTimes              int
 		expectedStartingBlock       uint64
 		newLatestBlock              string
-		storedContracts             [][]byte
 		expectedContracts           []string
 	}{
 		{
@@ -223,10 +215,7 @@ func TestRunScanOk(t *testing.T) {
 			txCommitTimes:               1,
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
-			expectedContracts: []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
 		},
 		// {
 		// 	c: config.Config{
@@ -313,15 +302,13 @@ func TestRunScanOk(t *testing.T) {
 				Times(tt.scanEventsTimes)
 
 			if tt.c.Contracts == nil || len(tt.c.Contracts) == 0 {
-				storage.EXPECT().GetKeysWithPrefix([]byte("contract_")).
-					Return(tt.storedContracts, nil).
+				tx2.EXPECT().GetAllERC721UniversalContracts().
+					Return(tt.expectedContracts).
 					Times(1)
 			} else {
-				for _, contract := range tt.c.Contracts {
-					storage.EXPECT().Get([]byte("contract_"+contract)).
-						Return([]byte("1"), nil).
-						Times(1)
-				}
+				tx2.EXPECT().GetExistingERC721UniversalContracts(tt.c.Contracts).
+					Return(tt.c.Contracts).
+					Times(1)
 			}
 
 			newLatestBlock, err := strconv.ParseUint(tt.newLatestBlock, 10, 64)

@@ -25,8 +25,8 @@ func New(s storage.Service) Service {
 	}
 }
 
-// TODO I'm unused, remove me and move my tests to state
 func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
+	// TODO remove me and move my tests to state
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
 	for i := 0; i < len(universalContracts); i++ {
@@ -44,6 +44,7 @@ func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC72
 }
 
 func (s *Service) GetAllERC721UniversalContracts() ([]string, error) {
+	// TODO remove me and move my tests to state
 	var contracts []string
 	keys, err := s.storageService.GetKeysWithPrefix([]byte(contractPrefix))
 	if err != nil {
@@ -67,8 +68,8 @@ func (s *Service) get(key string) ([]byte, error) {
 	return value, nil
 }
 
-// TODO move chain-related methods to state
 func (s *Service) GetChainID() (string, error) {
+	// TODO move chain-related methods to state
 	value, err := s.get(chainID)
 	if err != nil {
 		return "", err
