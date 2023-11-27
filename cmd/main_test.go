@@ -158,6 +158,11 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				tx2.EXPECT().StoreERC721UniversalContracts(tt.discoveredContracts).Return(nil).Times(1)
 			}
 
+			tx2.EXPECT().GetLastTaggedBlock(gomock.Any()).Return(int64(0), nil).AnyTimes()
+			client.EXPECT().HeaderByNumber(gomock.Any(), big.NewInt(int64(1))).Return(&types.Header{
+				Time: 3000,
+			}, nil).AnyTimes()
+
 			tx2.EXPECT().SetCurrentOwnershipBlock(tt.newLatestBlock).Return(nil).Times(1)
 			tx2.EXPECT().Commit().Return(nil).Times(tt.txCommitTimes)
 			tx2.EXPECT().Discard().Times(tt.txDiscardTimes)
@@ -327,6 +332,10 @@ func TestRunScanOk(t *testing.T) {
 			tx2.EXPECT().GetCurrentOwnershipBlock().
 				Return(tt.blockNumberDB, nil).
 				Times(1)
+			tx2.EXPECT().GetLastTaggedBlock(gomock.Any()).Return(int64(0), nil).AnyTimes()
+			client.EXPECT().HeaderByNumber(gomock.Any(), big.NewInt(int64(1))).Return(&types.Header{
+				Time: 3000,
+			}, nil).AnyTimes()
 
 			err = scanUniversalChain(ctx, &tt.c, client, scanner, repository.New(storage), mockState)
 			if err != nil {
