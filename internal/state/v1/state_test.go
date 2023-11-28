@@ -219,13 +219,11 @@ func TestCheckout(t *testing.T) {
 
 		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		enumeratedTree.EXPECT().FindBlockWithTag(int64(5)).Return(int64(1), nil)
-
 		enumeratedTotalTree.EXPECT().Checkout(int64(1)).Return(nil)
 		enumeratedTree.EXPECT().Checkout(int64(1)).Return(nil)
 		ownershipTree.EXPECT().Checkout(int64(1)).Return(nil)
 
-		err := tx.Checkout(common.HexToAddress("0x500"), int64(5))
+		err := tx.Checkout(common.HexToAddress("0x500"), int64(1))
 		assert.NilError(t, err)
 	})
 }
