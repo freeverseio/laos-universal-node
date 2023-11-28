@@ -77,11 +77,15 @@ func (t Tx) Discard() {
 	t.tx.Discard()
 }
 
+// Set sets []byte value for []byte key
 func (t Tx) Set(key, value []byte) error {
 	return t.tx.Set(key, value)
 }
 
+// Get returns byte for the key
 func (t Tx) Get(key []byte) ([]byte, error) {
+	// TODO to use t.Discard here we must first give the possibility to have t as read-only (i.e. `NewTransaction(readOnly bool)`)
+	// so as a first thing, `Get` checks if t is read only, and, if it is, `defer t.Discard()`
 	item, err := t.tx.Get(key)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
@@ -90,4 +94,25 @@ func (t Tx) Get(key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return item.ValueCopy(nil)
+}
+
+// Delete deletes a key.
+func (t Tx) Delete(key []byte) error {
+	return t.tx.Delete(key)
+}
+
+// GetKeysWithPrefix looks for all the keys with the specified prefix and returns them. It doesn't return values
+func (t Tx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	var keys [][]byte
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := t.tx.NewIterator(opts)
+	defer iterator.Close()
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		var key []byte
+		key = item.KeyCopy(key)
+		keys = append(keys, key)
+	}
+	return keys
 }

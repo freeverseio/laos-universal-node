@@ -5,13 +5,14 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 const (
@@ -20,15 +21,21 @@ const (
 	headRootKeyPrefix = prefix + "head/"
 	tokensPrefix      = prefix + "tokens/"
 	tagPrefix         = prefix + "tags/"
+	lastTagPrefix     = prefix + "lasttag/"
 	treeDepth         = 160
 )
 
 // Tree is used to store enumerated tokens of each owner
 type Tree interface {
 	Root() common.Hash
-	Transfer(minted bool, eventTransfer scan.EventTransfer) error
+	Transfer(minted bool, eventTransfer *model.ERC721Transfer) error
 	Mint(tokenId *big.Int, owner common.Address) error
 	TokensOf(owner common.Address) ([]big.Int, error)
+	TagRoot(blockNumber int64) error
+	GetLastTaggedBlock() (int64, error)
+	DeleteRootTag(blockNumber int64) error
+	Checkout(blockNumber int64) error
+	FindBlockWithTag(blockNumber int64) (int64, error)
 }
 
 type tree struct {
@@ -76,7 +83,7 @@ func (b *tree) Mint(tokenId *big.Int, owner common.Address) error {
 }
 
 // Transfer adds TokenId to the new owner and removes it from the previous owner
-func (b *tree) Transfer(minted bool, eventTransfer scan.EventTransfer) error {
+func (b *tree) Transfer(minted bool, eventTransfer *model.ERC721Transfer) error {
 	if !minted {
 		return nil
 	}
@@ -171,4 +178,75 @@ func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
 
 func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
 	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
+}
+
+// TagRoot stores a root value for the block so that it can be checked later
+func (b *tree) TagRoot(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	root := b.Root()
+
+	err := b.store.Set([]byte(tagKey), root.Bytes())
+	if err != nil {
+		return err
+	}
+
+	lastTagKey := lastTagPrefix + b.contract.String()
+	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
+}
+
+func (b *tree) GetLastTaggedBlock() (int64, error) {
+	lastTagKey := lastTagPrefix + b.contract.String()
+	buf, err := b.store.Get([]byte(lastTagKey))
+	if err != nil {
+		return 0, err
+	}
+	if len(buf) == 0 {
+		return 0, nil
+	}
+
+	return strconv.ParseInt(string(buf), 10, 64)
+}
+
+// DeleteRootTag deletes root tag
+func (b *tree) DeleteRootTag(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	return b.store.Delete([]byte(tagKey))
+}
+
+// Checkout sets the current root to the one that is tagged for a blockNumber.
+func (b *tree) Checkout(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	buf, err := b.store.Get([]byte(tagKey))
+	if err != nil {
+		return err
+	}
+
+	if len(buf) == 0 {
+		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
+	}
+
+	newRoot := common.BytesToHash(buf)
+	b.mt.SetRoot(newRoot)
+	return setHeadRoot(b.contract, b.store, newRoot)
+}
+
+// FindBlockWithTag returns the first previous blockNumber that has been tagged if the tag for the blockNumber does not
+// exist
+func (b *tree) FindBlockWithTag(blockNumber int64) (int64, error) {
+	for {
+		if blockNumber == 0 {
+			return 0, nil
+		}
+
+		buf, err := b.store.Get([]byte(tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)))
+		if err != nil {
+			return 0, err
+		}
+
+		if len(buf) != 0 {
+			return blockNumber, nil
+		}
+
+		blockNumber--
+	}
 }

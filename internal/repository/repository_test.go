@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
@@ -25,12 +24,12 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 
 		universalContracts := []model.ERC721UniversalContract{
 			{
-				Address: common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
-				BaseURI: "http://baseuri1.com",
+				Address:           common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
+				CollectionAddress: common.HexToAddress("http://baseuri1.com"),
 			},
 			{
-				Address: common.HexToAddress("0x0"),
-				BaseURI: "http://baseuri2.com",
+				Address:           common.HexToAddress("0x0"),
+				CollectionAddress: common.HexToAddress("http://baseuri2.com"),
 			},
 		}
 
@@ -41,7 +40,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 			addressLowerCase := strings.ToLower(contract.Address.String())
 			tx.EXPECT().Set(
 				[]byte("contract_"+addressLowerCase),
-				[]byte(contract.BaseURI),
+				contract.CollectionAddress.Bytes(),
 			).Return(nil)
 		}
 
@@ -63,12 +62,12 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 
 		universalContracts := []model.ERC721UniversalContract{
 			{
-				Address: common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
-				BaseURI: "http://baseuri1.com",
+				Address:           common.HexToAddress("0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"),
+				CollectionAddress: common.HexToAddress("http://baseuri1.com"),
 			},
 			{
-				Address: common.HexToAddress("0x0"),
-				BaseURI: "http://baseuri2.com",
+				Address:           common.HexToAddress("0x0"),
+				CollectionAddress: common.HexToAddress("http://baseuri2.com"),
 			},
 		}
 
@@ -78,7 +77,7 @@ func TestStoreERC721UniversalContracts(t *testing.T) {
 		errExpected := fmt.Errorf("error")
 		tx.EXPECT().Set(
 			[]byte("contract_"+strings.ToLower(universalContracts[0].Address.String())),
-			[]byte(universalContracts[0].BaseURI),
+			universalContracts[0].CollectionAddress.Bytes(),
 		).Return(errExpected)
 
 		tx.EXPECT().Discard().Times(1)
@@ -177,68 +176,6 @@ func TestGetChainID(t *testing.T) {
 		_, err := service.GetChainID()
 		if err == nil {
 			t.Fatalf("got no error, expecting en error %s", errExpected.Error())
-		}
-	})
-}
-
-func TestGetCurrentBlock(t *testing.T) {
-	t.Parallel()
-	t.Run("should execute GetCurrentBlock without error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		mockStorage.EXPECT().Get([]byte("current_block")).Return([]byte("1"), nil)
-
-		currentBlock, err := service.GetCurrentBlock()
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
-		}
-
-		if currentBlock != "1" {
-			t.Fatalf("got currentBlock %s, expecting 1", currentBlock)
-		}
-	})
-
-	t.Run("should execute GetCurrentBlock and handle ErrKeyNotFound error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		mockStorage.EXPECT().Get([]byte("current_block")).Return(nil, badger.ErrKeyNotFound)
-
-		currentBlock, err := service.GetCurrentBlock()
-		// no error expected since we handle ErrKeyNotFound internally
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
-		}
-		// currentBlock should be epmty
-		if currentBlock != "" {
-			t.Fatalf("got currentBlock %s, expecting empty current block", currentBlock)
-		}
-	})
-}
-
-func TestStoreCurrentBlock(t *testing.T) {
-	t.Parallel()
-	t.Run("should execute StoreCurrentBlock without error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-		mockStorage.EXPECT().Set([]byte("current_block"), []byte("2")).Return(nil)
-
-		err := service.SetCurrentBlock("2")
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	})
 }

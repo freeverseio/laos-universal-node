@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
-	scan "github.com/freeverseio/laos-universal-node/internal/scan"
+	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -38,6 +38,64 @@ func NewMockTree(ctrl *gomock.Controller) *MockTree {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTree) EXPECT() *MockTreeMockRecorder {
 	return m.recorder
+}
+
+// Checkout mocks base method.
+func (m *MockTree) Checkout(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checkout", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checkout indicates an expected call of Checkout.
+func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
+}
+
+// DeleteRootTag mocks base method.
+func (m *MockTree) DeleteRootTag(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRootTag", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRootTag indicates an expected call of DeleteRootTag.
+func (mr *MockTreeMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTree)(nil).DeleteRootTag), blockNumber)
+}
+
+// FindBlockWithTag mocks base method.
+func (m *MockTree) FindBlockWithTag(blockNumber int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindBlockWithTag", blockNumber)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindBlockWithTag indicates an expected call of FindBlockWithTag.
+func (mr *MockTreeMockRecorder) FindBlockWithTag(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBlockWithTag", reflect.TypeOf((*MockTree)(nil).FindBlockWithTag), blockNumber)
+}
+
+// GetLastTaggedBlock mocks base method.
+func (m *MockTree) GetLastTaggedBlock() (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastTaggedBlock")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
+func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
 }
 
 // Mint mocks base method.
@@ -68,6 +126,20 @@ func (mr *MockTreeMockRecorder) Root() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Root", reflect.TypeOf((*MockTree)(nil).Root))
 }
 
+// TagRoot mocks base method.
+func (m *MockTree) TagRoot(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TagRoot", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TagRoot indicates an expected call of TagRoot.
+func (mr *MockTreeMockRecorder) TagRoot(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTree)(nil).TagRoot), blockNumber)
+}
+
 // TokensOf mocks base method.
 func (m *MockTree) TokensOf(owner common.Address) ([]big.Int, error) {
 	m.ctrl.T.Helper()
@@ -84,7 +156,7 @@ func (mr *MockTreeMockRecorder) TokensOf(owner any) *gomock.Call {
 }
 
 // Transfer mocks base method.
-func (m *MockTree) Transfer(minted bool, eventTransfer scan.EventTransfer) error {
+func (m *MockTree) Transfer(minted bool, eventTransfer *model.ERC721Transfer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Transfer", minted, eventTransfer)
 	ret0, _ := ret[0].(error)

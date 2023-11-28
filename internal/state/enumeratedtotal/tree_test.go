@@ -201,3 +201,123 @@ func TestTree(t *testing.T) {
 		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
 	})
 }
+
+func TestTag(t *testing.T) {
+	t.Parallel()
+	t.Run(`tag root after mints. checkout at that root returns state before the second mint`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.Mint(big.NewInt(1))
+		assert.NilError(t, err)
+		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+
+		totalSupply, err := tr.TotalSupply()
+		assert.NilError(t, err)
+		assert.Equal(t, totalSupply, int64(1))
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.Mint(big.NewInt(2))
+		assert.NilError(t, err)
+		assert.Equal(t, tr.Root().String(), "0x50e3465f546649f773f1a167ae56adb65b37f4653b6e7002ef8d9862ca4d05a0")
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+
+		totalSupply, err = tr.TotalSupply()
+		assert.NilError(t, err)
+		assert.Equal(t, totalSupply, int64(2))
+
+		err = tr.Checkout(1)
+		assert.NilError(t, err)
+
+		totalSupply, err = tr.TotalSupply()
+		assert.NilError(t, err)
+		assert.Equal(t, totalSupply, int64(1))
+
+		token0, err := tr.TokenByIndex(0)
+		assert.NilError(t, err)
+		assert.Equal(t, token0.Cmp(big.NewInt(1)), 0)
+
+		err = tr.Checkout(2)
+		assert.NilError(t, err)
+
+		totalSupply, err = tr.TotalSupply()
+		assert.NilError(t, err)
+		assert.Equal(t, totalSupply, int64(2))
+
+		token0, err = tr.TokenByIndex(1)
+		assert.NilError(t, err)
+		assert.Equal(t, token0.Cmp(big.NewInt(2)), 0)
+	})
+
+	t.Run(`tag root before transfer. checkout at block which tag does not exist returns error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.Checkout(1)
+		assert.Error(t, err, "no tag found for this block number 1")
+	})
+	t.Run(`Find the first tag that has the same state as current block number`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+
+		blockNumber, err := tr.FindBlockWithTag(4)
+		assert.NilError(t, err)
+		assert.Equal(t, blockNumber, int64(2))
+	})
+
+	t.Run(`Find the first tag that has the same state as current block number. no tags return 0`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		blockNumber, err := tr.FindBlockWithTag(4)
+		assert.NilError(t, err)
+		assert.Equal(t, blockNumber, int64(0))
+	})
+
+	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+
+		err = tr.DeleteRootTag(1)
+		assert.NilError(t, err)
+
+		err = tr.Checkout(1)
+		assert.Error(t, err, "no tag found for this block number 1")
+	})
+}

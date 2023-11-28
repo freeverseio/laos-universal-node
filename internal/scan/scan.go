@@ -59,9 +59,11 @@ type Event interface{}
 
 // EventTransfer is the ERC721 Transfer event
 type EventTransfer struct {
-	From    common.Address
-	To      common.Address
-	TokenId *big.Int
+	From        common.Address
+	To          common.Address
+	TokenId     *big.Int
+	BlockNumber uint64
+	Contract    common.Address
 }
 
 // EventApproval is the ERC721 Approval event
@@ -82,6 +84,7 @@ type EventApprovalForAll struct {
 type EventNewERC721Universal struct {
 	NewContractAddress common.Address
 	BaseURI            string
+	BlockNumber        uint64
 }
 
 func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
@@ -109,10 +112,13 @@ type EventNewCollecion struct {
 
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
-	Slot     *big.Int
-	To       common.Address
-	TokenURI string
-	TokenId  *big.Int
+	Slot        *big.Int
+	To          common.Address
+	TokenURI    string
+	TokenId     *big.Int
+	Contract    common.Address
+	BlockNumber uint64
+	Timestamp   uint64
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
@@ -183,9 +189,16 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 			}
 			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
 
+			collectionAddress, err := newERC721Universal.CollectionAddress()
+			if err != nil {
+				slog.Warn("error parsing collection address for contract", "contract", newERC721Universal.NewContractAddress,
+					"base_uri", newERC721Universal.BaseURI)
+				continue
+			}
 			c := model.ERC721UniversalContract{
-				Address: newERC721Universal.NewContractAddress,
-				BaseURI: newERC721Universal.BaseURI,
+				Address:           newERC721Universal.NewContractAddress,
+				CollectionAddress: collectionAddress,
+				BlockNumber:       newERC721Universal.BlockNumber,
 			}
 			contracts = append(contracts, c)
 
@@ -292,6 +305,16 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					return nil, nil, err
 				}
 
+				blockNum := eventLogs[i].BlockNumber
+				h, err := s.client.HeaderByNumber(ctx, big.NewInt(int64(blockNum)))
+				if err != nil {
+					return nil, nil, err
+				}
+
+				ev.Contract = eventLogs[i].Address
+				ev.BlockNumber = blockNum
+				ev.Timestamp = h.Time
+
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventMintedWithExternalURI, ev)
 
@@ -314,6 +337,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 }
 
 func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {
+	// TODO optionally filter by topics?
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
@@ -333,6 +357,8 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	transfer.From = common.HexToAddress(eL.Topics[1].Hex())
 	transfer.To = common.HexToAddress(eL.Topics[2].Hex())
 	transfer.TokenId = eL.Topics[3].Big()
+	transfer.BlockNumber = eL.BlockNumber
+	transfer.Contract = eL.Address
 
 	return transfer, nil
 }
@@ -374,6 +400,7 @@ func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC72
 	if err != nil {
 		return newERC721Universal, err
 	}
+	newERC721Universal.BlockNumber = eL.BlockNumber
 
 	return newERC721Universal, nil
 }

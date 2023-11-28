@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strconv"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
+	evolutionBlockState "github.com/freeverseio/laos-universal-node/internal/state/block/evolution"
+	ownershipBlockState "github.com/freeverseio/laos-universal-node/internal/state/block/ownership"
+	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/evolution"
+	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/ownership"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
@@ -31,10 +35,14 @@ func NewStateService(storageService storage.Service) state.Service {
 func (s *service) NewTransaction() state.Tx {
 	storageTx := s.storageService.NewTransaction()
 	return &tx{
-		ownershipTrees:       make(map[common.Address]ownership.Tree),
-		enumeratedTrees:      make(map[common.Address]enumerated.Tree),
-		enumeratedTotalTrees: make(map[common.Address]enumeratedtotal.Tree),
-		tx:                   storageTx,
+		ownershipTrees:         make(map[common.Address]ownership.Tree),
+		enumeratedTrees:        make(map[common.Address]enumerated.Tree),
+		enumeratedTotalTrees:   make(map[common.Address]enumeratedtotal.Tree),
+		tx:                     storageTx,
+		OwnershipContractState: ownershipContractState.NewService(storageTx),
+		EvolutionContractState: evolutionContractState.NewService(storageTx),
+		OwnershipBlockState:    ownershipBlockState.NewService(storageTx),
+		EvolutionBlockState:    evolutionBlockState.NewService(storageTx),
 	}
 }
 
@@ -43,6 +51,10 @@ type tx struct {
 	ownershipTrees       map[common.Address]ownership.Tree
 	enumeratedTrees      map[common.Address]enumerated.Tree
 	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
+	state.OwnershipContractState
+	state.EvolutionContractState
+	state.OwnershipBlockState
+	state.EvolutionBlockState
 }
 
 // IsTreeSetForContact returns true if the tree is set
@@ -50,6 +62,8 @@ func (t *tx) IsTreeSetForContract(contract common.Address) bool {
 	_, ok := t.ownershipTrees[contract]
 	return ok
 }
+
+// TODO CreateTreesForContract should be GetTreesForContract
 
 // CreateTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
 func (t *tx) CreateTreesForContract(contract common.Address) (
@@ -84,14 +98,12 @@ func (t *tx) SetTreesForContract(
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
 	enumeratedTotalTree enumeratedtotal.Tree,
-) error {
-	slog.Debug("setting trees for contract %s", "contract", contract.String())
+) {
+	slog.Debug("setting trees for contract", "contract", contract.String())
 
 	t.ownershipTrees[contract] = ownershipTree
 	t.enumeratedTrees[contract] = enumeratedTree
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
-
-	return nil
 }
 
 // OwnerOf returns the owner of the token
@@ -139,7 +151,7 @@ func (t *tx) TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.
 }
 
 // Transfer transfers ownership of the token. From, To, and TokenID are set in event
-func (t *tx) Transfer(contract common.Address, eventTransfer scan.EventTransfer) error {
+func (t *tx) Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error {
 	slog.Debug("Transfer ", "contract",
 		contract.String(),
 		"From", eventTransfer.From.String(),
@@ -271,6 +283,120 @@ func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	return enumeratedTotalTree.TokenByIndex(idx)
 }
 
+// TagRoot tags roots for all 3 merkle trees at the same block
+func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
+	slog.Debug("TagRoot ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.TagRoot(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.TagRoot(blockNumber)
+}
+
+func (t *tx) GetLastTaggedBlock(contract common.Address) (int64, error) {
+	slog.Debug("GetLastTaggedBlock ", "contract", contract.String())
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return 0, fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return enumeratedTree.GetLastTaggedBlock()
+}
+
+func (t *tx) DeleteRootTag(contract common.Address, blockNumber int64) error {
+	slog.Debug("DeleteRootTag ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err := enumeratedTree.DeleteRootTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.DeleteRootTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.DeleteRootTag(blockNumber)
+}
+
+// Checkout sets the current roots to those tagged for the block
+// If no tag for the block exists, it searches for the first block in the past that has the tag.
+func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
+	// TODO this transaction should be committed only if we want to permanently store the new root as the head
+	// (when reorgs happens)
+	// If we just want to read the state at current root we should not commit this transaction
+	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
+	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
+
+	slog.Debug("Checkout ", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	blockNumber, err := enumeratedTree.FindBlockWithTag(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	err = enumeratedTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	err = enumeratedTotalTree.Checkout(blockNumber)
+	if err != nil {
+		return err
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	return ownershipTree.Checkout(blockNumber)
+}
+
 // Discards transaction
 func (t *tx) Discard() {
 	t.tx.Discard()
@@ -279,16 +405,6 @@ func (t *tx) Discard() {
 // Commits transaction
 func (t *tx) Commit() error {
 	return t.tx.Commit()
-}
-
-func (t *tx) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
-	for i := 0; i < len(universalContracts); i++ {
-		err := t.tx.Set([]byte(state.ContractPrefix+universalContracts[i].Address.String()), []byte(universalContracts[i].BaseURI))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (t *tx) Get(key string) ([]byte, error) {

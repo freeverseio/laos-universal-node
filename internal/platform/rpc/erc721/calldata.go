@@ -37,6 +37,7 @@ const (
 	TotalSupply
 	TokenOfOwnerByIndex
 	TokenByIndex
+	SupportsInterface
 )
 
 // universalMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
@@ -46,6 +47,7 @@ var universalMintingMethodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("totalSupply()"))[:ShortAddressLength]):                        TotalSupply,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address,uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                TokenByIndex,
+	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]):            SupportsInterface,
 }
 
 // Method returns if the calldata is a supported remote minting ERC721 method and the method.
@@ -56,6 +58,15 @@ func (b CallData) UniversalMintingMethod() (Erc721method, bool, error) {
 	}
 
 	if method, exists := universalMintingMethodSigs[sig]; exists {
+		// if SupportsInterface
+		if method == SupportsInterface {
+			// check calldata is SupportsInterface(0x780e9d63)
+			if b.GetCallData() == "0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000" {
+				return method, true, nil
+			} else {
+				return 0, false, err
+			}
+		}
 		return method, exists, nil
 	}
 
@@ -111,4 +122,8 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return inputArgs, nil
+}
+
+func (b CallData) GetCallData() string {
+	return hexutil.Encode(b)
 }

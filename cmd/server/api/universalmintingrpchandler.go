@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
@@ -40,6 +41,15 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 		return
 	}
 
+	blockNumber := "latest" // if this by chance does not exist in param use the latest block
+	if len(jsonRPCRequest.Params) == 2 {
+		if err := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); err != nil {
+			http.Error(w, "Error parsing block number", http.StatusBadRequest)
+			return
+		}
+	}
+	slog.Debug("block number", "blockNumber", blockNumber)
+
 	calldata, err := erc721.NewCallData(params.Data)
 	if err != nil {
 		http.Error(w, "Error parsing calldata", http.StatusBadRequest)
@@ -55,20 +65,29 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 	} else {
 		switch method {
 		case erc721.OwnerOf:
-			ownerOf(calldata, params, h.stateService, w)
+			ownerOf(calldata, params, blockNumber, h.stateService, w)
 		case erc721.BalanceOf:
-			balanceOf(calldata, params, h.stateService, w)
+			balanceOf(calldata, params, blockNumber, h.stateService, w)
 		case erc721.TotalSupply:
-			totalSupply(params, h.stateService, w)
+			totalSupply(params, blockNumber, h.stateService, w)
 		case erc721.TokenOfOwnerByIndex:
-			tokenOfOwnerByIndex(calldata, params, h.stateService, w)
+			tokenOfOwnerByIndex(calldata, params, blockNumber, h.stateService, w)
 		case erc721.TokenByIndex:
-			tokenByIndex(calldata, params, h.stateService, w)
+			tokenByIndex(calldata, params, blockNumber, h.stateService, w)
+		case erc721.SupportsInterface:
+			supportsInterface(w)
 		}
 	}
 }
 
-func ownerOf(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
+func supportsInterface(w http.ResponseWriter) {
+	// calldata already checked for SupportsInterface 0x780e9d63
+	// if we are here it means that the calldata is SupportsInterface(0x780e9d63)
+	// so we can return true
+	sendResponse(w, "0x0000000000000000000000000000000000000000000000000000000000000001", nil)
+}
+
+func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
@@ -77,7 +96,7 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, stateService sta
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
@@ -85,10 +104,13 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, stateService sta
 	}
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
-	sendResponse(w, owner.Hex(), err)
+	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
+	// TODO check if there is a better way to do this
+	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
+	sendResponse(w, fullAddressString, err)
 }
 
-func balanceOf(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
+func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
 		slog.Error("Error getting owner", "err", err)
@@ -98,7 +120,7 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, stateService s
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
@@ -106,23 +128,24 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, stateService s
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	sendResponse(w, balance.String(), err)
+	// TODO check if there is a better way to format the balance
+	sendResponse(w, fmt.Sprintf("0x%064x", balance), err)
 }
 
-func totalSupply(params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
+func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	tx, err := createMerkleTrees(tx, common.HexToAddress(params.To))
+	tx, err := loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
 	totalSupply, err := tx.TotalSupply(common.HexToAddress(params.To))
-	sendResponse(w, strconv.FormatInt(totalSupply, 10), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", totalSupply), err)
 }
 
-func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
+func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
@@ -137,17 +160,17 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, stat
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
 	tokenId, err := tx.TokenOfOwnerByIndex(common.HexToAddress(params.To), ownerAddress, int(index.Int64()))
-	sendResponse(w, tokenId.String(), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, stateService state.Service, w http.ResponseWriter) {
+func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
@@ -157,25 +180,38 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, stateServic
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	tx, err = createMerkleTrees(tx, common.HexToAddress(params.To))
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
-	sendResponse(w, tokenId.String(), err)
+	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func createMerkleTrees(tx state.Tx, contactAddress common.Address) (state.Tx, error) {
-	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contactAddress)
+func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
+	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	err = tx.SetTreesForContract(contactAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
-	if err != nil {
-		return nil, err
+	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
+	// if block is not latest we should checkout tree for that tag
+	// it is important that this transaction is not commit which is always the case for this transaction
+	if blockNumber != "latest" {
+		num, err := strconv.ParseInt(strings.Replace(blockNumber, "0x", "", 1), 16, 64)
+		if err != nil {
+			slog.Error("wrong block number", "err", err)
+			return nil, err
+		}
+
+		err = tx.Checkout(contractAddress, num)
+		if err != nil {
+			slog.Error("error occurred checking out merkle tree at block number", "block_number", num,
+				"contract_address", contractAddress, "err", err)
+			return nil, err
+		}
 	}
 	return tx, nil
 }
@@ -211,7 +247,7 @@ func sendErrorResponse(w http.ResponseWriter, err error) {
 			Message string `json:"message"`
 		}{
 			Code:    ErrorCodeInvalidRequest,
-			Message: err.Error(),
+			Message: "execution reverted",
 		},
 	}
 

@@ -91,6 +91,12 @@ func TestMethod(t *testing.T) {
 			err:           nil,
 		},
 		{
+			input:         hexutil.MustDecode("0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"),
+			expected:      erc721.SupportsInterface,
+			remoteMinting: true,
+			err:           nil,
+		},
+		{
 			expected:      0,
 			remoteMinting: false,
 			err:           nil,

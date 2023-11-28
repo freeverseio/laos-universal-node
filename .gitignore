@@ -40,6 +40,8 @@ deployment/environments/local/*
 *.log
 *.vlog
 *.sst
+*.mem
+LOCK
 DISCARD
 KEYREGISTRY
 MANIFEST

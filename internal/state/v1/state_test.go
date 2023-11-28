@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	enumeratedTreeMock "github.com/freeverseio/laos-universal-node/internal/state/enumerated/mock"
 	enumeratedTotalTreeMock "github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal/mock"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
@@ -28,13 +28,13 @@ func TestTransfer(t *testing.T) {
 
 		tx := stateService.NewTransaction()
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
 		}
 
-		err := tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.Error(t, err, "contract 0x0000000000000000000000000000000000000500 does not exist")
 	})
 
@@ -52,10 +52,9 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -63,10 +62,10 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: false, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -84,10 +83,9 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -95,11 +93,11 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: true, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
-		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
+		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 
@@ -117,10 +115,9 @@ func TestTransfer(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
-		eventTransfer := scan.EventTransfer{
+		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.Address{},
 			TokenId: big.NewInt(1),
@@ -128,9 +125,9 @@ func TestTransfer(t *testing.T) {
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x2"), Minted: true, Idx: 0}
 
-		ownershipTree.EXPECT().Transfer(eventTransfer).Return(nil)
+		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
-		enumeratedTree.EXPECT().Transfer(true, eventTransfer).Return(nil)
+		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15), nil)
 		enumeratedTotalTree.EXPECT().TokenByIndex(14).Return(big.NewInt(10), nil)
 		enumeratedTotalTree.EXPECT().Burn(int(0)).Return(nil)
@@ -140,7 +137,7 @@ func TestTransfer(t *testing.T) {
 		tokenData2.Idx = 0
 		ownershipTree.EXPECT().SetTokenData(&tokenData2, big.NewInt(10)).Return(nil)
 
-		err = tx.Transfer(common.HexToAddress("0x500"), eventTransfer)
+		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.NilError(t, err)
 	})
 }
@@ -161,8 +158,7 @@ func TestMinting(t *testing.T) {
 		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
 		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
 
-		err := tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-		assert.NilError(t, err)
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
@@ -173,7 +169,63 @@ func TestMinting(t *testing.T) {
 
 		enumeratedTree.EXPECT().Mint(big.NewInt(1), tokenData.SlotOwner).Return(nil)
 
-		err = tx.Mint(common.HexToAddress("0x500"), big.NewInt(1))
+		err := tx.Mint(common.HexToAddress("0x500"), big.NewInt(1))
+		assert.NilError(t, err)
+	})
+}
+
+func TestTag(t *testing.T) {
+	t.Parallel()
+	t.Run(`test tag`, func(t *testing.T) {
+		t.Parallel()
+		t.Helper()
+		ctrl := gomock.NewController(t)
+
+		memoryService := memory.New()
+		stateService := v1.NewStateService(memoryService)
+
+		tx := stateService.NewTransaction()
+
+		enumeratedTree := enumeratedTreeMock.NewMockTree(ctrl)
+		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
+		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
+
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
+
+		enumeratedTotalTree.EXPECT().TagRoot(int64(1)).Return(nil)
+		enumeratedTree.EXPECT().TagRoot(int64(1)).Return(nil)
+		ownershipTree.EXPECT().TagRoot(int64(1)).Return(nil)
+
+		err := tx.TagRoot(common.HexToAddress("0x500"), int64(1))
+		assert.NilError(t, err)
+	})
+}
+
+func TestCheckout(t *testing.T) {
+	t.Parallel()
+	t.Run(`test checkout`, func(t *testing.T) {
+		t.Parallel()
+		t.Helper()
+		ctrl := gomock.NewController(t)
+
+		memoryService := memory.New()
+		stateService := v1.NewStateService(memoryService)
+
+		tx := stateService.NewTransaction()
+
+		enumeratedTree := enumeratedTreeMock.NewMockTree(ctrl)
+		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
+		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
+
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
+
+		enumeratedTree.EXPECT().FindBlockWithTag(int64(5)).Return(int64(1), nil)
+
+		enumeratedTotalTree.EXPECT().Checkout(int64(1)).Return(nil)
+		enumeratedTree.EXPECT().Checkout(int64(1)).Return(nil)
+		ownershipTree.EXPECT().Checkout(int64(1)).Return(nil)
+
+		err := tx.Checkout(common.HexToAddress("0x500"), int64(5))
 		assert.NilError(t, err)
 	})
 }

@@ -11,7 +11,7 @@ import (
 const (
 	contractPrefix  = "contract_"
 	chainID         = "chain_id"
-	currentBlock    = "current_block"
+	currentBlock    = "ownership_current_block"
 	evoCurrentBlock = "evo_current_block"
 )
 
@@ -26,11 +26,12 @@ func New(s storage.Service) Service {
 }
 
 func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
+	// TODO remove me and move my tests to state
 	tx := s.storageService.NewTransaction()
 	defer tx.Discard()
 	for i := 0; i < len(universalContracts); i++ {
 		addressLowerCase := strings.ToLower(universalContracts[i].Address.String())
-		err := tx.Set([]byte(contractPrefix+addressLowerCase), []byte(universalContracts[i].BaseURI))
+		err := tx.Set([]byte(contractPrefix+addressLowerCase), universalContracts[i].CollectionAddress.Bytes())
 		if err != nil {
 			return err
 		}
@@ -43,6 +44,7 @@ func (s *Service) StoreERC721UniversalContracts(universalContracts []model.ERC72
 }
 
 func (s *Service) GetAllERC721UniversalContracts() ([]string, error) {
+	// TODO remove me and move my tests to state
 	var contracts []string
 	keys, err := s.storageService.GetKeysWithPrefix([]byte(contractPrefix))
 	if err != nil {
@@ -67,6 +69,7 @@ func (s *Service) get(key string) ([]byte, error) {
 }
 
 func (s *Service) GetChainID() (string, error) {
+	// TODO move chain-related methods to state
 	value, err := s.get(chainID)
 	if err != nil {
 		return "", err
@@ -78,31 +81,8 @@ func (s *Service) SetChainID(chainIDValue string) error {
 	return s.storageService.Set([]byte(chainID), []byte(chainIDValue))
 }
 
-func (s *Service) GetCurrentBlock() (string, error) {
-	value, err := s.get(currentBlock)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
-}
-
-func (s *Service) GetEvoChainCurrentBlock() (string, error) {
-	value, err := s.get(evoCurrentBlock)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
-}
-
-func (s *Service) SetCurrentBlock(value string) error {
-	return s.storageService.Set([]byte(currentBlock), []byte(value))
-}
-
-func (s *Service) SetEvoChainCurrentBlock(value string) error {
-	return s.storageService.Set([]byte(evoCurrentBlock), []byte(value))
-}
-
 func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {
+	// TODO remove me and move my tests to state
 	value, err := s.get(contractPrefix + contract)
 	if err != nil {
 		return false, err
