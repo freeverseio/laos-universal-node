@@ -7,7 +7,7 @@ networks:
     blocksMargin: 0
     blocksRange: 2
     evoRpc: https://caladan.gorengine.com/own
-    evoStartingBlock: "2791870"
+    evoStartingBlock: "279187"
     evoBlocksMargin: 0
     evoBlocksRange: 2
   - name: polygon-mainnet
