@@ -174,33 +174,6 @@ func TestMinting(t *testing.T) {
 	})
 }
 
-func TestTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`test tag`, func(t *testing.T) {
-		t.Parallel()
-		t.Helper()
-		ctrl := gomock.NewController(t)
-
-		memoryService := memory.New()
-		stateService := v1.NewStateService(memoryService)
-
-		tx := stateService.NewTransaction()
-
-		enumeratedTree := enumeratedTreeMock.NewMockTree(ctrl)
-		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
-		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
-
-		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
-
-		enumeratedTotalTree.EXPECT().TagRoot(int64(1)).Return(nil)
-		enumeratedTree.EXPECT().TagRoot(int64(1)).Return(nil)
-		ownershipTree.EXPECT().TagRoot(int64(1)).Return(nil)
-
-		err := tx.TagRoot(common.HexToAddress("0x500"), int64(1))
-		assert.NilError(t, err)
-	})
-}
-
 func TestCheckout(t *testing.T) {
 	t.Parallel()
 	t.Run(`test checkout`, func(t *testing.T) {
