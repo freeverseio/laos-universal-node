@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -662,7 +663,7 @@ func getModelTransferEvents(ctx context.Context, client scan.EthClient, scanEven
 			if err != nil {
 				return nil, fmt.Errorf("error retrieving timestamp for block number %d: %w", scanEvent.BlockNumber, err)
 			}
-			contractString := scanEvent.Contract.String()
+			contractString := strings.ToLower(scanEvent.Contract.String())
 			modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
 				From:        scanEvent.From,
 				To:          scanEvent.To,
