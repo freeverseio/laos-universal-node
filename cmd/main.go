@@ -40,7 +40,7 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
-	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.DEBUG).WithMemTableSize(220 << 20))
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
@@ -477,9 +477,10 @@ func tagRootsUntilBlock(tx state.Tx, contractsAddress []string, blockNumber uint
 			if err := tx.TagRoot(common.HexToAddress(contractsAddress[i]), block); err != nil {
 				return err
 			}
-
-			if err := tx.DeleteRootTag(common.HexToAddress(contractsAddress[i]), block-historyLength); err != nil {
-				return err
+			if (block - historyLength) > 0 {
+				if err := tx.DeleteRootTag(common.HexToAddress(contractsAddress[i]), block-historyLength); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -596,9 +597,10 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
 			return err
 		}
-
-		if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
-			return err
+		if (block - historyLength) > 0 {
+			if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+				return err
+			}
 		}
 	}
 
