@@ -49,6 +49,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		timeStampTransferEvents      uint64
 		blocknumberMintedEvents      uint64
 		timeStampMintedEvents        uint64
+		timeStampLastOwnershipBlock  uint64
+		timeStampLastEvoBlock        uint64
 		expectedTxMintCalls          int
 	}{
 		{
@@ -74,6 +76,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			blockNumberTransferEvents:    1,
 			timeStampTransferEvents:      1000,
 			blocknumberMintedEvents:      1,
+			timeStampLastOwnershipBlock:  3000,
+			timeStampLastEvoBlock:        3000,
 			timeStampMintedEvents:        0,
 		},
 		{
@@ -100,6 +104,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampTransferEvents:      1000,
 			blocknumberMintedEvents:      101,
 			timeStampMintedEvents:        2000,
+			timeStampLastOwnershipBlock:  3000,
+			timeStampLastEvoBlock:        3000,
 			expectedTxMintCalls:          2,
 		},
 	}
@@ -117,6 +123,11 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
+
+			tx2.EXPECT().GetCurrentEvoBlockTimestamp().Return(tt.timeStampLastEvoBlock, nil).Times(1)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).Return(&types.Header{
+				Time: tt.timeStampLastOwnershipBlock,
+			}, nil).Times(1)
 
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.blockNumberTransferEvents))).Return(&types.Header{
 				Time: tt.timeStampTransferEvents,
@@ -204,6 +215,8 @@ func TestRunScanOk(t *testing.T) {
 		expectedStartingBlock       uint64
 		newLatestBlock              string
 		expectedContracts           []string
+		timeStampLastOwnershipBlock uint64
+		timeStampLastEvoBlock       uint64
 	}{
 		{
 			c: config.Config{
@@ -222,6 +235,8 @@ func TestRunScanOk(t *testing.T) {
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
 			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			timeStampLastOwnershipBlock: 3000,
+			timeStampLastEvoBlock:       3000,
 		},
 		// {
 		// 	c: config.Config{
@@ -242,6 +257,8 @@ func TestRunScanOk(t *testing.T) {
 		// 	txDiscardTimes:              0,
 		// 	newLatestBlock:              "102",
 		// 	expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+		//  timeStampLastOwnershipBlock:  3000,
+		//	timeStampLastEvoBlock:        3000,
 		// },
 		// {
 		// 	c: config.Config{
@@ -262,6 +279,8 @@ func TestRunScanOk(t *testing.T) {
 		// 		[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 		// 	},
 		// 	expectedContracts: []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+		//  timeStampLastOwnershipBlock:  3000,
+		//	timeStampLastEvoBlock:        3000,
 		// },
 		// {
 		// 	c: config.Config{
@@ -282,6 +301,8 @@ func TestRunScanOk(t *testing.T) {
 		// 	txDiscardTimes:              0,
 		// 	newLatestBlock:              "102",
 		// 	expectedContracts:           []string{"0x0", "0x1"},
+		//  timeStampLastOwnershipBlock:  3000,
+		//	timeStampLastEvoBlock:        3000,
 		// },
 	}
 	for _, tt := range tests {
@@ -299,6 +320,10 @@ func TestRunScanOk(t *testing.T) {
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 
+			tx2.EXPECT().GetCurrentEvoBlockTimestamp().Return(tt.timeStampLastEvoBlock, nil).Times(1)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).Return(&types.Header{
+				Time: tt.timeStampLastOwnershipBlock,
+			}, nil).Times(1)
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
 				Return(nil, nil).
 				Times(tt.scanNewUniversalEventsTimes)
@@ -707,6 +732,8 @@ func TestScanEvoChainOnce(t *testing.T) {
 						},
 					).Times(1)
 					if tt.errorSaveBlockNumber == nil {
+						client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedNewLatestBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
+						tx2.EXPECT().SetCurrentEvoBlockTimestamp(uint64(1000)).Return(nil).Times(1)
 						tx2.EXPECT().Commit().Return(nil).Times(1)
 					}
 				}
@@ -798,8 +825,9 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 
 			storage2.EXPECT().NewTransaction().Return(tx).Times(2)
 			tx.EXPECT().Discard().Return()
-
 			tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedNewLatestBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
+			tx.EXPECT().SetCurrentEvoBlockTimestamp(uint64(1000)).Return(nil).Times(1)
 			tx.EXPECT().Commit().Return(nil).Do(
 				func() {
 					cancel() // we cancel the loop since we only want one iteration

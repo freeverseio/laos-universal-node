@@ -77,4 +77,6 @@ type OwnershipBlockState interface {
 type EvolutionBlockState interface {
 	SetCurrentEvoBlock(number uint64) error
 	GetCurrentEvoBlock() (uint64, error)
+	SetCurrentEvoBlockTimestamp(number uint64) error
+	GetCurrentEvoBlockTimestamp() (uint64, error)
 }
