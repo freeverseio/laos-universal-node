@@ -197,7 +197,7 @@ func setupMocks(t *testing.T, mockSetup func(storage *mockTx.MockService, tx *mo
 func setupMerkeTreeMocks(t *testing.T, tx *mockTx.MockTx) {
 	t.Helper()
 	tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, nil).Times(1)
-	tx.EXPECT().SetTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil, nil, nil).Return(nil).Times(1)
+	tx.EXPECT().SetTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), nil, nil, nil).Times(1)
 }
 
 func setUpTransactionMocks(t *testing.T, storage *mockTx.MockService, tx *mockTx.MockTx) {

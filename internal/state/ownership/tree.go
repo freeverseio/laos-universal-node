@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 )
 
 const ones160bits = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
@@ -23,6 +23,7 @@ const (
 	headRootKeyPrefix = prefix + "head/"
 	tokenDataPrefix   = prefix + "data/"
 	tagPrefix         = prefix + "tags/"
+	lastTagPrefix     = prefix + "lasttag/"
 	treeDepth         = 256
 )
 
@@ -36,12 +37,14 @@ type TokenData struct {
 // Tree defines interface for ownership tree
 type Tree interface {
 	Root() common.Hash
-	Transfer(eventTransfer scan.EventTransfer) error
+	Transfer(eventTransfer *model.ERC721Transfer) error
 	Mint(tokenId *big.Int, idx int) error
 	TokenData(tokenId *big.Int) (*TokenData, error)
 	SetTokenData(tokenData *TokenData, tokenId *big.Int) error
 	OwnerOf(tokenId *big.Int) (common.Address, error)
 	TagRoot(blockNumber int64) error
+	GetLastTaggedBlock() (int64, error)
+	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 	FindBlockWithTag(blockNumber int64) (int64, error)
 }
@@ -53,6 +56,8 @@ type tree struct {
 	store    storage.Tx
 	tx       bool
 }
+
+// TODO NewTree should be GetTree (same for enumerated and enumeratedtotal packages)
 
 // NewTree creates a new merkleTree with a custom storage
 func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
@@ -77,7 +82,7 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 }
 
 // Transfer updates the SlotOwner of the token
-func (b *tree) Transfer(eventTransfer scan.EventTransfer) error {
+func (b *tree) Transfer(eventTransfer *model.ERC721Transfer) error {
 	tokenData, err := b.TokenData(eventTransfer.TokenId)
 	if err != nil {
 		return err
@@ -189,7 +194,32 @@ func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) er
 func (b *tree) TagRoot(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
 	root := b.Root()
-	return b.store.Set([]byte(tagKey), root.Bytes())
+	err := b.store.Set([]byte(tagKey), root.Bytes())
+	if err != nil {
+		return err
+	}
+
+	lastTagKey := lastTagPrefix + b.contract.String()
+	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
+}
+
+func (b *tree) GetLastTaggedBlock() (int64, error) {
+	lastTagKey := lastTagPrefix + b.contract.String()
+	buf, err := b.store.Get([]byte(lastTagKey))
+	if err != nil {
+		return 0, err
+	}
+	if len(buf) == 0 {
+		return 0, nil
+	}
+
+	return strconv.ParseInt(string(buf), 10, 64)
+}
+
+// DeleteRootTag deletes root tag
+func (b *tree) DeleteRootTag(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	return b.store.Delete([]byte(tagKey))
 }
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.

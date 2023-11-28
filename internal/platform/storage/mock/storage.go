@@ -52,6 +52,20 @@ func (mr *MockTxMockRecorder) Commit() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockTx)(nil).Commit))
 }
 
+// Delete mocks base method.
+func (m *MockTx) Delete(key []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockTxMockRecorder) Delete(key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockTx)(nil).Delete), key)
+}
+
 // Discard mocks base method.
 func (m *MockTx) Discard() {
 	m.ctrl.T.Helper()
@@ -77,6 +91,20 @@ func (m *MockTx) Get(key []byte) ([]byte, error) {
 func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTx)(nil).Get), key)
+}
+
+// GetKeysWithPrefix mocks base method.
+func (m *MockTx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
+	ret0, _ := ret[0].([][]byte)
+	return ret0
+}
+
+// GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
+func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), prefix)
 }
 
 // Set mocks base method.

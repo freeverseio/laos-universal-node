@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
 	"gotest.tools/assert"
 )
@@ -141,7 +141,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 
 		tokenId := big.NewInt(1)
-		err = tr.Transfer(scan.EventTransfer{
+		err = tr.Transfer(&model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: tokenId,
@@ -196,7 +196,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, owner.Cmp(common.HexToAddress("0x1")), 0)
 
-		err = tr.Transfer(scan.EventTransfer{
+		err = tr.Transfer(&model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: tokenId,
@@ -241,7 +241,7 @@ func TestTag(t *testing.T) {
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
-		err = tr.Transfer(scan.EventTransfer{
+		err = tr.Transfer(&model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: tokenId,
@@ -321,5 +321,26 @@ func TestTag(t *testing.T) {
 		blockNumber, err := tr.FindBlockWithTag(4)
 		assert.NilError(t, err)
 		assert.Equal(t, blockNumber, int64(0))
+	})
+
+	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+
+		err = tr.DeleteRootTag(1)
+		assert.NilError(t, err)
+
+		err = tr.Checkout(1)
+		assert.Error(t, err, "no tag found for this block number 1")
 	})
 }

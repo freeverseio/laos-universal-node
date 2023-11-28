@@ -84,6 +84,42 @@ func TestStorageGetKeysWithPrefix(t *testing.T) {
 	}
 }
 
+func TestSetGetDeleteOnTransaction(t *testing.T) {
+	t.Parallel()
+	t.Helper()
+
+	service := badgerStorage.NewService(db)
+	t.Helper()
+	tx := service.NewTransaction()
+	defer tx.Discard()
+
+	err := tx.Set([]byte("key"), []byte("value"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf, err := tx.Get([]byte("key"))
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+	if !bytes.Equal(buf, []byte("value")) {
+		t.Fatalf("got %v, expected %v", string(buf), "value")
+	}
+
+	err = tx.Delete([]byte("key"))
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+
+	buf, err = tx.Get([]byte("key"))
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+	if !bytes.Equal(buf, []byte("")) {
+		t.Fatalf("got %v, expected %v", string(buf), "value")
+	}
+}
+
 func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 	t.Parallel()
 

@@ -22,6 +22,7 @@ const (
 	tokensPrefix         = prefix + "tokens/"
 	tagPrefix            = prefix + "tags/"
 	totalSupplyTagPrefix = prefix + "tags/totalsupply"
+	lastTagPrefix        = prefix + "lasttag/"
 	treeDepth            = 64
 )
 
@@ -33,6 +34,8 @@ type Tree interface {
 	TokenByIndex(idx int) (*big.Int, error)
 	TotalSupply() (int64, error)
 	TagRoot(blockNumber int64) error
+	GetLastTaggedBlock() (int64, error)
+	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 	FindBlockWithTag(blockNumber int64) (int64, error)
 }
@@ -225,7 +228,38 @@ func (b *tree) TagRoot(blockNumber int64) error {
 		return err
 	}
 	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	return b.store.Set([]byte(tagTotalSupplyKey), []byte(strconv.FormatInt(totalSupply, 10)))
+	err = b.store.Set([]byte(tagTotalSupplyKey), []byte(strconv.FormatInt(totalSupply, 10)))
+	if err != nil {
+		return err
+	}
+
+	lastTagKey := lastTagPrefix + b.contract.String()
+	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
+}
+
+func (b *tree) GetLastTaggedBlock() (int64, error) {
+	lastTagKey := lastTagPrefix + b.contract.String()
+	buf, err := b.store.Get([]byte(lastTagKey))
+	if err != nil {
+		return 0, err
+	}
+	if len(buf) == 0 {
+		return 0, nil
+	}
+
+	return strconv.ParseInt(string(buf), 10, 64)
+}
+
+// DeleteRootTag deletes root tag
+func (b *tree) DeleteRootTag(blockNumber int64) error {
+	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	err := b.store.Delete([]byte(tagKey))
+	if err != nil {
+		return err
+	}
+
+	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	return b.store.Delete([]byte(tagTotalSupplyKey))
 }
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.

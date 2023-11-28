@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"gotest.tools/assert"
 )
@@ -44,7 +44,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 
 		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
-		err = tr.Transfer(false, scan.EventTransfer{
+		err = tr.Transfer(false, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -70,7 +70,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 1)
 
-		err = tr.Transfer(false, scan.EventTransfer{
+		err = tr.Transfer(false, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(2),
@@ -155,7 +155,7 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 0)
 
-		err = tr.Transfer(true, scan.EventTransfer{
+		err = tr.Transfer(true, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -200,7 +200,7 @@ func TestTag(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens2), 0)
 
-		err = tr.Transfer(true, scan.EventTransfer{
+		err = tr.Transfer(true, &model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
 			To:      common.HexToAddress("0x2"),
 			TokenId: big.NewInt(1),
@@ -285,5 +285,26 @@ func TestTag(t *testing.T) {
 		blockNumber, err := tr.FindBlockWithTag(4)
 		assert.NilError(t, err)
 		assert.Equal(t, blockNumber, int64(0))
+	})
+
+	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+
+		err = tr.DeleteRootTag(1)
+		assert.NilError(t, err)
+
+		err = tr.Checkout(1)
+		assert.Error(t, err, "no tag found for this block number 1")
 	})
 }

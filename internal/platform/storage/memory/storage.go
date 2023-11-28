@@ -49,6 +49,12 @@ func (b *service) Set(key, value []byte) error {
 	return nil
 }
 
+// Delete deletes a key
+func (b *service) Delete(key []byte) error {
+	delete(b.committed.data, string(key))
+	return nil
+}
+
 // Close closes the storage service.
 func (b service) Close() {}
 
@@ -71,6 +77,18 @@ func (b tx) Get(key []byte) ([]byte, error) {
 	}
 
 	return value, nil
+}
+
+// GetKeysWithPrefix added for interface compatibility
+func (b tx) GetKeysWithPrefix(prefix []byte) [][]byte {
+	// TODO implement this if we have to use it for testing purposes
+	return nil
+}
+
+// Delete deletes a key.
+func (b tx) Delete(key []byte) error {
+	delete(b.temp.data, string(key))
+	return nil
 }
 
 // Discard implemented just to make it compatible with storage interface

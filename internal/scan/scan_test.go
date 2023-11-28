@@ -45,8 +45,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -68,8 +68,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -92,8 +92,8 @@ func TestParseEvents(t *testing.T) {
 			address:   common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
 			contracts: []model.ERC721UniversalContract{
 				{
-					Address: common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
-					BaseURI: "johndoe/collection",
+					Address:           common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D"),
+					CollectionAddress: common.HexToAddress("johndoe/collection"),
 				},
 			},
 			eventLogs: []types.Log{
@@ -461,8 +461,8 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 	fromBlock := big.NewInt(0)
 	toBlock := big.NewInt(100)
 	contract := model.ERC721UniversalContract{
-		Address: address,
-		BaseURI: "evochain1/collectionId/",
+		Address:           address,
+		CollectionAddress: common.HexToAddress("evochain1/collectionId/"),
 	}
 
 	tests := []struct {
@@ -516,7 +516,7 @@ func TestScanNewUniversalEvents(t *testing.T) {
 					Topics: []common.Hash{
 						common.HexToHash(newERC721UniversalEventHash),
 					},
-					Data: common.Hex2Bytes("00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001765766f636861696e312f636f6c6c656374696f6e49642f000000000000000000"),
+					Data: common.Hex2Bytes("000000000000000000000000c3dd09d5387fa0ab798e0adc152d15b8d1a299df0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008c756c6f633a2f2f476c6f62616c436f6e73656e7375732867656e292f50617261636861696e2832393030292f4163636f756e744b6579323028307830303030303030303030303030303030303030303030303031306663346161303133356166376263356434386665373564613332646262353262643936333162292f47656e6572616c4b657928363636290000000000000000000000000000000000000000"),
 				},
 			},
 			expectedContractsParsed: 1,

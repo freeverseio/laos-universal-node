@@ -196,11 +196,7 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 		return nil, err
 	}
 
-	err = tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
-	if err != nil {
-		return nil, err
-	}
-
+	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
 	// if block is not latest we should checkout tree for that tag
 	// it is important that this transaction is not commit which is always the case for this transaction
 	if blockNumber != "latest" {

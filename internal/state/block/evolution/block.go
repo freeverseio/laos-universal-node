@@ -21,10 +21,12 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) GetCurrentEvoBlock() (uint64, error) {
-	defer s.tx.Discard()
 	value, err := s.tx.Get([]byte(currentBlock))
 	if err != nil {
 		return 0, err
+	}
+	if value == nil {
+		value = []byte("0")
 	}
 	return strconv.ParseUint(string(value), 10, 64)
 }
