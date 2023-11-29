@@ -387,13 +387,13 @@ func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Servi
 		return 0, err
 	}
 
-	headers, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
+	timestamp, err := getTimestampForBlockNumber(ctx, client, nextStartingBlock)
 	if err != nil {
 		slog.Error("error retrieving block headers", "err", err.Error())
 		return 0, err
 	}
 
-	if err = tx.SetCurrentEvoBlockTimestamp(headers.Time); err != nil {
+	if err = tx.SetCurrentEvoBlockTimestamp(timestamp); err != nil {
 		slog.Error("error storing block headers", "err", err.Error())
 		return 0, err
 	}
