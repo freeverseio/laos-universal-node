@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -40,7 +41,7 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
-	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR).WithMemTableSize(220 << 20))
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
@@ -252,7 +253,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 
 				// retrieving minted events and update the state accordingly
-				if err = readEventsAndUpdateState(ctx, client, contractsAddress, modelTransferEvents, tx); err != nil {
+				if err = readEventsAndUpdateState(ctx, client, contractsAddress, modelTransferEvents, tx, lastBlock); err != nil {
 					slog.Error("error occurred", "err", err.Error())
 					break
 				}
@@ -439,7 +440,7 @@ func setLogger(debug bool) {
 	slog.SetDefault(logger)
 }
 
-func readEventsAndUpdateState(ctx context.Context, client scan.EthClient, contractsAddress []string, modelTransferEvents map[string][]model.ERC721Transfer, tx state.Tx) error {
+func readEventsAndUpdateState(ctx context.Context, client scan.EthClient, contractsAddress []string, modelTransferEvents map[string][]model.ERC721Transfer, tx state.Tx, lastBlock uint64) error {
 	for i := range contractsAddress {
 		var mintedEvents []model.MintedWithExternalURI
 		collectionAddress, err := tx.GetCollectionAddress(contractsAddress[i]) // get collection address from ownership address
@@ -455,7 +456,7 @@ func readEventsAndUpdateState(ctx context.Context, client scan.EthClient, contra
 		}
 
 		var evoBlock uint64
-		evoBlock, err = updateState(ctx, client, mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx)
+		evoBlock, err = updateState(ctx, client, mintedEvents, modelTransferEvents[contractsAddress[i]], contractsAddress[i], tx, lastBlock)
 		if err != nil {
 			return fmt.Errorf("error updating state: %w", err)
 		}
@@ -477,9 +478,10 @@ func tagRootsUntilBlock(tx state.Tx, contractsAddress []string, blockNumber uint
 			if err := tx.TagRoot(common.HexToAddress(contractsAddress[i]), block); err != nil {
 				return err
 			}
-
-			if err := tx.DeleteRootTag(common.HexToAddress(contractsAddress[i]), block-historyLength); err != nil {
-				return err
+			if (block - historyLength) > 0 {
+				if err := tx.DeleteRootTag(common.HexToAddress(contractsAddress[i]), block-historyLength); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -536,7 +538,7 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
 	return nil
 }
 
-func updateState(ctx context.Context, client scan.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx) (uint64, error) {
+func updateState(ctx context.Context, client scan.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlock uint64) (uint64, error) {
 	ownershipContractEvoBlock, err := tx.GetCurrentEvoBlockForOwnershipContract(contract)
 	if err != nil {
 		return 0, err
@@ -558,7 +560,7 @@ func updateState(ctx context.Context, client scan.EthClient, mintedEvents []mode
 			transferIndex++
 		// all transfer events have been processed => process remaining minted events
 		case transferIndex >= len(modelTransferEvents):
-			block, err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+			block, err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock, lastBlock)
 			if err != nil {
 				return 0, err
 			}
@@ -567,7 +569,7 @@ func updateState(ctx context.Context, client scan.EthClient, mintedEvents []mode
 		default:
 			// if minted event's timestamp is behind transfer event's timestamp => process minted event
 			if mintedEvents[mintedIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
-				block, err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock)
+				block, err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[mintedIndex], ownershipContractEvoBlock, lastBlock)
 				if err != nil {
 					return 0, err
 				}
@@ -596,9 +598,10 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 		if err := tx.TagRoot(common.HexToAddress(contract), block); err != nil {
 			return err
 		}
-
-		if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
-			return err
+		if (block - historyLength) > 0 {
+			if err := tx.DeleteRootTag(common.HexToAddress(contract), block-historyLength); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -610,7 +613,7 @@ func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *m
 	return nil
 }
 
-func updateStateWithMint(ctx context.Context, client scan.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock uint64) (uint64, error) {
+func updateStateWithMint(ctx context.Context, client scan.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI, ownershipContractEvoBlock, lastBlock uint64) (uint64, error) {
 	updatedBlock := ownershipContractEvoBlock
 	// TODO check if this is correct. Could it be that on a early termination (ctrl + c), some events on ownershipContractEvoBlock are not stored in the state?
 	// if so, on the next iteration, those events won't be stored in the state because of the ">" comparison
@@ -628,7 +631,7 @@ func updateStateWithMint(ctx context.Context, client scan.EthClient, contract st
 		if err != nil {
 			return 0, err
 		}
-		if timestamp > mintedEvent.Timestamp {
+		if uint64(blockToTag) > lastBlock || timestamp > mintedEvent.Timestamp {
 			break
 		}
 		if err := tx.TagRoot(common.HexToAddress(contract), blockToTag); err != nil {
@@ -660,7 +663,7 @@ func getModelTransferEvents(ctx context.Context, client scan.EthClient, scanEven
 			if err != nil {
 				return nil, fmt.Errorf("error retrieving timestamp for block number %d: %w", scanEvent.BlockNumber, err)
 			}
-			contractString := scanEvent.Contract.String()
+			contractString := strings.ToLower(scanEvent.Contract.String())
 			modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
 				From:        scanEvent.From,
 				To:          scanEvent.To,

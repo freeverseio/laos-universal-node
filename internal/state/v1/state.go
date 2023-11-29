@@ -369,12 +369,7 @@ func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	blockNumber, err := enumeratedTree.FindBlockWithTag(blockNumber)
-	if err != nil {
-		return err
-	}
-
-	err = enumeratedTree.Checkout(blockNumber)
+	err := enumeratedTree.Checkout(blockNumber)
 	if err != nil {
 		return err
 	}
