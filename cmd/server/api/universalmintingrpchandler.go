@@ -38,7 +38,7 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
-		blockNumber(w, r, &jsonRPCRequest, nil, nil, h.stateService)
+		blockNumber(w, h.stateService)
 		return
 	}
 
@@ -197,7 +197,7 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func blockNumber(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, stateService state.Service) {
+func blockNumber(w http.ResponseWriter, stateService state.Service) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	blockNumber, err := tx.GetCurrentOwnershipBlock()
