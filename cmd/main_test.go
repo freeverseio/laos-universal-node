@@ -707,7 +707,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			client, scanner, _ := getMocks(t)
 			state, tx2 := getMocksFromState(t)
 			state.EXPECT().NewTransaction().Return(tx2).Times(tt.txCreatedTimes)
-			tx2.EXPECT().Discard().Times(1)
+			tx2.EXPECT().Discard().Times(tt.txCreatedTimes)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
@@ -826,7 +826,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			tx.EXPECT().StoreMintedWithExternalURIEvents("0x0000000000000000000000000000000000000000", gomock.Any()).Return(nil).Times(1)
 
 			storage2.EXPECT().NewTransaction().Return(tx).Times(2)
-			tx.EXPECT().Discard().Return()
+			tx.EXPECT().Discard().Return().Times(2)
 			tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber)
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedNewLatestBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
 			tx.EXPECT().SetCurrentEvoBlockTimestamp(uint64(1000)).Return(nil).Times(1)

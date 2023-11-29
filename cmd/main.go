@@ -328,7 +328,6 @@ func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Co
 
 func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {
 	tx := stateService.NewTransaction()
-
 	defer tx.Discard()
 	startingBlockDB, err := tx.GetCurrentEvoBlock()
 	if err != nil {
@@ -363,37 +362,46 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			tx = stateService.NewTransaction()
-			err = storeMintedWithExternalURIEventsByContract(tx, events)
+			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, lastScannedBlock, client)
 			if err != nil {
-				slog.Error("error occurred while storing minted events", "err", err.Error())
-				break
-			}
-
-			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
-				slog.Error("error occurred while storing current block", "err", err.Error())
-				break
-			}
-
-			headers, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
-			if err != nil {
-				slog.Error("error retrieving block headers", "err", err.Error())
-				break
-			}
-
-			if err = tx.SetCurrentEvoBlockTimestamp(headers.Time); err != nil {
-				slog.Error("error storing block headers", "err", err.Error())
-				break
-			}
-			if err = tx.Commit(); err != nil {
-				slog.Error("error committing transaction", "err", err.Error())
 				break
 			}
 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Service, events []scan.Event, lastBlock *big.Int, client scan.EthClient) (uint64, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	err := storeMintedWithExternalURIEventsByContract(tx, events)
+	if err != nil {
+		slog.Error("error occurred while storing minted events", "err", err.Error())
+		return 0, err
+	}
+
+	nextStartingBlock := lastBlock.Uint64() + 1
+	if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
+		slog.Error("error occurred while storing current block", "err", err.Error())
+		return 0, err
+	}
+
+	headers, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
+	if err != nil {
+		slog.Error("error retrieving block headers", "err", err.Error())
+		return 0, err
+	}
+
+	if err = tx.SetCurrentEvoBlockTimestamp(headers.Time); err != nil {
+		slog.Error("error storing block headers", "err", err.Error())
+		return 0, err
+	}
+	if err = tx.Commit(); err != nil {
+		slog.Error("error committing transaction", "err", err.Error())
+		return 0, err
+	}
+	return nextStartingBlock, nil
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
