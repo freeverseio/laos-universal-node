@@ -35,6 +35,13 @@ type JSONRPCErrorResponse struct {
 
 func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
 	jsonRPCRequest := h.GetJsonRPCRequest()
+
+	// if call is eth_blockNumber we should return the latest block number
+	if jsonRPCRequest.Method == "eth_blockNumber" {
+		blockNumber(w, r, &jsonRPCRequest, nil, nil, h.stateService)
+		return
+	}
+
 	var params ParamsRPCRequest
 	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
@@ -188,6 +195,19 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
 	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
+}
+
+func blockNumber(w http.ResponseWriter, r *http.Request, req *JSONRPCRequest, proxyRPCHandler, universalMintingHandler http.Handler, stateService state.Service) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	blockNumber, err := tx.GetCurrentOwnershipBlock()
+	if err != nil {
+		slog.Error("Error getting current block number", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	// minus 1 because we want to return the last tagged block
+	sendResponse(w, fmt.Sprintf("0x%x", blockNumber-1), nil)
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
