@@ -75,6 +75,8 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *J
 	switch jsonRequest.Method {
 	case "eth_call":
 		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, stateService)
+	case "eth_blockNumber":
+		universalMintingHandler.ServeHTTP(w, r)
 	default:
 		proxyRPCHandler.ServeHTTP(w, r)
 	}
