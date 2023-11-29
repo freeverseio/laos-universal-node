@@ -685,15 +685,14 @@ func TestScanEvoChainOnce(t *testing.T) {
 				WaitingTime:      1 * time.Second,
 				Contracts:        []string{},
 			},
-			l1LatestBlock:          250,
-			txCreatedTimes:         1,
-			blockNumberTimes:       1,
-			blockNumberDB:          100,
-			expectedFromBlock:      100,
-			expectedToBlock:        150,
-			expectedNewLatestBlock: 151,
-			errorScanEvents:        errors.New("error scanning events"),
-			expectedError:          nil, // in this case we break the loop and don't return an error
+			l1LatestBlock:     250,
+			txCreatedTimes:    1,
+			blockNumberTimes:  1,
+			blockNumberDB:     100,
+			expectedFromBlock: 100,
+			expectedToBlock:   150,
+			errorScanEvents:   errors.New("error scanning events"),
+			expectedError:     nil, // in this case we break the loop and don't return an error
 		},
 	}
 
@@ -734,7 +733,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 						},
 					).Times(1)
 					if tt.errorSaveBlockNumber == nil {
-						client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedNewLatestBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
+						client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
 						tx2.EXPECT().SetCurrentEvoBlockTimestamp(uint64(1000)).Return(nil).Times(1)
 						tx2.EXPECT().Commit().Return(nil).Times(1)
 					}
@@ -828,7 +827,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			storage2.EXPECT().NewTransaction().Return(tx).Times(2)
 			tx.EXPECT().Discard().Return().Times(2)
 			tx.EXPECT().SetCurrentEvoBlock(tt.expectedNewLatestBlock).Return(tt.errorSaveBlockNumber)
-			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedNewLatestBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).Return(&types.Header{Time: 1000}, nil).Times(1)
 			tx.EXPECT().SetCurrentEvoBlockTimestamp(uint64(1000)).Return(nil).Times(1)
 			tx.EXPECT().Commit().Return(nil).Do(
 				func() {
