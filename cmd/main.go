@@ -178,6 +178,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	if err != nil {
 		return err
 	}
+	evoSynced := true
+	lastBlock := startingBlock
 
 	for {
 		select {
@@ -185,30 +187,34 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			slog.Info("context canceled")
 			return nil
 		default:
-			l1LatestBlock, err := getL1LatestBlock(ctx, client)
-			if err != nil {
-				slog.Error("error retrieving the latest block", "err", err.Error())
-				break
-			}
-			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
-			if lastBlock < startingBlock {
-				slog.Debug("last calculated block is behind starting block, waiting...",
-					"last_block", lastBlock, "starting_block", startingBlock)
-				waitBeforeNextScan(ctx, c.WaitingTime)
-				break
+			if evoSynced {
+				var l1LatestBlock uint64
+				l1LatestBlock, err = getL1LatestBlock(ctx, client)
+				if err != nil {
+					slog.Error("error retrieving the latest block", "err", err.Error())
+					break
+				}
+				lastBlock = calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
+				if lastBlock < startingBlock {
+					slog.Debug("last calculated block is behind starting block, waiting...",
+						"last_block", lastBlock, "starting_block", startingBlock)
+					waitBeforeNextScan(ctx, c.WaitingTime)
+					break
+				}
 			}
 
-			ok, err := isEvoSyncedWithOwnership(ctx, stateService, client, lastBlock)
+			evoSynced, err = isEvoSyncedWithOwnership(ctx, stateService, client, lastBlock)
 			if err != nil {
 				slog.Error("error occurred while checking if evolution chain is synced with ownership chain", "err", err.Error())
 				break
 			}
 
-			if !ok {
+			if !evoSynced {
 				slog.Debug("evolution chain is not synced with ownership chain, waiting...")
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
+			evoSynced = true
 
 			// discovering new contracts deployed on the ownership chain
 			// choosing which contracts to scan
