@@ -221,7 +221,7 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			// scanning contracts for events on the ownership chain
 			// getting transfer events from scan events
 			// retrieving minted events and update the state accordingly
-			nextStartingBlock, err := ScanAndDigest(ctx, tx, c, s, startingBlock, lastBlock, client)
+			nextStartingBlock, err := scanAndDigest(ctx, tx, c, s, startingBlock, lastBlock, client)
 			if err != nil {
 				slog.Error("error occurred during scanning and digesting", "err", err.Error())
 				tx.Discard()
@@ -256,7 +256,7 @@ func isEvoSyncedWithOwnership(ctx context.Context, tx state.Tx, client scan.EthC
 	return true, nil
 }
 
-func ScanAndDigest(ctx context.Context, tx state.Tx, c *config.Config, s scan.Scanner, startingBlock, lastBlock uint64, client scan.EthClient) (uint64, error) {
+func scanAndDigest(ctx context.Context, tx state.Tx, c *config.Config, s scan.Scanner, startingBlock, lastBlock uint64, client scan.EthClient) (uint64, error) {
 	shouldDiscover, err := shouldDiscover(tx, c.Contracts)
 	if err != nil {
 		slog.Error("error occurred reading contracts from storage", "err", err.Error())
