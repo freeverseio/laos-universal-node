@@ -387,6 +387,7 @@ func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Servi
 		return 0, err
 	}
 
+	// asking for timestamp of lastBlock as nextStartingBlock does not exist yet
 	timestamp, err := getTimestampForBlockNumber(ctx, client, lastBlock.Uint64())
 	if err != nil {
 		slog.Error("error retrieving block headers", "err", err.Error())
