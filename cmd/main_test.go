@@ -118,7 +118,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			client, scanner, _ := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
-			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
+			mockState.EXPECT().NewTransaction().Return(tx2).Times(3)
+			tx2.EXPECT().Discard().Return().Times(2)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
@@ -315,7 +316,8 @@ func TestRunScanOk(t *testing.T) {
 			client, scanner, _ := getMocks(t)
 			mockState, tx2 := getMocksFromState(t)
 
-			mockState.EXPECT().NewTransaction().Return(tx2).Times(2)
+			mockState.EXPECT().NewTransaction().Return(tx2).Times(3)
+			tx2.EXPECT().Discard().Return().Times(2)
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)

@@ -198,18 +198,14 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				break
 			}
 
-			tx = stateService.NewTransaction()
-
-			ok, err := isEvoSyncedWithOwnership(ctx, tx, client, lastBlock)
+			ok, err := isEvoSyncedWithOwnership(ctx, stateService, client, lastBlock)
 			if err != nil {
 				slog.Error("error occurred while checking if evolution chain is synced with ownership chain", "err", err.Error())
-				tx.Discard()
 				break
 			}
 
 			if !ok {
-				slog.Info("evolution chain is not synced with ownership chain, waiting...")
-				tx.Discard()
+				slog.Debug("evolution chain is not synced with ownership chain, waiting...")
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
@@ -221,14 +217,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			// scanning contracts for events on the ownership chain
 			// getting transfer events from scan events
 			// retrieving minted events and update the state accordingly
-			nextStartingBlock, err := scanAndDigest(ctx, tx, c, s, startingBlock, lastBlock, client)
+			nextStartingBlock, err := scanAndDigest(ctx, stateService, c, s, startingBlock, lastBlock, client)
 			if err != nil {
-				slog.Error("error occurred during scanning and digesting", "err", err.Error())
-				tx.Discard()
-				break
-			}
-			if err = tx.Commit(); err != nil {
-				slog.Error("error occurred while committing transaction", "err", err.Error())
 				break
 			}
 			startingBlock = nextStartingBlock
@@ -236,7 +226,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
-func isEvoSyncedWithOwnership(ctx context.Context, tx state.Tx, client scan.EthClient, lastBlock uint64) (bool, error) {
+func isEvoSyncedWithOwnership(ctx context.Context, stateService state.Service, client scan.EthClient, lastBlock uint64) (bool, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
 	evoCurrentTimestamp, err := tx.GetCurrentEvoBlockTimestamp()
 	if err != nil {
 		return false, err
@@ -256,7 +248,9 @@ func isEvoSyncedWithOwnership(ctx context.Context, tx state.Tx, client scan.EthC
 	return true, nil
 }
 
-func scanAndDigest(ctx context.Context, tx state.Tx, c *config.Config, s scan.Scanner, startingBlock, lastBlock uint64, client scan.EthClient) (uint64, error) {
+func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Config, s scan.Scanner, startingBlock, lastBlock uint64, client scan.EthClient) (uint64, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
 	shouldDiscover, err := shouldDiscover(tx, c.Contracts)
 	if err != nil {
 		slog.Error("error occurred reading contracts from storage", "err", err.Error())
@@ -321,6 +315,11 @@ func scanAndDigest(ctx context.Context, tx state.Tx, c *config.Config, s scan.Sc
 
 	if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
 		slog.Error("error occurred while storing current block", "err", err.Error())
+		return 0, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		slog.Error("error occurred while committing transaction", "err", err.Error())
 		return 0, err
 	}
 
