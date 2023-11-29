@@ -10,7 +10,7 @@ It allows users to mint assets on any EVM-Compatible Chain without paying gas fe
 
 You can start and sync the universal node locally with the following command:
 ```
-$ docker run -p 5001:5001 freeverseio/laos-universal-node:<release> 
+$ docker run -p 5001:5001 freeverseio/laos-universal-node:<release> -rpc=<ownership-node-rpc> -evo_rpc=<evochain-node-rpc>
 ```
 The port is for the json-rpc interface.
 
