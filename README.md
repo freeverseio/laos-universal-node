@@ -19,12 +19,10 @@ We are actively working to address this in future updates. Your understanding an
 
 ## Contributing
 
-Contributions to the LAOS Universal Node project are welcome. When you work on this repo, you adhere to the following rules:
-
-### Git
+Contributions to the LAOS Universal Node project are welcome. Please adhere to [Github's contribution guidelines](https://docs.github.com/en/get-started/quickstart/contributing-to-projects) to ensure a smooth collaboration process.
 
 #### Pre-commit hook
 
-Run `cp git/pre-commit ./.git/hooks/pre-commit` to copy the pre-commit hook to your `.git` folder. This runs a few important checks whenever you have something to commit.
+To ensure code consistency, please set up the pre-commit hook. Execute `cp git/pre-commit ./.git/hooks/pre-commit` to copy the pre-defined hook into your `.git` folder. This will automatically perform essential checks before each commit.
 
-For further details, check [pre-commit](./git/pre-commit).
+For more information, please refer to the [pre-commit details](./git/pre-commit).
