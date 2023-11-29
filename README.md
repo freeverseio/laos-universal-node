@@ -12,6 +12,11 @@ $ docker run -p 5001:5001 freeverseio/laos-universal-node:<release> -rpc=<owners
 ```
 The specified port (`5001`) is used for the JSON-RPC interface.
 
+Use the following command to display all available command-line options:
+```
+$ docker run freeverseio/laos-universal-node --help 
+```
+
 Please be aware that the current version of the uNode does not handle blockchain reorganizations (reorgs). As a precaution, we strongly encourage operating with a heightened safety margin in your ownership chain management.
 We are actively working to address this in future updates. Your understanding and cooperation are greatly appreciated as we strive to enhance the capabilities and security of the uNode.
 
