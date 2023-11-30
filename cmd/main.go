@@ -263,7 +263,7 @@ func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Co
 		return 0, err
 	}
 	if shouldDiscover {
-		if errDiscover := discoverContracts(ctx, s, startingBlock, lastBlock, tx); errDiscover != nil {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx); errDiscover != nil {
 			return 0, errDiscover
 		}
 	}
