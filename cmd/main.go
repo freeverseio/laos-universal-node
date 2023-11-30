@@ -52,6 +52,12 @@ func run() error {
 		}
 	}()
 
+	// Disclaimer
+	slog.Info("******************************************************************************")
+	slog.Info("This is a beta version of the Laos Universal Node. It is not intended for production use. Use at your own risk.")
+	slog.Info("You are now running the Universal Node Docker Image. Please be aware that this version currently does not handle blockchain reorganizations (reorgs). As a precaution, we strongly encourage operating with a heightened safety margin in your ownership chain management.")
+	slog.Info("******************************************************************************")
+
 	storageService := badgerStorage.NewService(db)
 	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
@@ -263,7 +269,7 @@ func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Co
 		return 0, err
 	}
 	if shouldDiscover {
-		if errDiscover := discoverContracts(ctx, s, startingBlock, lastBlock, tx); errDiscover != nil {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx); errDiscover != nil {
 			return 0, errDiscover
 		}
 	}
@@ -568,7 +574,7 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
 	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
@@ -588,6 +594,29 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 			return err
 		}
 
+		// check if there are mint events for this contract
+		mintEvents, err := tx.GetMintedWithExternalURIEvents(contracts[i].CollectionAddress.String())
+		if err != nil {
+			slog.Error("error occurred retrieving evochain minted events for ownership contract: %w", err)
+			return err
+		}
+
+		timestampContract, err := getTimestampForBlockNumber(ctx, client, contracts[i].BlockNumber)
+		if err != nil {
+			return err
+		}
+
+		ownershipContractEvoBlock, err := updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract)
+		if err != nil {
+			slog.Error("error occurred updating state with mint events", "err", err)
+			return err
+		}
+
+		if err = tx.SetCurrentEvoBlockForOwnershipContract(contracts[i].Address.String(), ownershipContractEvoBlock); err != nil {
+			return fmt.Errorf("error updating current evochain block %d for ownership contract %s: %w",
+				ownershipContractEvoBlock, strings.ToLower(contracts[i].Address.String()), err)
+		}
+
 		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
 			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
 			return err
@@ -595,6 +624,21 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 	}
 
 	return nil
+}
+
+func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) (uint64, error) {
+	var ownershipContractEvoBlock uint64
+	for _, mintedEvent := range mintedEvents {
+		if mintedEvent.Timestamp > timestampContract {
+			break
+		}
+		if err := tx.Mint(contract, mintedEvent.TokenId); err != nil {
+			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
+				contract, mintedEvent.TokenId, err)
+		}
+		ownershipContractEvoBlock = mintedEvent.BlockNumber
+	}
+	return ownershipContractEvoBlock, nil
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
