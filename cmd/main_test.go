@@ -147,7 +147,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Times(1)
 
 			for _, contract := range tt.discoveredContracts {
-				tx2.EXPECT().GetMintedWithExternalURIEvents(contract.Address.Hex()).
+				tx2.EXPECT().GetMintedWithExternalURIEvents(contract.CollectionAddress.Hex()).
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
 				client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(contract.BlockNumber))).Return(&types.Header{

@@ -595,7 +595,7 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 		}
 
 		// check if there are mint events for this contract
-		mintEvents, err := tx.GetMintedWithExternalURIEvents(contracts[i].Address.String())
+		mintEvents, err := tx.GetMintedWithExternalURIEvents(contracts[i].CollectionAddress.String())
 		if err != nil {
 			slog.Error("error occurred retrieving evochain minted events for ownership contract: %w", err)
 			return err
