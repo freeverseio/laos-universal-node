@@ -583,7 +583,6 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 	}
 
 	for i := range contracts {
-
 		if err = loadMerkleTree(tx, contracts[i].Address); err != nil {
 			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
 			return err
@@ -599,7 +598,10 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 		if err != nil {
 			return err
 		}
-		updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract)
+		if err = updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract); err != nil {
+			slog.Error("error occurred updating state with mint events", "err", err)
+			return err
+		}
 
 		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
 			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
@@ -619,7 +621,6 @@ func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvent
 			return fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
 				contract, mintedEvent.TokenId, err)
 		}
-
 	}
 	return nil
 }

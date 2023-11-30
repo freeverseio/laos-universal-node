@@ -106,7 +106,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampMintedEvents:        2000,
 			timeStampLastOwnershipBlock:  3000,
 			timeStampLastEvoBlock:        3000,
-			expectedTxMintCalls:          2,
+			expectedTxMintCalls:          1,
 		},
 	}
 	for _, tt := range tests {
@@ -145,6 +145,16 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			tx2.EXPECT().GetAllERC721UniversalContracts().
 				Return(tt.expectedContracts).
 				Times(1)
+
+			for _, contract := range tt.discoveredContracts {
+				tx2.EXPECT().GetMintedWithExternalURIEvents(contract.Address.Hex()).
+					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
+					Times(1)
+				client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(contract.BlockNumber))).Return(&types.Header{
+					Time: tt.timeStampTransferEvents,
+				}, nil).Times(1)
+				tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			}
 
 			for i, contract := range tt.expectedContracts {
 				tx2.EXPECT().GetCollectionAddress(contract).Return(common.HexToAddress(tt.collectionAddressForContract[i]), nil).Times(1)
