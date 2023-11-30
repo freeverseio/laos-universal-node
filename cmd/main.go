@@ -600,13 +600,21 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 			slog.Error("error occurred retrieving evochain minted events for ownership contract: %w", err)
 			return err
 		}
+
 		timestampContract, err := getTimestampForBlockNumber(ctx, client, contracts[i].BlockNumber)
 		if err != nil {
 			return err
 		}
-		if err = updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract); err != nil {
+
+		ownershipContractEvoBlock, err := updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract)
+		if err != nil {
 			slog.Error("error occurred updating state with mint events", "err", err)
 			return err
+		}
+
+		if err = tx.SetCurrentEvoBlockForOwnershipContract(contracts[i].Address.String(), ownershipContractEvoBlock); err != nil {
+			return fmt.Errorf("error updating current evochain block %d for ownership contract %s: %w",
+				ownershipContractEvoBlock, strings.ToLower(contracts[i].Address.String()), err)
 		}
 
 		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
@@ -618,17 +626,19 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 	return nil
 }
 
-func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) error {
+func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) (uint64, error) {
+	var ownershipContractEvoBlock uint64
 	for _, mintedEvent := range mintedEvents {
 		if mintedEvent.Timestamp > timestampContract {
 			break
 		}
 		if err := tx.Mint(contract, mintedEvent.TokenId); err != nil {
-			return fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
+			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
 				contract, mintedEvent.TokenId, err)
 		}
+		ownershipContractEvoBlock = mintedEvent.BlockNumber
 	}
-	return nil
+	return ownershipContractEvoBlock, nil
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
