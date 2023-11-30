@@ -568,7 +568,7 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
 	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
@@ -583,10 +583,23 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 	}
 
 	for i := range contracts {
+
 		if err = loadMerkleTree(tx, contracts[i].Address); err != nil {
 			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
 			return err
 		}
+
+		// check if there are mint events for this contract
+		mintEvents, err := tx.GetMintedWithExternalURIEvents(contracts[i].Address.String())
+		if err != nil {
+			slog.Error("error occurred retrieving evochain minted events for ownership contract: %w", err)
+			return err
+		}
+		timestampContract, err := getTimestampForBlockNumber(ctx, client, contracts[i].BlockNumber)
+		if err != nil {
+			return err
+		}
+		updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract)
 
 		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
 			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
@@ -594,6 +607,20 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 		}
 	}
 
+	return nil
+}
+
+func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) error {
+	for _, mintedEvent := range mintedEvents {
+		if mintedEvent.Timestamp > timestampContract {
+			break
+		}
+		if err := tx.Mint(contract, mintedEvent.TokenId); err != nil {
+			return fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
+				contract, mintedEvent.TokenId, err)
+		}
+
+	}
 	return nil
 }
 
