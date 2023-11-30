@@ -52,6 +52,12 @@ func run() error {
 		}
 	}()
 
+	// Disclaimer
+	slog.Info("******************************************************************************")
+	slog.Info("This is a beta version of the Laos Universal Node. It is not intended for production use. Use at your own risk.")
+	slog.Info("You are now running the Universal Node Docker Image. Please be aware that this version currently does not handle blockchain reorganizations (reorgs). As a precaution, we strongly encourage operating with a heightened safety margin in your ownership chain management.")
+	slog.Info("******************************************************************************")
+
 	storageService := badgerStorage.NewService(db)
 	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
