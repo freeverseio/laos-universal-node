@@ -37,7 +37,6 @@ type Tree interface {
 	GetLastTaggedBlock() (int64, error)
 	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
-	FindBlockWithTag(blockNumber int64) (int64, error)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each owner
@@ -289,25 +288,4 @@ func (b *tree) Checkout(blockNumber int64) error {
 	}
 
 	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), buf)
-}
-
-// FindBlockWithTag returns the first previous blockNumber that has been tagged if the tag for the blockNumber does not
-// exist
-func (b *tree) FindBlockWithTag(blockNumber int64) (int64, error) {
-	for {
-		if blockNumber == 0 {
-			return 0, nil
-		}
-
-		buf, err := b.store.Get([]byte(tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)))
-		if err != nil {
-			return 0, err
-		}
-
-		if len(buf) != 0 {
-			return blockNumber, nil
-		}
-
-		blockNumber--
-	}
 }
