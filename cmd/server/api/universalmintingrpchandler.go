@@ -110,10 +110,6 @@ func getJsonRPCRequest(r *http.Request) (*JSONRPCRequest, error) {
 	if err := json.Unmarshal(body, &req); err != nil {
 		return nil, fmt.Errorf("error parsing JSON request: %w", err)
 	}
-	slog.Info("request", "req", req)
-	if req.JSONRPC != "2.0" {
-		return nil, fmt.Errorf("invalid JSON-RPC version")
-	}
 	return &req, nil
 }
 
