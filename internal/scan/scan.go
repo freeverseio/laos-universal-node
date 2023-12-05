@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"math/big"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -205,7 +204,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 	}
 
 	if len(contracts) > 0 {
-		slog.Info("found " + strconv.Itoa(len(contracts)) + " new universal contracts")
+		slog.Info("universal contracts found", "contracts", len(contracts))
 	}
 
 	return contracts, nil
@@ -213,6 +212,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
+	slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
 	var lastBlock *big.Int
 	lastBlock = fromBlock
 	var addresses []common.Address
@@ -246,7 +246,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 
 	var parsedEvents []Event
 	for i := range eventLogs {
-		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) > 0 {
 			switch eventLogs[i].Topics[0].Hex() {
 			// Ownership events
