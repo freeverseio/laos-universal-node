@@ -10,10 +10,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
 )
 
-const (
-	ContractPrefix = "contract_"
-)
-
 // Service interface is used for initializing and terminating state transaction.
 type Service interface {
 	NewTransaction() Tx

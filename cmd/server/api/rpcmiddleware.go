@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
 	"github.com/freeverseio/laos-universal-node/internal/state"
@@ -121,20 +120,7 @@ func handleEthCallMethod(w http.ResponseWriter, r *http.Request, req *JSONRPCReq
 func isContractStored(contractAddress string, stateService state.Service) (bool, error) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	lowerCaseContractAddress := strings.ToLower(contractAddress)
-	contract, err := tx.Get(state.ContractPrefix + lowerCaseContractAddress)
-	if err != nil {
-		return false, err
-	}
-
-	if contract != nil {
-		lowerCaseContract := strings.ToLower(string(contract))
-		if lowerCaseContract != "" {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return tx.HasERC721UniversalContract(contractAddress)
 }
 
 func isUniversalMintingMethod(data string) (bool, error) {
