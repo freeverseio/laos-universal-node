@@ -11,13 +11,13 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 	"github.com/freeverseio/laos-universal-node/internal/state"
-	evolutionBlockState "github.com/freeverseio/laos-universal-node/internal/state/block/evolution"
-	ownershipBlockState "github.com/freeverseio/laos-universal-node/internal/state/block/ownership"
 	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/evolution"
 	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/ownership"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
 	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
+	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/state/sync/evolution"
+	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/state/sync/ownership"
 )
 
 type service struct {
@@ -41,8 +41,8 @@ func (s *service) NewTransaction() state.Tx {
 		tx:                     storageTx,
 		OwnershipContractState: ownershipContractState.NewService(storageTx),
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
-		OwnershipBlockState:    ownershipBlockState.NewService(storageTx),
-		EvolutionBlockState:    evolutionBlockState.NewService(storageTx),
+		OwnershipSyncState:     ownershipSyncState.NewService(storageTx),
+		EvolutionSyncState:     evolutionSyncState.NewService(storageTx),
 	}
 }
 
@@ -53,8 +53,8 @@ type tx struct {
 	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
 	state.OwnershipContractState
 	state.EvolutionContractState
-	state.OwnershipBlockState
-	state.EvolutionBlockState
+	state.OwnershipSyncState
+	state.EvolutionSyncState
 }
 
 // IsTreeSetForContact returns true if the tree is set
