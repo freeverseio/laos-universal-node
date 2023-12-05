@@ -159,6 +159,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
+	slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
@@ -176,13 +177,11 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 	contracts := make([]model.ERC721UniversalContract, 0)
 	for i := range eventLogs {
-		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) == 0 {
 			continue
 		}
 
-		switch eventLogs[i].Topics[0].Hex() {
-		case eventNewERC721UniversalSigHash:
+		if eventLogs[i].Topics[0].Hex() == eventNewERC721UniversalSigHash {
 			newERC721Universal, err := parseNewERC721Universal(&eventLogs[i], &contractAbi)
 			if err != nil {
 				return nil, err
@@ -201,10 +200,11 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 				BlockNumber:       newERC721Universal.BlockNumber,
 			}
 			contracts = append(contracts, c)
-
-		default:
-			slog.Debug("no new universal contracts found")
 		}
+	}
+
+	if len(contracts) > 0 {
+		slog.Info("universal contracts found", "contracts", len(contracts))
 	}
 
 	return contracts, nil
@@ -212,6 +212,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
+	slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
 	var lastBlock *big.Int
 	lastBlock = fromBlock
 	var addresses []common.Address
@@ -245,7 +246,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 
 	var parsedEvents []Event
 	for i := range eventLogs {
-		slog.Info("scanning event", "block", eventLogs[i].BlockNumber, "txHash", eventLogs[i].TxHash)
 		if len(eventLogs[i].Topics) > 0 {
 			switch eventLogs[i].Topics[0].Hex() {
 			// Ownership events
