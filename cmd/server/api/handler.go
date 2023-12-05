@@ -24,15 +24,13 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 type RPCHandler interface {
 	PostRPCProxyHandler(w http.ResponseWriter, r *http.Request)
 	UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request)
-	SetJsonRPCRequest(req JSONRPCRequest)
 	SetStateService(stateService state.Service)
 }
 
 type GlobalRPCHandler struct {
-	rpcUrl         string
-	httpClient     HTTPClientInterface // Inject the HTTP client interface here
-	jsonRPCRequest JSONRPCRequest
-	stateService   state.Service
+	rpcUrl       string
+	httpClient   HTTPClientInterface // Inject the HTTP client interface here
+	stateService state.Service
 }
 
 func (h *GlobalRPCHandler) GetRpcUrl() string {
@@ -41,14 +39,6 @@ func (h *GlobalRPCHandler) GetRpcUrl() string {
 
 func (h *GlobalRPCHandler) GetHttpClient() HTTPClientInterface {
 	return h.httpClient
-}
-
-func (h *GlobalRPCHandler) SetJsonRPCRequest(req JSONRPCRequest) {
-	h.jsonRPCRequest = req
-}
-
-func (h *GlobalRPCHandler) GetJsonRPCRequest() JSONRPCRequest {
-	return h.jsonRPCRequest
 }
 
 func (h *GlobalRPCHandler) SetStateService(stateService state.Service) {
