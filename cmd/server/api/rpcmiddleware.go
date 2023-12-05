@@ -34,7 +34,6 @@ func PostRpcRequestMiddleware(h RPCHandler, stateService state.Service) http.Han
 		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler) // handler for universal minting requests
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
-			h.SetJsonRPCRequest(*body)
 			h.SetStateService(stateService)
 			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, stateService)
 		}

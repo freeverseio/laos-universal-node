@@ -242,7 +242,6 @@ func runHandler(t *testing.T, request *http.Request, storage *mockTx.MockService
 		}
 
 		h := api.GlobalRPCHandler{}
-		h.SetJsonRPCRequest(req)
 		h.SetStateService(storage)
 		h.UniversalMintingRPCHandler(w, r)
 	})

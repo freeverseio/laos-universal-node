@@ -208,7 +208,6 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 					slog.Error("error parsing JSON request", "err", err)
 					return
 				}
-				handlerMock.EXPECT().SetJsonRPCRequest(req).Times(1)
 				handlerMock.EXPECT().SetStateService(stateService).Times(1)
 			}
 
