@@ -40,7 +40,7 @@ func TestListenAndServe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err = s.ListenAndServe(ctx, "rpcUrl", "localhost:8080", stateService)
+	err = s.ListenAndServe(ctx, "rpcUrl", "evoRpcUrl", "localhost:8080", stateService)
 	if err != nil {
 		t.Fatalf("got unexpected error: %v, expected: no error", err)
 	}
@@ -74,7 +74,7 @@ func TestListenAndServeWithCancel(t *testing.T) {
 
 	// Start the server in a goroutine.
 	go func() {
-		err := s.ListenAndServe(ctx, "rpcUrl", ":9999", stateService) // using a random port, as it won't actually bind
+		err := s.ListenAndServe(ctx, "rpcUrl", "evoRpcUrl", ":9999", stateService) // using a random port, as it won't actually bind
 		done <- err
 	}()
 
@@ -116,7 +116,7 @@ func TestListenAndServeWithError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err = s.ListenAndServe(ctx, "rpcUrl", ":9999", stateService)
+	err = s.ListenAndServe(ctx, "rpcUrl", "evoRpcUrl", ":9999", stateService)
 	if err == nil {
 		t.Fatalf("got nil, expected error")
 	}

@@ -81,10 +81,10 @@ func New(opts ...ServerOption) (*Server, error) {
 
 // ListenAndServe starts the RPC server to listen and serve incoming requests on the specified address.
 // It also handles graceful shutdown on receiving a context cancellation signal.
-func (s Server) ListenAndServe(ctx context.Context, rpcUrl, addr string, stateService state.Service) error {
+func (s Server) ListenAndServe(ctx context.Context, rpcUrl, evoRpcUrl, addr string, stateService state.Service) error {
 	s.httpServer.SetAddr(addr)
 
-	handler := api.NewGlobalRPCHandler(rpcUrl)
+	handler := api.NewGlobalRPCHandler(rpcUrl, evoRpcUrl)
 	router := mux.NewRouter()
 	s.httpServer.SetHandler(api.Routes(handler, router, stateService))
 	slog.Info("server listening", "address", addr)

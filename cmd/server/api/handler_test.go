@@ -17,8 +17,10 @@ func TestHandler(t *testing.T) {
 
 	mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 	rpcUrl := "https://polygon-mumbai.test.com/"
+	evoRpcUrl := "https://evo-chain.com"
 	handler := api.NewGlobalRPCHandler(
 		rpcUrl,
+		evoRpcUrl,
 		api.WithHttpClient(mockHttpClient),
 	)
 
@@ -29,6 +31,9 @@ func TestHandler(t *testing.T) {
 		t.Error("handler.HttpClient is nil")
 	}
 	if handler.GetRpcUrl() != rpcUrl {
-		t.Fatalf("RpcUrl got %v,  expected %v", handler.GetRpcUrl(), rpcUrl)
+		t.Fatalf("Got RPC URL %v,  expected %v", handler.GetRpcUrl(), rpcUrl)
+	}
+	if handler.GetEvoRpcUrl() != evoRpcUrl {
+		t.Fatalf("Got Evo RPC URL %v,  expected %v", handler.GetEvoRpcUrl(), evoRpcUrl)
 	}
 }

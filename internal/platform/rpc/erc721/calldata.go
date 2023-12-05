@@ -38,6 +38,7 @@ const (
 	TokenOfOwnerByIndex
 	TokenByIndex
 	SupportsInterface
+	TokenURI
 )
 
 // universalMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
@@ -48,6 +49,7 @@ var universalMintingMethodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address,uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                TokenByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]):            SupportsInterface,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:ShortAddressLength]):                    TokenURI,
 }
 
 // Method returns if the calldata is a supported remote minting ERC721 method and the method.
