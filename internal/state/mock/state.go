@@ -514,6 +514,21 @@ func (mr *MockTxMockRecorder) TokenOfOwnerByIndex(contract, owner, idx any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenOfOwnerByIndex", reflect.TypeOf((*MockTx)(nil).TokenOfOwnerByIndex), contract, owner, idx)
 }
 
+// TokenURI mocks base method.
+func (m *MockTx) TokenURI(contract common.Address, tokenId *big.Int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TokenURI", contract, tokenId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TokenURI indicates an expected call of TokenURI.
+func (mr *MockTxMockRecorder) TokenURI(contract, tokenId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenURI", reflect.TypeOf((*MockTx)(nil).TokenURI), contract, tokenId)
+}
+
 // TotalSupply mocks base method.
 func (m *MockTx) TotalSupply(contract common.Address) (int64, error) {
 	m.ctrl.T.Helper()
@@ -753,6 +768,21 @@ func (m *MockState) TokenOfOwnerByIndex(contract, owner common.Address, idx int)
 func (mr *MockStateMockRecorder) TokenOfOwnerByIndex(contract, owner, idx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenOfOwnerByIndex", reflect.TypeOf((*MockState)(nil).TokenOfOwnerByIndex), contract, owner, idx)
+}
+
+// TokenURI mocks base method.
+func (m *MockState) TokenURI(contract common.Address, tokenId *big.Int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TokenURI", contract, tokenId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TokenURI indicates an expected call of TokenURI.
+func (mr *MockStateMockRecorder) TokenURI(contract, tokenId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenURI", reflect.TypeOf((*MockState)(nil).TokenURI), contract, tokenId)
 }
 
 // TotalSupply mocks base method.

@@ -40,6 +40,7 @@ type State interface {
 	TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.Int, error)
 	TotalSupply(contract common.Address) (int64, error)
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
+	TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	IsTreeSetForContract(contract common.Address) bool

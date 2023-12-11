@@ -218,6 +218,7 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 }
 
 func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, w http.ResponseWriter) {
+	// TODO test me
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
@@ -233,9 +234,8 @@ func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRe
 		sendErrorResponse(w, err)
 		return
 	}
-	// TODO get rid of the logs and call tokenURI method of state
-	slog.Info("tokenId", "tokenId", tokenID.Uint64())
-	slog.Info("tx", "tx", tx)
+	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
+	sendResponse(w, tokenURI, err)
 }
 
 func blockNumber(w http.ResponseWriter, stateService state.Service) {
@@ -279,7 +279,6 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 
 func sendResponse(w http.ResponseWriter, result string, err error) {
 	if err != nil {
-		slog.Error("Failed to send response", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}

@@ -283,6 +283,25 @@ func (t *tx) TokenByIndex(contract common.Address, idx int) (*big.Int, error) {
 	return enumeratedTotalTree.TokenByIndex(idx)
 }
 
+// TokenURI returns the token URI associated with tokenId. It returns an error if tokenId does not exist
+func (t *tx) TokenURI(contract common.Address, tokenId *big.Int) (string, error) {
+	// TODO test me
+	slog.Debug("TokenURI", "contract", contract.String(), "tokenId", tokenId.String())
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return "", fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	tokenData, err := ownershipTree.TokenData(tokenId)
+	if err != nil {
+		return "", err
+	}
+	if !tokenData.Minted {
+		return "", fmt.Errorf("tokenId %d does not exist", tokenId.Uint64())
+	}
+	return tokenData.TokenURI, nil
+}
+
 // TagRoot tags roots for all 3 merkle trees at the same block
 func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
 	slog.Debug("TagRoot", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
