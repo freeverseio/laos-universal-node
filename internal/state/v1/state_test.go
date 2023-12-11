@@ -163,7 +163,7 @@ func TestMinting(t *testing.T) {
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
 
-		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1}
+		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
 		ownershipTree.EXPECT().TokenData(big.NewInt(1)).Return(&tokenData, nil)
 
 		enumeratedTree.EXPECT().Mint(big.NewInt(1), tokenData.SlotOwner).Return(nil)
@@ -171,7 +171,7 @@ func TestMinting(t *testing.T) {
 		mintEvent := model.MintedWithExternalURI{
 			Slot:        big.NewInt(1),
 			To:          tokenData.SlotOwner,
-			TokenURI:    "tokenURI",
+			TokenURI:    tokenData.TokenURI,
 			TokenId:     big.NewInt(1),
 			BlockNumber: 100,
 			Timestamp:   1000,
