@@ -223,7 +223,12 @@ func TestPostRPCRequestHandler(t *testing.T) {
 
 			response := recorder.Result()
 			body, _ := io.ReadAll(response.Body)
-			defer response.Body.Close()
+			defer func() {
+				err := response.Body.Close()
+				if err != nil {
+					t.Errorf("got %v, want %v", err, nil)
+				}
+			}()
 
 			if response.StatusCode != tc.expectedStatus {
 				t.Errorf("got %v, want %v", response.StatusCode, tc.expectedStatus)
