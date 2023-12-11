@@ -125,7 +125,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, c.EvoRpc, addr, stateService)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, stateService)
 	})
 
 	if err := group.Wait(); err != nil {

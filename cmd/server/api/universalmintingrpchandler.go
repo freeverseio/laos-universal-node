@@ -88,7 +88,7 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 		case erc721.TokenByIndex:
 			tokenByIndex(calldata, params, blockNumber, h.stateService, w)
 		case erc721.TokenURI:
-			h.tokenURI(params, *jsonRPCRequest, h.stateService, w, r)
+			h.tokenURI(calldata, params, blockNumber, w)
 		case erc721.SupportsInterface:
 			supportsInterface(w)
 		}
@@ -217,70 +217,25 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func (h *GlobalRPCHandler) tokenURI(params ParamsRPCRequest, jsonRpcRequest JSONRPCRequest, stateService state.Service, w http.ResponseWriter, r *http.Request) {
-	// TODO block number from the ownership chain must be converted to a block number of the evochain (maybe get blockNumber parameter from the caller?)
-	// TODO review, clean and test!
-	tx := stateService.NewTransaction()
+func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, w http.ResponseWriter) {
+	tokenID, err := getParamBigInt(callData, "tokenId")
+	if err != nil {
+		slog.Error("Error getting tokenId", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+
+	tx := h.stateService.NewTransaction()
 	defer tx.Discard()
-	collectionAddress, err := tx.GetCollectionAddress(params.To)
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
+		slog.Error("Error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
-
-	newParams := ParamsRPCRequest{
-		From:  params.From,
-		To:    collectionAddress.String(),
-		Data:  params.Data,
-		Value: params.Value,
-	}
-
-	marshaledParams, err := json.Marshal(newParams)
-	if err != nil {
-		sendErrorResponse(w, err)
-		return
-	}
-
-	jsonRpcRequest.Params[0] = marshaledParams
-	marshaledReq, err := json.Marshal(jsonRpcRequest)
-	if err != nil {
-		sendErrorResponse(w, err)
-		return
-	}
-
-	newReq, err := http.NewRequest(http.MethodPost, h.GetEvoRpcUrl(), io.NopCloser(bytes.NewBuffer(marshaledReq)))
-	if err != nil {
-		sendErrorResponse(w, err)
-		return
-	}
-	newReq.Header = r.Header
-
-	res, err := h.GetHttpClient().Do(newReq)
-	if err != nil {
-		sendErrorResponse(w, err)
-		return
-	}
-	for name, values := range res.Header {
-		for _, value := range values {
-			w.Header().Set(name, value)
-		}
-	}
-
-	defer func() {
-		errClose := res.Body.Close()
-		if errClose != nil {
-			slog.Error("error closing response body", "err", errClose)
-		}
-	}()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		sendErrorResponse(w, err)
-		return
-	}
-	_, err = w.Write(body)
-	if err != nil {
-		slog.Error("error writing response body", "err", err)
-	}
+	// TODO get rid of the logs and call tokenURI method of state
+	slog.Info("tokenId", "tokenId", tokenID.Uint64())
+	slog.Info("tx", "tx", tx)
 }
 
 func blockNumber(w http.ResponseWriter, stateService state.Service) {

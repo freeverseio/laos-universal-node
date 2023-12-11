@@ -29,17 +29,12 @@ type RPCHandler interface {
 
 type GlobalRPCHandler struct {
 	rpcUrl       string
-	evoRpcUrl    string
 	httpClient   HTTPClientInterface // Inject the HTTP client interface here
 	stateService state.Service
 }
 
 func (h *GlobalRPCHandler) GetRpcUrl() string {
 	return h.rpcUrl
-}
-
-func (h *GlobalRPCHandler) GetEvoRpcUrl() string {
-	return h.evoRpcUrl
 }
 
 func (h *GlobalRPCHandler) GetHttpClient() HTTPClientInterface {
@@ -58,10 +53,9 @@ func WithHttpClient(client HTTPClientInterface) HandlerOption {
 	}
 }
 
-func NewGlobalRPCHandler(rpcUrl, evoRpcUrl string, opts ...HandlerOption) *GlobalRPCHandler {
+func NewGlobalRPCHandler(rpcUrl string, opts ...HandlerOption) *GlobalRPCHandler {
 	handler := &GlobalRPCHandler{
-		rpcUrl:    rpcUrl,
-		evoRpcUrl: evoRpcUrl,
+		rpcUrl: rpcUrl,
 		httpClient: &HTTPClientWrapper{
 			client: &http.Client{
 				Timeout: 10 * time.Second,
