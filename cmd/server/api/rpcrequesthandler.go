@@ -89,7 +89,7 @@ func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) R
 	case "eth_call":
 		return h.handleEthCallMethod(r, &req)
 	case "eth_blockNumber":
-		return h.HandleProxyRPC(r)
+		return h.HandleUniversalMinting(r, h.stateService)
 	default:
 		return h.HandleProxyRPC(r)
 	}

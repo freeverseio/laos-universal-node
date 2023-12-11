@@ -157,6 +157,20 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			},
 		},
 		{
+			name:           "Good request with no erc721 method but eth_blockNumber call",
+			method:         http.MethodPost,
+			contentType:    "application/json",
+			requestBody:    `{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}`,
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			expectedStatus: http.StatusOK,
+			expectedUniversalMintingHandlerCalledTimes: 1,
+			expectedProxyHandlerCalledTimes:            0,
+			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
+			storedContracts: [][]byte{
+				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+		},
+		{
 			name:           "Bad request with GET method",
 			method:         http.MethodGet,
 			contentType:    "application/json",
@@ -198,12 +212,14 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			universalHandler := mock.NewMockRPCUniversalHandler(ctrl)
 			proxyHandler := mock.NewMockRPCProxyHandler(ctrl)
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
+
 			if len(tc.mockResponse) > 0 {
 				universalHandler.EXPECT().HandleUniversalMinting(gomock.Any(), gomock.Any()).Return(tc.mockResponse[0]).Times(tc.expectedUniversalMintingHandlerCalledTimes)
 			}
 			if len(tc.mockResponseProxy) > 0 {
 				proxyHandler.EXPECT().HandleProxyRPC(gomock.Any()).Return(tc.mockResponseProxy[0]).Times(tc.expectedProxyHandlerCalledTimes)
 			}
+
 			handler := api.NewGlobalRPCHandler(
 				"https://example.com/",
 				api.WithHttpClient(mockHttpClient),
@@ -212,11 +228,11 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			)
 
 			tx := mockStorage.NewMockTx(ctrl)
-			// TODO fix AnyTimes
 			storage.EXPECT().NewTransaction().Return(tx).AnyTimes()
 			tx.EXPECT().Discard().AnyTimes()
-
-			tx.EXPECT().Get(gomock.Any()).Return(tc.storedContracts[0], nil).AnyTimes()
+			if len(tc.storedContracts) > 0 {
+				tx.EXPECT().Get(gomock.Any()).Return(tc.storedContracts[0], nil).AnyTimes()
+			}
 			stateService := v1.NewStateService(storage)
 			handler.SetStateService(stateService)
 			http.HandlerFunc(handler.PostRPCRequestHandler).ServeHTTP(recorder, request)
