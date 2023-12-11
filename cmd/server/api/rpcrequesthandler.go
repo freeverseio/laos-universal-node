@@ -58,13 +58,17 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		http.Error(w, ErrMsgBadRequest, http.StatusBadRequest)
 		return
 	}
-	responseBody := make([]RPCResponse, len(rpcRequests))
+	responseBody := make([]RPCResponse, 0, len(rpcRequests))
 	for _, rpcRequest := range rpcRequests {
 		responseBody = append(responseBody, h.GetRPCResponse(r, rpcRequest))
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(responseBody)
+	if len(responseBody) == 1 {
+		err = json.NewEncoder(w).Encode(responseBody[0])
+	} else {
+		err = json.NewEncoder(w).Encode(responseBody)
+	}
+
 	if err != nil {
 		slog.Error("Failed to send response", "err", err)
 	}

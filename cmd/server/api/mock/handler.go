@@ -190,6 +190,34 @@ func (m *MockRPCProxyHandler) EXPECT() *MockRPCProxyHandlerMockRecorder {
 	return m.recorder
 }
 
+// GetHttpClient mocks base method.
+func (m *MockRPCProxyHandler) GetHttpClient() api.HTTPClientInterface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHttpClient")
+	ret0, _ := ret[0].(api.HTTPClientInterface)
+	return ret0
+}
+
+// GetHttpClient indicates an expected call of GetHttpClient.
+func (mr *MockRPCProxyHandlerMockRecorder) GetHttpClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHttpClient", reflect.TypeOf((*MockRPCProxyHandler)(nil).GetHttpClient))
+}
+
+// GetRpcUrl mocks base method.
+func (m *MockRPCProxyHandler) GetRpcUrl() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRpcUrl")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetRpcUrl indicates an expected call of GetRpcUrl.
+func (mr *MockRPCProxyHandlerMockRecorder) GetRpcUrl() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRpcUrl", reflect.TypeOf((*MockRPCProxyHandler)(nil).GetRpcUrl))
+}
+
 // HandleProxyRPC mocks base method.
 func (m *MockRPCProxyHandler) HandleProxyRPC(r *http.Request) api.RPCResponse {
 	m.ctrl.T.Helper()
@@ -202,4 +230,16 @@ func (m *MockRPCProxyHandler) HandleProxyRPC(r *http.Request) api.RPCResponse {
 func (mr *MockRPCProxyHandlerMockRecorder) HandleProxyRPC(r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleProxyRPC", reflect.TypeOf((*MockRPCProxyHandler)(nil).HandleProxyRPC), r)
+}
+
+// SetHttpClient mocks base method.
+func (m *MockRPCProxyHandler) SetHttpClient(client api.HTTPClientInterface) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetHttpClient", client)
+}
+
+// SetHttpClient indicates an expected call of SetHttpClient.
+func (mr *MockRPCProxyHandlerMockRecorder) SetHttpClient(client any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHttpClient", reflect.TypeOf((*MockRPCProxyHandler)(nil).SetHttpClient), client)
 }
