@@ -16,285 +16,181 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/state"
 )
 
-const (
-	RpcId = 1
-)
-
-type RPCResponse struct {
-	Jsonrpc string `json:"jsonrpc"`
-	ID      int    `json:"id"`
-	Result  string `json:"result"`
-}
-
-type JSONRPCErrorResponse struct {
-	JSONRPC string `json:"jsonrpc"`
-	ID      int    `json:"id"`
-	Error   struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UniversalMintingRPCHandler) HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse {
 	jsonRPCRequest, err := getJsonRPCRequest(r)
 	if err != nil {
-		http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
-		return
+		return getErrorResponse(fmt.Errorf("error parsing JSON request: %w", err))
 	}
 
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
-		blockNumber(w, h.stateService)
-		return
+		return blockNumber(stateService)
 	}
 
 	var params ParamsRPCRequest
 	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
-		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
-		return
+		return getErrorResponse(fmt.Errorf("error parsing params or missing params"))
 	}
 
 	blockNumber := "latest" // if this by chance does not exist in param use the latest block
 	if len(jsonRPCRequest.Params) == 2 {
 		if errUnmarshal := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); errUnmarshal != nil {
-			http.Error(w, "Error parsing block number", http.StatusBadRequest)
-			return
+			return getErrorResponse(fmt.Errorf("error parsing block number: %w", errUnmarshal))
 		}
 	}
-	slog.Debug("block number", "blockNumber", blockNumber)
 
 	calldata, err := erc721.NewCallData(params.Data)
 	if err != nil {
-		http.Error(w, "Error parsing calldata", http.StatusBadRequest)
-		return
+		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err))
 	}
 
 	if method, exists, err := calldata.UniversalMintingMethod(); err != nil {
-		http.Error(w, "Error parsing calldata", http.StatusBadRequest)
-		return
+		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err))
 	} else if !exists {
-		http.Error(w, "Method not supported", http.StatusBadRequest)
-		return
+		return getErrorResponse(fmt.Errorf("method not supported"))
 	} else {
 		switch method {
 		case erc721.OwnerOf:
-			ownerOf(calldata, params, blockNumber, h.stateService, w)
+			return ownerOf(calldata, params, blockNumber, stateService)
 		case erc721.BalanceOf:
-			balanceOf(calldata, params, blockNumber, h.stateService, w)
+			return balanceOf(calldata, params, blockNumber, stateService)
 		case erc721.TotalSupply:
-			totalSupply(params, blockNumber, h.stateService, w)
+			return totalSupply(params, blockNumber, stateService)
 		case erc721.TokenOfOwnerByIndex:
-			tokenOfOwnerByIndex(calldata, params, blockNumber, h.stateService, w)
+			return tokenOfOwnerByIndex(calldata, params, blockNumber, stateService)
 		case erc721.TokenByIndex:
-			tokenByIndex(calldata, params, blockNumber, h.stateService, w)
+			return tokenByIndex(calldata, params, blockNumber, stateService)
 		case erc721.SupportsInterface:
-			supportsInterface(w)
+			return supportsInterface()
 		}
 	}
+	return getErrorResponse(fmt.Errorf("method not supported"))
 }
 
-func supportsInterface(w http.ResponseWriter) {
+func supportsInterface() RPCResponse {
 	// calldata already checked for SupportsInterface 0x780e9d63
 	// if we are here it means that the calldata is SupportsInterface(0x780e9d63)
 	// so we can return true
-	sendResponse(w, "0x0000000000000000000000000000000000000000000000000000000000000001", nil)
+	return getResponse("0x0000000000000000000000000000000000000000000000000000000000000001", nil)
 }
 
-func getJsonRPCRequest(r *http.Request) (*JSONRPCRequest, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading request body: %w", err)
-	}
-	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
-	var req JSONRPCRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		return nil, fmt.Errorf("error parsing JSON request: %w", err)
-	}
-	return &req, nil
-}
-
-func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
+func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
-		slog.Error("Error getting tokenId", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(err)
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
 	}
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
 	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
 	// TODO check if there is a better way to do this
 	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
-	sendResponse(w, fullAddressString, err)
+	return getResponse(fullAddressString, err)
 }
 
-func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
+func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
-		slog.Error("Error getting owner", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error getting owner: %w", err))
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	// TODO check if there is a better way to format the balance
-	sendResponse(w, fmt.Sprintf("0x%064x", balance), err)
+	return getResponse(fmt.Sprintf("0x%064x", balance), err)
 }
 
-func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
+func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err := loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
 	}
 	totalSupply, err := tx.TotalSupply(common.HexToAddress(params.To))
-	sendResponse(w, fmt.Sprintf("0x%064x", totalSupply), err)
+	return getResponse(fmt.Sprintf("0x%064x", totalSupply), err)
 }
 
-func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
+func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err))
 	}
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
-		slog.Error("Error getting owner", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error getting owner: %w", err))
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
 	}
 	tokenId, err := tx.TokenOfOwnerByIndex(common.HexToAddress(params.To), ownerAddress, int(index.Int64()))
-	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
+	return getResponse(fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
+func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
-		slog.Error("Error getting tokenId", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err))
 	}
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
-	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
+	return getResponse(fmt.Sprintf("0x%064x", tokenId), err)
 }
 
-func blockNumber(w http.ResponseWriter, stateService state.Service) {
+func blockNumber(stateService state.Service) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	blockNumber, err := tx.GetCurrentOwnershipBlock()
 	if err != nil {
-		slog.Error("Error getting current block number", "err", err)
-		sendErrorResponse(w, err)
-		return
+		return getErrorResponse(fmt.Errorf("error getting current block number: %w", err))
 	}
 	// minus 1 because we want to return the last tagged block
-	sendResponse(w, fmt.Sprintf("0x%x", blockNumber-1), nil)
+	return getResponse(fmt.Sprintf("0x%x", blockNumber-1), nil)
 }
 
-func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
-	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
+func getResponse(result string, err error) RPCResponse {
 	if err != nil {
-		return nil, err
+		return getErrorResponse(err)
 	}
 
-	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
-	// if block is not latest we should checkout tree for that tag
-	// it is important that this transaction is not commit which is always the case for this transaction
-	if blockNumber != "latest" {
-		num, err := strconv.ParseInt(strings.Replace(blockNumber, "0x", "", 1), 16, 64)
-		if err != nil {
-			slog.Error("wrong block number", "err", err)
-			return nil, err
-		}
-
-		err = tx.Checkout(contractAddress, num)
-		if err != nil {
-			slog.Error("error occurred checking out merkle tree at block number", "block_number", num,
-				"contract_address", contractAddress, "err", err)
-			return nil, err
-		}
-	}
-	return tx, nil
-}
-
-func sendResponse(w http.ResponseWriter, result string, err error) {
-	if err != nil {
-		slog.Error("Failed to send response", "err", err)
-		sendErrorResponse(w, err)
-		return
-	}
-
-	response := RPCResponse{
+	return RPCResponse{
 		Jsonrpc: "2.0",
 		ID:      RpcId,
 		Result:  result,
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		slog.Error("Failed to send response", "err", err)
-	}
 }
 
-func sendErrorResponse(w http.ResponseWriter, err error) {
+func getErrorResponse(err error) RPCResponse {
 	slog.Error("Failed to send response", "err", err)
-
-	errorResponse := JSONRPCErrorResponse{
-		JSONRPC: "2.0",
+	errorResponse := RPCResponse{
+		Jsonrpc: "2.0",
 		ID:      errorId,
-		Error: struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		}{
+		Error: &RPCError{
 			Code:    ErrorCodeInvalidRequest,
 			Message: "execution reverted",
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	err = json.NewEncoder(w).Encode(errorResponse)
-	if err != nil {
-		slog.Error("Failed to send response", "err", err)
-	}
+	return errorResponse
 }
 
 func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error) {
@@ -323,4 +219,43 @@ func getParamAddress(callData erc721.CallData, paramName string) (common.Address
 	}
 
 	return addressParam, nil
+}
+
+func getJsonRPCRequest(r *http.Request) (*JSONRPCRequest, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading request body: %w", err)
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
+	var req JSONRPCRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return nil, fmt.Errorf("error parsing JSON request: %w", err)
+	}
+	return &req, nil
+}
+
+func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
+	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
+	// if block is not latest we should checkout tree for that tag
+	// it is important that this transaction is not commit which is always the case for this transaction
+	if blockNumber != "latest" {
+		num, err := strconv.ParseInt(strings.Replace(blockNumber, "0x", "", 1), 16, 64)
+		if err != nil {
+			slog.Error("wrong block number", "err", err)
+			return nil, err
+		}
+
+		err = tx.Checkout(contractAddress, num)
+		if err != nil {
+			slog.Error("error occurred checking out merkle tree at block number", "block_number", num,
+				"contract_address", contractAddress, "err", err)
+			return nil, err
+		}
+	}
+	return tx, nil
 }

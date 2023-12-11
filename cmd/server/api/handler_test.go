@@ -25,10 +25,16 @@ func TestHandler(t *testing.T) {
 	if handler == nil {
 		t.Error("handler is nil")
 	}
-	if handler.GetHttpClient() == nil {
+	if handler == nil || handler.UniversalMintingRPCHandler == nil {
+		t.Error("handler.UniversalMintingRPCHandler is nil")
+	}
+	if handler.ProxyRPCHandler == nil {
+		t.Error("handler.ProxyRPCHandler is nil")
+	}
+	if handler.ProxyRPCHandler.GetHttpClient() == nil {
 		t.Error("handler.HttpClient is nil")
 	}
-	if handler.GetRpcUrl() != rpcUrl {
-		t.Fatalf("RpcUrl got %v,  expected %v", handler.GetRpcUrl(), rpcUrl)
+	if handler.ProxyRPCHandler.GetRpcUrl() != rpcUrl {
+		t.Fatalf("RpcUrl got %v,  expected %v", handler.ProxyRPCHandler.GetRpcUrl(), rpcUrl)
 	}
 }
