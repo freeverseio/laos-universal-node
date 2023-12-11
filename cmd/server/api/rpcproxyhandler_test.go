@@ -14,7 +14,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestPostRpcHandler1(t *testing.T) {
+func TestPostRpcHandler(t *testing.T) {
 	t.Parallel() // Run tests in parallel
 
 	tests := []struct {
