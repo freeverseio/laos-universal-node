@@ -241,6 +241,21 @@ func (mr *MockTxMockRecorder) GetCurrentEvoBlockForOwnershipContract(contract an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).GetCurrentEvoBlockForOwnershipContract), contract)
 }
 
+// GetCurrentEvoBlockTimestamp mocks base method.
+func (m *MockTx) GetCurrentEvoBlockTimestamp() (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentEvoBlockTimestamp")
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentEvoBlockTimestamp indicates an expected call of GetCurrentEvoBlockTimestamp.
+func (mr *MockTxMockRecorder) GetCurrentEvoBlockTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockTx)(nil).GetCurrentEvoBlockTimestamp))
+}
+
 // GetCurrentOwnershipBlock mocks base method.
 func (m *MockTx) GetCurrentOwnershipBlock() (uint64, error) {
 	m.ctrl.T.Helper()
@@ -385,6 +400,20 @@ func (m *MockTx) SetCurrentEvoBlockForOwnershipContract(contract string, blockNu
 func (mr *MockTxMockRecorder) SetCurrentEvoBlockForOwnershipContract(contract, blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).SetCurrentEvoBlockForOwnershipContract), contract, blockNumber)
+}
+
+// SetCurrentEvoBlockTimestamp mocks base method.
+func (m *MockTx) SetCurrentEvoBlockTimestamp(number uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCurrentEvoBlockTimestamp", number)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCurrentEvoBlockTimestamp indicates an expected call of SetCurrentEvoBlockTimestamp.
+func (mr *MockTxMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockTx)(nil).SetCurrentEvoBlockTimestamp), number)
 }
 
 // SetCurrentOwnershipBlock mocks base method.
@@ -1022,6 +1051,21 @@ func (mr *MockEvolutionBlockStateMockRecorder) GetCurrentEvoBlock() *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlock", reflect.TypeOf((*MockEvolutionBlockState)(nil).GetCurrentEvoBlock))
 }
 
+// GetCurrentEvoBlockTimestamp mocks base method.
+func (m *MockEvolutionBlockState) GetCurrentEvoBlockTimestamp() (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentEvoBlockTimestamp")
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentEvoBlockTimestamp indicates an expected call of GetCurrentEvoBlockTimestamp.
+func (mr *MockEvolutionBlockStateMockRecorder) GetCurrentEvoBlockTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionBlockState)(nil).GetCurrentEvoBlockTimestamp))
+}
+
 // SetCurrentEvoBlock mocks base method.
 func (m *MockEvolutionBlockState) SetCurrentEvoBlock(number uint64) error {
 	m.ctrl.T.Helper()
@@ -1034,4 +1078,18 @@ func (m *MockEvolutionBlockState) SetCurrentEvoBlock(number uint64) error {
 func (mr *MockEvolutionBlockStateMockRecorder) SetCurrentEvoBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlock", reflect.TypeOf((*MockEvolutionBlockState)(nil).SetCurrentEvoBlock), number)
+}
+
+// SetCurrentEvoBlockTimestamp mocks base method.
+func (m *MockEvolutionBlockState) SetCurrentEvoBlockTimestamp(number uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCurrentEvoBlockTimestamp", number)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCurrentEvoBlockTimestamp indicates an expected call of SetCurrentEvoBlockTimestamp.
+func (mr *MockEvolutionBlockStateMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionBlockState)(nil).SetCurrentEvoBlockTimestamp), number)
 }

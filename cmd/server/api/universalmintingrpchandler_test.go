@@ -160,13 +160,16 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				validateResponse(t, rr, http.StatusOK, hexStringOne)
 			},
 		},
+
 		{
-			name: "Should execute SupportsInterface",
+			name: "Should execute blocknumber",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+				setUpTransactionMocks(t, storage, tx)
+				tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(42971043), nil).Times(1)
 			},
-			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x01ffc9a7780e9d6300000000000000000000000000000000000000000000000000000000"}, "latest"],"id":1}`,
+			request: `{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}`,
 			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+				validateResponse(t, rr, http.StatusOK, "0x28fafa2")
 			},
 		},
 	}
@@ -239,7 +242,6 @@ func runHandler(t *testing.T, request *http.Request, storage *mockTx.MockService
 		}
 
 		h := api.GlobalRPCHandler{}
-		h.SetJsonRPCRequest(req)
 		h.SetStateService(storage)
 		h.UniversalMintingRPCHandler(w, r)
 	})

@@ -34,7 +34,6 @@ func PostRpcRequestMiddleware(h RPCHandler, stateService state.Service) http.Han
 		universalMintingRPCHandler := http.HandlerFunc(h.UniversalMintingRPCHandler) // handler for universal minting requests
 		// Check for a valid JSON-RPC POST request
 		if valid, body := validateJSONRPCPostRequest(w, r); valid {
-			h.SetJsonRPCRequest(*body)
 			h.SetStateService(stateService)
 			handleJSONRPCRequest(w, r, body, proxyRPCHandler, universalMintingRPCHandler, stateService)
 		}
@@ -75,6 +74,8 @@ func handleJSONRPCRequest(w http.ResponseWriter, r *http.Request, jsonRequest *J
 	switch jsonRequest.Method {
 	case "eth_call":
 		handleEthCallMethod(w, r, jsonRequest, proxyRPCHandler, universalMintingHandler, stateService)
+	case "eth_blockNumber":
+		universalMintingHandler.ServeHTTP(w, r)
 	default:
 		proxyRPCHandler.ServeHTTP(w, r)
 	}

@@ -52,6 +52,12 @@ func run() error {
 		}
 	}()
 
+	// Disclaimer
+	slog.Info("******************************************************************************")
+	slog.Info("This is a beta version of the Laos Universal Node. It is not intended for production use. Use at your own risk.")
+	slog.Info("You are now running the Universal Node Docker Image. Please be aware that this version currently does not handle blockchain reorganizations (reorgs). As a precaution, we strongly encourage operating with a heightened safety margin in your ownership chain management.")
+	slog.Info("******************************************************************************")
+
 	storageService := badgerStorage.NewService(db)
 	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
@@ -178,6 +184,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	if err != nil {
 		return err
 	}
+	evoSynced := true
+	lastBlock := startingBlock
 
 	for {
 		select {
@@ -185,95 +193,44 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			slog.Info("context canceled")
 			return nil
 		default:
-			l1LatestBlock, err := getL1LatestBlock(ctx, client)
+			if evoSynced {
+				var l1LatestBlock uint64
+				l1LatestBlock, err = getL1LatestBlock(ctx, client)
+				if err != nil {
+					slog.Error("error retrieving the latest block", "err", err.Error())
+					break
+				}
+				lastBlock = calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
+				if lastBlock < startingBlock {
+					slog.Debug("last calculated block is behind starting block, waiting...",
+						"last_block", lastBlock, "starting_block", startingBlock)
+					waitBeforeNextScan(ctx, c.WaitingTime)
+					break
+				}
+			}
+
+			evoSynced, err = isEvoSyncedWithOwnership(ctx, stateService, client, lastBlock)
 			if err != nil {
-				slog.Error("error retrieving the latest block", "err", err.Error())
+				slog.Error("error occurred while checking if evolution chain is synced with ownership chain", "err", err.Error())
 				break
 			}
-			lastBlock := calculateLastBlock(startingBlock, l1LatestBlock, c.BlocksRange, c.BlocksMargin)
-			if lastBlock < startingBlock {
-				slog.Debug("last calculated block is behind starting block, waiting...",
-					"last_block", lastBlock, "starting_block", startingBlock)
+
+			if !evoSynced {
+				slog.Debug("evolution chain is not synced with ownership chain, waiting...")
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
-
-			tx = stateService.NewTransaction()
+			evoSynced = true
 
 			// discovering new contracts deployed on the ownership chain
-			shouldDiscover, err := shouldDiscover(tx, c.Contracts)
-			if err != nil {
-				slog.Error("error occurred reading contracts from storage", "err", err.Error())
-				break
-			}
-			if shouldDiscover {
-				if err = discoverContracts(ctx, s, startingBlock, lastBlock, tx); err != nil {
-					break
-				}
-			}
-
-			var contractsAddress []string
 			// choosing which contracts to scan
-			if len(c.Contracts) > 0 {
-				// if contracts come from flag, consider only those that have been discovered (whether in this iteration or previously)
-				var existingContracts []string
-				existingContracts, err = tx.GetExistingERC721UniversalContracts(c.Contracts)
-				if err != nil {
-					slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
-					break
-				}
-				contractsAddress = append(contractsAddress, existingContracts...)
-			} else {
-				dbContracts := tx.GetAllERC721UniversalContracts()
-				contractsAddress = append(contractsAddress, dbContracts...)
-			}
-
+			// if contracts come from flag, consider only those that have been discovered (whether in this iteration or previously)
 			// load merkle trees for all contracts whose events have to be scanned for
-			if err = loadMerkleTrees(tx, contractsAddress); err != nil {
-				slog.Error("error creating merkle trees", "err", err)
-				break
-			}
-
 			// scanning contracts for events on the ownership chain
-			var lastScannedBlock *big.Int
-			if len(contractsAddress) > 0 {
-				var scanEvents []scan.Event
-				scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contractsAddress)
-				if err != nil {
-					slog.Error("error occurred while scanning events", "err", err.Error())
-					break
-				}
-
-				// getting transfer events from scan events
-				var modelTransferEvents map[string][]model.ERC721Transfer
-				modelTransferEvents, err = getModelTransferEvents(ctx, client, scanEvents)
-				if err != nil {
-					slog.Error("error parsing transfer events", "err", err.Error())
-					break
-				}
-
-				// retrieving minted events and update the state accordingly
-				if err = readEventsAndUpdateState(ctx, client, contractsAddress, modelTransferEvents, tx, lastBlock); err != nil {
-					slog.Error("error occurred", "err", err.Error())
-					break
-				}
-			} else {
-				lastScannedBlock = big.NewInt(int64(lastBlock))
-			}
-
-			nextStartingBlock := lastScannedBlock.Uint64() + 1
-
-			if err = tagRootsUntilBlock(tx, contractsAddress, nextStartingBlock); err != nil {
-				slog.Error("error occurred while tagging roots", "err", err.Error())
-				break
-			}
-
-			if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
-				slog.Error("error occurred while storing current block", "err", err.Error())
-				break
-			}
-			if err = tx.Commit(); err != nil {
-				slog.Error("error occurred while committing transaction", "err", err.Error())
+			// getting transfer events from scan events
+			// retrieving minted events and update the state accordingly
+			nextStartingBlock, err := scanAndDigest(ctx, stateService, c, s, startingBlock, lastBlock, client)
+			if err != nil {
 				break
 			}
 			startingBlock = nextStartingBlock
@@ -281,9 +238,108 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 	}
 }
 
+func isEvoSyncedWithOwnership(ctx context.Context, stateService state.Service, client scan.EthClient, lastBlock uint64) (bool, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	evoCurrentTimestamp, err := tx.GetCurrentEvoBlockTimestamp()
+	if err != nil {
+		return false, err
+	}
+
+	ownershipCurrentTimestamp, err := getTimestampForBlockNumber(ctx, client, lastBlock)
+	if err != nil {
+		return false, err
+	}
+
+	slog.Debug("check if evo chain is synced with ownership chain",
+		"evo_block_timestamp", evoCurrentTimestamp, "ownership_block_timestamp", ownershipCurrentTimestamp)
+	if evoCurrentTimestamp < ownershipCurrentTimestamp {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Config, s scan.Scanner, startingBlock, lastBlock uint64, client scan.EthClient) (uint64, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	shouldDiscover, err := shouldDiscover(tx, c.Contracts)
+	if err != nil {
+		slog.Error("error occurred reading contracts from storage", "err", err.Error())
+		return 0, err
+	}
+	if shouldDiscover {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx); errDiscover != nil {
+			return 0, errDiscover
+		}
+	}
+
+	var contractsAddress []string
+
+	if len(c.Contracts) > 0 {
+		var existingContracts []string
+		existingContracts, err = tx.GetExistingERC721UniversalContracts(c.Contracts)
+		if err != nil {
+			slog.Error("error occurred checking if user-provided contracts exist in storage", "err", err.Error())
+			return 0, err
+		}
+		contractsAddress = append(contractsAddress, existingContracts...)
+	} else {
+		dbContracts := tx.GetAllERC721UniversalContracts()
+		contractsAddress = append(contractsAddress, dbContracts...)
+	}
+
+	if err = loadMerkleTrees(tx, contractsAddress); err != nil {
+		slog.Error("error creating merkle trees", "err", err)
+		return 0, err
+	}
+
+	var lastScannedBlock *big.Int
+	if len(contractsAddress) > 0 {
+		var scanEvents []scan.Event
+		scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contractsAddress)
+		if err != nil {
+			slog.Error("error occurred while scanning events", "err", err.Error())
+			return 0, err
+		}
+
+		var modelTransferEvents map[string][]model.ERC721Transfer
+		modelTransferEvents, err = getModelTransferEvents(ctx, client, scanEvents)
+		if err != nil {
+			slog.Error("error parsing transfer events", "err", err.Error())
+			return 0, err
+		}
+
+		if err = readEventsAndUpdateState(ctx, client, contractsAddress, modelTransferEvents, tx, lastBlock); err != nil {
+			slog.Error("error occurred", "err", err.Error())
+			return 0, err
+		}
+	} else {
+		lastScannedBlock = big.NewInt(int64(lastBlock))
+	}
+
+	nextStartingBlock := lastScannedBlock.Uint64() + 1
+
+	if err = tagRootsUntilBlock(tx, contractsAddress, nextStartingBlock); err != nil {
+		slog.Error("error occurred while tagging roots", "err", err.Error())
+		return 0, err
+	}
+
+	if err = tx.SetCurrentOwnershipBlock(nextStartingBlock); err != nil {
+		slog.Error("error occurred while storing current block", "err", err.Error())
+		return 0, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		slog.Error("error occurred while committing transaction", "err", err.Error())
+		return 0, err
+	}
+
+	return nextStartingBlock, nil
+}
+
 func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, s scan.Scanner, stateService state.Service) error {
 	tx := stateService.NewTransaction()
-
 	defer tx.Discard()
 	startingBlockDB, err := tx.GetCurrentEvoBlock()
 	if err != nil {
@@ -318,27 +374,47 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			tx = stateService.NewTransaction()
-			err = storeMintedWithExternalURIEventsByContract(tx, events)
+			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, lastScannedBlock, client)
 			if err != nil {
-				slog.Error("error occurred while storing minted events", "err", err.Error())
-				break
-			}
-
-			nextStartingBlock := lastScannedBlock.Uint64() + 1
-			if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
-				slog.Error("error occurred while storing current block", "err", err.Error())
-				break
-			}
-
-			if err = tx.Commit(); err != nil {
-				slog.Error("error committing transaction", "err", err.Error())
 				break
 			}
 
 			startingBlock = nextStartingBlock
 		}
 	}
+}
+
+func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Service, events []scan.Event, lastBlock *big.Int, client scan.EthClient) (uint64, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	err := storeMintedWithExternalURIEventsByContract(tx, events)
+	if err != nil {
+		slog.Error("error occurred while storing minted events", "err", err.Error())
+		return 0, err
+	}
+
+	nextStartingBlock := lastBlock.Uint64() + 1
+	if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
+		slog.Error("error occurred while storing current block", "err", err.Error())
+		return 0, err
+	}
+
+	// asking for timestamp of lastBlock as nextStartingBlock does not exist yet
+	timestamp, err := getTimestampForBlockNumber(ctx, client, lastBlock.Uint64())
+	if err != nil {
+		slog.Error("error retrieving block headers", "err", err.Error())
+		return 0, err
+	}
+
+	if err = tx.SetCurrentEvoBlockTimestamp(timestamp); err != nil {
+		slog.Error("error storing block headers", "err", err.Error())
+		return 0, err
+	}
+	if err = tx.Commit(); err != nil {
+		slog.Error("error committing transaction", "err", err.Error())
+		return 0, err
+	}
+	return nextStartingBlock, nil
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
@@ -498,7 +574,7 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
 	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
@@ -518,6 +594,29 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 			return err
 		}
 
+		// check if there are mint events for this contract
+		mintEvents, err := tx.GetMintedWithExternalURIEvents(contracts[i].CollectionAddress.String())
+		if err != nil {
+			slog.Error("error occurred retrieving evochain minted events for ownership contract: %w", err)
+			return err
+		}
+
+		timestampContract, err := getTimestampForBlockNumber(ctx, client, contracts[i].BlockNumber)
+		if err != nil {
+			return err
+		}
+
+		ownershipContractEvoBlock, err := updateStateWithMintEvents(contracts[i].Address, tx, mintEvents, timestampContract)
+		if err != nil {
+			slog.Error("error occurred updating state with mint events", "err", err)
+			return err
+		}
+
+		if err = tx.SetCurrentEvoBlockForOwnershipContract(contracts[i].Address.String(), ownershipContractEvoBlock); err != nil {
+			return fmt.Errorf("error updating current evochain block %d for ownership contract %s: %w",
+				ownershipContractEvoBlock, strings.ToLower(contracts[i].Address.String()), err)
+		}
+
 		if err = tx.TagRoot(contracts[i].Address, int64(contracts[i].BlockNumber)); err != nil {
 			slog.Error("error occurred tagging roots for newly discovered universal contract(s)", "err", err.Error())
 			return err
@@ -525,6 +624,21 @@ func discoverContracts(ctx context.Context, s scan.Scanner, startingBlock, lastB
 	}
 
 	return nil
+}
+
+func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) (uint64, error) {
+	var ownershipContractEvoBlock uint64
+	for _, mintedEvent := range mintedEvents {
+		if mintedEvent.Timestamp > timestampContract {
+			break
+		}
+		if err := tx.Mint(contract, mintedEvent.TokenId); err != nil {
+			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
+				contract, mintedEvent.TokenId, err)
+		}
+		ownershipContractEvoBlock = mintedEvent.BlockNumber
+	}
+	return ownershipContractEvoBlock, nil
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {

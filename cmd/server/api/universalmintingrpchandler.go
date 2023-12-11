@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
 	"net/http"
@@ -34,7 +36,18 @@ type JSONRPCErrorResponse struct {
 }
 
 func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *http.Request) {
-	jsonRPCRequest := h.GetJsonRPCRequest()
+	jsonRPCRequest, err := getJsonRPCRequest(r)
+	if err != nil {
+		http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
+		return
+	}
+
+	// if call is eth_blockNumber we should return the latest block number
+	if jsonRPCRequest.Method == "eth_blockNumber" {
+		blockNumber(w, h.stateService)
+		return
+	}
+
 	var params ParamsRPCRequest
 	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
 		http.Error(w, "Error parsing params or missing params", http.StatusBadRequest)
@@ -43,7 +56,7 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 
 	blockNumber := "latest" // if this by chance does not exist in param use the latest block
 	if len(jsonRPCRequest.Params) == 2 {
-		if err := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); err != nil {
+		if errUnmarshal := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); errUnmarshal != nil {
 			http.Error(w, "Error parsing block number", http.StatusBadRequest)
 			return
 		}
@@ -87,6 +100,19 @@ func supportsInterface(w http.ResponseWriter) {
 	sendResponse(w, "0x0000000000000000000000000000000000000000000000000000000000000001", nil)
 }
 
+func getJsonRPCRequest(r *http.Request) (*JSONRPCRequest, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading request body: %w", err)
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
+	var req JSONRPCRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return nil, fmt.Errorf("error parsing JSON request: %w", err)
+	}
+	return &req, nil
+}
+
 func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, w http.ResponseWriter) {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
@@ -117,7 +143,6 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber st
 		sendErrorResponse(w, err)
 		return
 	}
-
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
@@ -188,6 +213,19 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
 	sendResponse(w, fmt.Sprintf("0x%064x", tokenId), err)
+}
+
+func blockNumber(w http.ResponseWriter, stateService state.Service) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	blockNumber, err := tx.GetCurrentOwnershipBlock()
+	if err != nil {
+		slog.Error("Error getting current block number", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	// minus 1 because we want to return the last tagged block
+	sendResponse(w, fmt.Sprintf("0x%x", blockNumber-1), nil)
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {
