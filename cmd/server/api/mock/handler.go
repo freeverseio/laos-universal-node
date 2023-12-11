@@ -12,7 +12,6 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	api "github.com/freeverseio/laos-universal-node/cmd/server/api"
 	state "github.com/freeverseio/laos-universal-node/internal/state"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -88,18 +87,6 @@ func (m *MockRPCHandler) PostRPCProxyHandler(w http.ResponseWriter, r *http.Requ
 func (mr *MockRPCHandlerMockRecorder) PostRPCProxyHandler(w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostRPCProxyHandler", reflect.TypeOf((*MockRPCHandler)(nil).PostRPCProxyHandler), w, r)
-}
-
-// SetJsonRPCRequest mocks base method.
-func (m *MockRPCHandler) SetJsonRPCRequest(req api.JSONRPCRequest) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetJsonRPCRequest", req)
-}
-
-// SetJsonRPCRequest indicates an expected call of SetJsonRPCRequest.
-func (mr *MockRPCHandlerMockRecorder) SetJsonRPCRequest(req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetJsonRPCRequest", reflect.TypeOf((*MockRPCHandler)(nil).SetJsonRPCRequest), req)
 }
 
 // SetStateService mocks base method.

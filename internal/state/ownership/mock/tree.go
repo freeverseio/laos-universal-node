@@ -85,17 +85,17 @@ func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
 }
 
 // Mint mocks base method.
-func (m *MockTree) Mint(tokenId *big.Int, idx int) error {
+func (m *MockTree) Mint(mintEvent *model.MintedWithExternalURI, idx int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Mint", tokenId, idx)
+	ret := m.ctrl.Call(m, "Mint", mintEvent, idx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Mint indicates an expected call of Mint.
-func (mr *MockTreeMockRecorder) Mint(tokenId, idx any) *gomock.Call {
+func (mr *MockTreeMockRecorder) Mint(mintEvent, idx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockTree)(nil).Mint), tokenId, idx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockTree)(nil).Mint), mintEvent, idx)
 }
 
 // OwnerOf mocks base method.

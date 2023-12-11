@@ -41,7 +41,7 @@ type State interface {
 	TotalSupply(contract common.Address) (int64, error)
 	TokenByIndex(contract common.Address, idx int) (*big.Int, error)
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
-	Mint(contract common.Address, tokenId *big.Int) error
+	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	IsTreeSetForContract(contract common.Address) bool
 	Get(key string) ([]byte, error)
 	TagRoot(contract common.Address, blockNumber int64) error

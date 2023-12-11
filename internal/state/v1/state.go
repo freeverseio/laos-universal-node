@@ -221,14 +221,14 @@ func (t *tx) Transfer(contract common.Address, eventTransfer *model.ERC721Transf
 }
 
 // Mint creates a new token
-func (t *tx) Mint(contract common.Address, tokenId *big.Int) error {
-	slog.Debug("Mint ", "contract", contract.String(), "tokenId", tokenId.String())
+func (t *tx) Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error {
+	slog.Debug("Mint ", "contract", contract.String(), "tokenId", mintEvent.TokenId.String())
 	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err := enumeratedTotalTree.Mint(tokenId)
+	err := enumeratedTotalTree.Mint(mintEvent.TokenId)
 	if err != nil {
 		return err
 	}
@@ -243,12 +243,12 @@ func (t *tx) Mint(contract common.Address, tokenId *big.Int) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = ownershipTree.Mint(tokenId, int(totalSupply)-1)
+	err = ownershipTree.Mint(mintEvent, int(totalSupply)-1)
 	if err != nil {
 		return err
 	}
 
-	tokenData, err := ownershipTree.TokenData(tokenId)
+	tokenData, err := ownershipTree.TokenData(mintEvent.TokenId)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func (t *tx) Mint(contract common.Address, tokenId *big.Int) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	return enumeratedTree.Mint(tokenId, tokenData.SlotOwner)
+	return enumeratedTree.Mint(mintEvent.TokenId, tokenData.SlotOwner)
 }
 
 // TotalSupply returns the total number of tokens in the contract

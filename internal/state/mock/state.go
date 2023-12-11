@@ -346,17 +346,17 @@ func (mr *MockTxMockRecorder) IsTreeSetForContract(contract any) *gomock.Call {
 }
 
 // Mint mocks base method.
-func (m *MockTx) Mint(contract common.Address, tokenId *big.Int) error {
+func (m *MockTx) Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Mint", contract, tokenId)
+	ret := m.ctrl.Call(m, "Mint", contract, mintEvent)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Mint indicates an expected call of Mint.
-func (mr *MockTxMockRecorder) Mint(contract, tokenId any) *gomock.Call {
+func (mr *MockTxMockRecorder) Mint(contract, mintEvent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockTx)(nil).Mint), contract, tokenId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockTx)(nil).Mint), contract, mintEvent)
 }
 
 // OwnerOf mocks base method.
@@ -671,17 +671,17 @@ func (mr *MockStateMockRecorder) IsTreeSetForContract(contract any) *gomock.Call
 }
 
 // Mint mocks base method.
-func (m *MockState) Mint(contract common.Address, tokenId *big.Int) error {
+func (m *MockState) Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Mint", contract, tokenId)
+	ret := m.ctrl.Call(m, "Mint", contract, mintEvent)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Mint indicates an expected call of Mint.
-func (mr *MockStateMockRecorder) Mint(contract, tokenId any) *gomock.Call {
+func (mr *MockStateMockRecorder) Mint(contract, mintEvent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockState)(nil).Mint), contract, tokenId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mint", reflect.TypeOf((*MockState)(nil).Mint), contract, mintEvent)
 }
 
 // OwnerOf mocks base method.
