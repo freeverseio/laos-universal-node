@@ -17,8 +17,7 @@ const (
 	RpcId = 1
 )
 
-type RPCResponder interface {
-}
+type RPCResponder interface{}
 
 type RPCResponse struct {
 	Jsonrpc string    `json:"jsonrpc"`
@@ -77,6 +76,7 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 func (h *GlobalRPCHandler) HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse {
 	return h.UniversalMintingRPCHandler.HandleUniversalMinting(r, stateService)
 }
+
 func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request) RPCResponse {
 	return h.ProxyRPCHandler.HandleProxyRPC(r)
 }
@@ -93,7 +93,6 @@ func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) R
 	default:
 		return h.HandleProxyRPC(r)
 	}
-
 }
 
 func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req *JSONRPCRequest) RPCResponse {
@@ -123,7 +122,6 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req *JSONRPCRequ
 	if contractExists {
 		return h.HandleUniversalMinting(r, h.stateService)
 	} else {
-
 		return h.HandleProxyRPC(r)
 	}
 }

@@ -121,7 +121,7 @@ func TestPostRpcHandler1(t *testing.T) {
 					Message: "execution reverted",
 				},
 			},
-			//expectedBody:   "Bad Gateway\n",
+			// expectedBody:   "Bad Gateway\n",
 		},
 	}
 
@@ -176,7 +176,6 @@ func TestPostRpcHandler1(t *testing.T) {
 								}
 							}
 						}
-
 					}
 				}).Return(mockResponse, nil)
 			}

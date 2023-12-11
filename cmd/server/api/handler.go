@@ -45,8 +45,7 @@ type GlobalRPCHandler struct {
 	ProxyRPCHandler            RPCProxyHandler
 }
 
-type UniversalMintingRPCHandler struct {
-}
+type UniversalMintingRPCHandler struct{}
 
 type ProxyRPCHandler struct {
 	rpcUrl     string
@@ -56,6 +55,7 @@ type ProxyRPCHandler struct {
 func (h *ProxyRPCHandler) SetHttpClient(client HTTPClientInterface) {
 	h.httpClient = client
 }
+
 func (h *ProxyRPCHandler) GetRpcUrl() string {
 	return h.rpcUrl
 }

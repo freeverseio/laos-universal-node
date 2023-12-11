@@ -187,7 +187,9 @@ func TestPostRPCRequestHandler(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			request := httptest.NewRequest(tc.method, "/rpc", bytes.NewBufferString(tc.requestBody))
 			request.Header.Set("Content-Type", tc.contentType)
 			recorder := httptest.NewRecorder()
@@ -226,12 +228,11 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			if response.StatusCode != tc.expectedStatus {
 				t.Errorf("got %v, want %v", response.StatusCode, tc.expectedStatus)
 			}
-			for i := 0; i < len(string(body)) && i < len(tc.expectedBody); i++ {
+			for i := 0; i < len(body) && i < len(tc.expectedBody); i++ {
 				if string(body)[i] != tc.expectedBody[i] {
 					t.Errorf("got %v, want %v", string(body), tc.expectedBody)
 				}
 			}
-
 		})
 	}
 }

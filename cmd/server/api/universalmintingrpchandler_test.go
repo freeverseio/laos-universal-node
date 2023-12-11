@@ -227,14 +227,11 @@ func createRequest(t *testing.T, requestBody string) *http.Request {
 }
 
 func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse string) {
-
 	if expectedStatus == http.StatusOK {
-
 		if rr.Result != expectedResponse {
 			t.Errorf("handler returned unexpected result: got %v want %v", rr.Result, expectedResponse)
 		}
 	} else {
-
 		if rr.Error.Code != api.ErrorCodeInvalidRequest {
 			t.Errorf("handler returned wrong status code: got %v want %v", rr.Error.Code, api.ErrorCodeInvalidRequest)
 		}
