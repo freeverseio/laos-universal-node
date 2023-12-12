@@ -41,16 +41,16 @@ type GlobalRPCHandler struct {
 	rpcUrl                     string
 	httpClient                 HTTPClientInterface // Inject the HTTP client interface here
 	stateService               state.Service
-	UniversalMintingRPCHandler RPCUniversalHandler
-	ProxyRPCHandler            RPCProxyHandler
+	universalMintingRPCHandler RPCUniversalHandler
+	proxyRPCHandler            RPCProxyHandler
 }
 
 func (h *GlobalRPCHandler) GetUniversalMintingRPCHandler() RPCUniversalHandler {
-	return h.UniversalMintingRPCHandler
+	return h.universalMintingRPCHandler
 }
 
 func (h *GlobalRPCHandler) GetProxyRPCHandler() RPCProxyHandler {
-	return h.ProxyRPCHandler
+	return h.proxyRPCHandler
 }
 
 type UniversalMintingRPCHandler struct{}
@@ -81,19 +81,19 @@ type HandlerOption func(*GlobalRPCHandler)
 func WithHttpClient(client HTTPClientInterface) HandlerOption {
 	return func(h *GlobalRPCHandler) {
 		h.httpClient = client
-		h.ProxyRPCHandler.SetHttpClient(client)
+		h.proxyRPCHandler.SetHttpClient(client)
 	}
 }
 
 func WithUniversalMintingRPCHandler(handler RPCUniversalHandler) HandlerOption {
 	return func(h *GlobalRPCHandler) {
-		h.UniversalMintingRPCHandler = handler
+		h.universalMintingRPCHandler = handler
 	}
 }
 
 func WithProxyRPCHandler(handler RPCProxyHandler) HandlerOption {
 	return func(h *GlobalRPCHandler) {
-		h.ProxyRPCHandler = handler
+		h.proxyRPCHandler = handler
 	}
 }
 
@@ -106,8 +106,8 @@ func NewGlobalRPCHandler(rpcUrl string, opts ...HandlerOption) *GlobalRPCHandler
 	handler := &GlobalRPCHandler{
 		rpcUrl:                     rpcUrl,
 		httpClient:                 httpClient,
-		UniversalMintingRPCHandler: &UniversalMintingRPCHandler{},
-		ProxyRPCHandler: &ProxyRPCHandler{
+		universalMintingRPCHandler: &UniversalMintingRPCHandler{},
+		proxyRPCHandler: &ProxyRPCHandler{
 			rpcUrl:     rpcUrl,
 			httpClient: httpClient,
 		},

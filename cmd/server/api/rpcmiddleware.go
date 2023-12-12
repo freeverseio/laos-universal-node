@@ -12,7 +12,7 @@ type JSONRPCRequest struct {
 	JSONRPC string            `json:"jsonrpc"`
 	Method  string            `json:"method"`
 	Params  []json.RawMessage `json:"params"`
-	ID      *json.RawMessage  `json:"id,omitempty"` // Pointer allows for an optional field
+	ID      *json.RawMessage  `json:"id,omitempty"`
 }
 
 type ParamsRPCRequest struct {
