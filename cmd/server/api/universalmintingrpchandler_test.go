@@ -219,7 +219,6 @@ func setUpBalanceOfMocks(t *testing.T, tx *mockTx.MockTx, addressContract, owner
 }
 
 func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
-
 	var jsonRPCRequest api.JSONRPCRequest
 	// tt.requestBody to []byte
 	body := []byte(requestBody)
