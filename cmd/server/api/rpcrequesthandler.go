@@ -80,7 +80,7 @@ func (h *GlobalRPCHandler) HandleUniversalMinting(req JSONRPCRequest, stateServi
 }
 
 func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
-	return h.proxyRPCHandler.HandleProxyRPC(r, req)
+	return h.rpcProxyHandler.HandleProxyRPC(r, req)
 }
 
 func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {

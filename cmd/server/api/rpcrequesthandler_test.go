@@ -223,7 +223,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			storage := mockStorage.NewMockService(ctrl)
 			universalHandler := mock.NewMockRPCUniversalHandler(ctrl)
-			proxyHandler := mock.NewMockRPCProxyHandler(ctrl)
+			proxyHandler := mock.NewMockProxyHandler(ctrl)
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 
 			if len(tc.mockResponse) > 0 {
@@ -237,7 +237,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 				"https://example.com/",
 				api.WithHttpClient(mockHttpClient),
 				api.WithUniversalMintingRPCHandler(universalHandler),
-				api.WithProxyRPCHandler(proxyHandler),
+				api.WithRPCProxyHandler(proxyHandler),
 			)
 
 			tx := mockStorage.NewMockTx(ctrl)

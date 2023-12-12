@@ -167,31 +167,31 @@ func (mr *MockRPCUniversalHandlerMockRecorder) HandleUniversalMinting(req, state
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUniversalMinting", reflect.TypeOf((*MockRPCUniversalHandler)(nil).HandleUniversalMinting), req, stateService)
 }
 
-// MockRPCProxyHandler is a mock of RPCProxyHandler interface.
-type MockRPCProxyHandler struct {
+// MockProxyHandler is a mock of ProxyHandler interface.
+type MockProxyHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockRPCProxyHandlerMockRecorder
+	recorder *MockProxyHandlerMockRecorder
 }
 
-// MockRPCProxyHandlerMockRecorder is the mock recorder for MockRPCProxyHandler.
-type MockRPCProxyHandlerMockRecorder struct {
-	mock *MockRPCProxyHandler
+// MockProxyHandlerMockRecorder is the mock recorder for MockProxyHandler.
+type MockProxyHandlerMockRecorder struct {
+	mock *MockProxyHandler
 }
 
-// NewMockRPCProxyHandler creates a new mock instance.
-func NewMockRPCProxyHandler(ctrl *gomock.Controller) *MockRPCProxyHandler {
-	mock := &MockRPCProxyHandler{ctrl: ctrl}
-	mock.recorder = &MockRPCProxyHandlerMockRecorder{mock}
+// NewMockProxyHandler creates a new mock instance.
+func NewMockProxyHandler(ctrl *gomock.Controller) *MockProxyHandler {
+	mock := &MockProxyHandler{ctrl: ctrl}
+	mock.recorder = &MockProxyHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRPCProxyHandler) EXPECT() *MockRPCProxyHandlerMockRecorder {
+func (m *MockProxyHandler) EXPECT() *MockProxyHandlerMockRecorder {
 	return m.recorder
 }
 
 // GetHttpClient mocks base method.
-func (m *MockRPCProxyHandler) GetHttpClient() api.HTTPClientInterface {
+func (m *MockProxyHandler) GetHttpClient() api.HTTPClientInterface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHttpClient")
 	ret0, _ := ret[0].(api.HTTPClientInterface)
@@ -199,13 +199,13 @@ func (m *MockRPCProxyHandler) GetHttpClient() api.HTTPClientInterface {
 }
 
 // GetHttpClient indicates an expected call of GetHttpClient.
-func (mr *MockRPCProxyHandlerMockRecorder) GetHttpClient() *gomock.Call {
+func (mr *MockProxyHandlerMockRecorder) GetHttpClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHttpClient", reflect.TypeOf((*MockRPCProxyHandler)(nil).GetHttpClient))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHttpClient", reflect.TypeOf((*MockProxyHandler)(nil).GetHttpClient))
 }
 
 // GetRpcUrl mocks base method.
-func (m *MockRPCProxyHandler) GetRpcUrl() string {
+func (m *MockProxyHandler) GetRpcUrl() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRpcUrl")
 	ret0, _ := ret[0].(string)
@@ -213,13 +213,13 @@ func (m *MockRPCProxyHandler) GetRpcUrl() string {
 }
 
 // GetRpcUrl indicates an expected call of GetRpcUrl.
-func (mr *MockRPCProxyHandlerMockRecorder) GetRpcUrl() *gomock.Call {
+func (mr *MockProxyHandlerMockRecorder) GetRpcUrl() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRpcUrl", reflect.TypeOf((*MockRPCProxyHandler)(nil).GetRpcUrl))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRpcUrl", reflect.TypeOf((*MockProxyHandler)(nil).GetRpcUrl))
 }
 
 // HandleProxyRPC mocks base method.
-func (m *MockRPCProxyHandler) HandleProxyRPC(r *http.Request, req api.JSONRPCRequest) api.RPCResponse {
+func (m *MockProxyHandler) HandleProxyRPC(r *http.Request, req api.JSONRPCRequest) api.RPCResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HandleProxyRPC", r, req)
 	ret0, _ := ret[0].(api.RPCResponse)
@@ -227,19 +227,19 @@ func (m *MockRPCProxyHandler) HandleProxyRPC(r *http.Request, req api.JSONRPCReq
 }
 
 // HandleProxyRPC indicates an expected call of HandleProxyRPC.
-func (mr *MockRPCProxyHandlerMockRecorder) HandleProxyRPC(r, req any) *gomock.Call {
+func (mr *MockProxyHandlerMockRecorder) HandleProxyRPC(r, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleProxyRPC", reflect.TypeOf((*MockRPCProxyHandler)(nil).HandleProxyRPC), r, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleProxyRPC", reflect.TypeOf((*MockProxyHandler)(nil).HandleProxyRPC), r, req)
 }
 
 // SetHttpClient mocks base method.
-func (m *MockRPCProxyHandler) SetHttpClient(client api.HTTPClientInterface) {
+func (m *MockProxyHandler) SetHttpClient(client api.HTTPClientInterface) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetHttpClient", client)
 }
 
 // SetHttpClient indicates an expected call of SetHttpClient.
-func (mr *MockRPCProxyHandlerMockRecorder) SetHttpClient(client any) *gomock.Call {
+func (mr *MockProxyHandlerMockRecorder) SetHttpClient(client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHttpClient", reflect.TypeOf((*MockRPCProxyHandler)(nil).SetHttpClient), client)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHttpClient", reflect.TypeOf((*MockProxyHandler)(nil).SetHttpClient), client)
 }

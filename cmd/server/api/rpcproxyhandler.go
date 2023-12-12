@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-// ProxyRPCHandler
-func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
+// RPCProxyHandler
+func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
 	rpcId := getRpcId(req)
 	// JSONRPCRequest to []byte
 	body, err := json.Marshal(req)
