@@ -14,164 +14,180 @@ import (
 )
 
 func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
+	rpcId := getRpcId(jsonRPCRequest)
+
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
-		return blockNumber(stateService)
+		return blockNumber(stateService, rpcId)
 	}
 
 	var params ParamsRPCRequest
 	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
-		return getErrorResponse(fmt.Errorf("error parsing params or missing params"))
+		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), rpcId)
 	}
 
 	blockNumber := "latest" // if this by chance does not exist in param use the latest block
 	if len(jsonRPCRequest.Params) == 2 {
 		if errUnmarshal := json.Unmarshal(jsonRPCRequest.Params[1], &blockNumber); errUnmarshal != nil {
-			return getErrorResponse(fmt.Errorf("error parsing block number: %w", errUnmarshal))
+			return getErrorResponse(fmt.Errorf("error parsing block number: %w", errUnmarshal), rpcId)
 		}
 	}
 
 	calldata, err := erc721.NewCallData(params.Data)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err))
+		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err), rpcId)
 	}
 
 	if method, exists, err := calldata.UniversalMintingMethod(); err != nil {
-		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err))
+		return getErrorResponse(fmt.Errorf("error parsing calldata: %w", err), rpcId)
 	} else if !exists {
-		return getErrorResponse(fmt.Errorf("method not supported"))
+		return getErrorResponse(fmt.Errorf("method not supported"), rpcId)
 	} else {
 		switch method {
 		case erc721.OwnerOf:
-			return ownerOf(calldata, params, blockNumber, stateService)
+			return ownerOf(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.BalanceOf:
-			return balanceOf(calldata, params, blockNumber, stateService)
+			return balanceOf(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.TotalSupply:
-			return totalSupply(params, blockNumber, stateService)
+			return totalSupply(params, blockNumber, stateService, rpcId)
 		case erc721.TokenOfOwnerByIndex:
-			return tokenOfOwnerByIndex(calldata, params, blockNumber, stateService)
+			return tokenOfOwnerByIndex(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.TokenByIndex:
-			return tokenByIndex(calldata, params, blockNumber, stateService)
+			return tokenByIndex(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.SupportsInterface:
-			return supportsInterface()
+			return supportsInterface(rpcId)
 		}
 	}
-	return getErrorResponse(fmt.Errorf("method not supported"))
+	return getErrorResponse(fmt.Errorf("method not supported"), rpcId)
 }
 
-func supportsInterface() RPCResponse {
+func getRpcId(jsonRPCRequest JSONRPCRequest) uint {
+	var id uint
+	if jsonRPCRequest.ID != nil {
+		err := json.Unmarshal(*jsonRPCRequest.ID, &id)
+		if err != nil {
+			return RPCErrorId
+		}
+		return id
+	} else {
+		return RPCId
+	}
+
+}
+
+func supportsInterface(id uint) RPCResponse {
 	// calldata already checked for SupportsInterface 0x780e9d63
 	// if we are here it means that the calldata is SupportsInterface(0x780e9d63)
 	// so we can return true
-	return getResponse("0x0000000000000000000000000000000000000000000000000000000000000001", nil)
+	return getResponse("0x0000000000000000000000000000000000000000000000000000000000000001", id, nil)
 }
 
-func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
+func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
-		return getErrorResponse(err)
+		return getErrorResponse(err, id)
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
 	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
 	// TODO check if there is a better way to do this
 	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
-	return getResponse(fullAddressString, err)
+	return getResponse(fullAddressString, id, err)
 }
 
-func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
+func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error getting owner: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting owner: %w", err), id)
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	return getResponse(fmt.Sprintf("0x%064x", balance), err)
+	return getResponse(fmt.Sprintf("0x%064x", balance), id, err)
 }
 
-func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
+func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err := loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
 	totalSupply, err := tx.TotalSupply(common.HexToAddress(params.To))
-	return getResponse(fmt.Sprintf("0x%064x", totalSupply), err)
+	return getResponse(fmt.Sprintf("0x%064x", totalSupply), id, err)
 }
 
-func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
+func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
-		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err), id)
 	}
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error getting owner: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting owner: %w", err), id)
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
 	tokenId, err := tx.TokenOfOwnerByIndex(common.HexToAddress(params.To), ownerAddress, int(index.Int64()))
-	return getResponse(fmt.Sprintf("0x%064x", tokenId), err)
+	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service) RPCResponse {
+func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err), id)
 	}
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
 	tokenId, err := tx.TokenByIndex(common.HexToAddress(params.To), int(index.Int64()))
-	return getResponse(fmt.Sprintf("0x%064x", tokenId), err)
+	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func blockNumber(stateService state.Service) RPCResponse {
+func blockNumber(stateService state.Service, id uint) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	blockNumber, err := tx.GetCurrentOwnershipBlock()
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error getting current block number: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting current block number: %w", err), id)
 	}
 	// minus 1 because we want to return the last tagged block
-	return getResponse(fmt.Sprintf("0x%x", blockNumber-1), nil)
+	return getResponse(fmt.Sprintf("0x%x", blockNumber-1), id, nil)
 }
 
-func getResponse(result string, err error) RPCResponse {
+func getResponse(result string, id uint, err error) RPCResponse {
 	if err != nil {
-		return getErrorResponse(err)
+		return getErrorResponse(err, id)
 	}
 
 	return RPCResponse{
 		Jsonrpc: "2.0",
-		ID:      RpcId,
+		ID:      id,
 		Result:  result,
 	}
 }
 
-func getErrorResponse(err error) RPCResponse {
+func getErrorResponse(err error, id uint) RPCResponse {
 	slog.Error("Failed to send response", "err", err)
 	errorResponse := RPCResponse{
 		Jsonrpc: "2.0",

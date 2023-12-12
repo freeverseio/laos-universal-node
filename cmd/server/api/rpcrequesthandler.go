@@ -14,14 +14,15 @@ import (
 )
 
 const (
-	RpcId = 1
+	RPCId      = 1
+	RPCErrorId = 0
 )
 
 type RPCResponder interface{}
 
 type RPCResponse struct {
 	Jsonrpc string    `json:"jsonrpc"`
-	ID      int       `json:"id"`
+	ID      uint      `json:"id"`
 	Result  string    `json:"result,omitempty"`
 	Error   *RPCError `json:"error,omitempty"`
 }
@@ -52,7 +53,7 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		}
 	}()
 
-	rpcRequests, isArrayRequest, err := parseBody(body)
+	rpcRequests, _, err := parseBody(body)
 	if err != nil {
 		http.Error(w, ErrMsgBadRequest, http.StatusBadRequest)
 		return
@@ -62,11 +63,8 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		responseBody = append(responseBody, h.GetRPCResponse(r, rpcRequest))
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if isArrayRequest {
-		err = json.NewEncoder(w).Encode(responseBody)
-	} else {
-		err = json.NewEncoder(w).Encode(responseBody[0])
-	}
+
+	err = json.NewEncoder(w).Encode(responseBody)
 
 	if err != nil {
 		slog.Error("Failed to send response", "err", err)
@@ -83,7 +81,7 @@ func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) R
 
 func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {
 	if req.JSONRPC != "2.0" {
-		return getErrorResponse(fmt.Errorf("invalid JSON-RPC version"))
+		return getErrorResponse(fmt.Errorf("invalid JSON-RPC version"), getRpcId(req))
 	}
 	switch req.Method {
 	case "eth_call":
@@ -96,15 +94,16 @@ func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) R
 }
 
 func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCRequest) RPCResponse {
+	rpcId := getRpcId(req)
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
-		return getErrorResponse(fmt.Errorf("error parsing params or missing params"))
+		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), rpcId)
 	}
 
 	// Check for universal minting method.
 	isRemoteMinting, err := isUniversalMintingMethod(params.Data)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error checking for universal minting method: %w", err))
+		return getErrorResponse(fmt.Errorf("error checking for universal minting method: %w", err), rpcId)
 	}
 
 	// If not related to remote minting, delegate to standard handler.
@@ -115,7 +114,7 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCReque
 	// Check if contract is stored
 	contractExists, err := isContractStored(params.To, h.stateService)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error checking contract list: %w", err))
+		return getErrorResponse(fmt.Errorf("error checking contract list: %w", err), rpcId)
 	}
 
 	// If contract is stored, use the specific handler for ERC721 universal minting.

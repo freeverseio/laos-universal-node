@@ -11,15 +11,16 @@ import (
 
 // ProxyRPCHandler
 func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
+	rpcId := getRpcId(req)
 	// JSONRPCRequest to []byte
 	body, err := json.Marshal(req)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err))
+		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err), rpcId)
 	}
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating request: %w", err))
+		return getErrorResponse(fmt.Errorf("error creating request: %w", err), rpcId)
 	}
 
 	// Forward headers the request
@@ -35,7 +36,7 @@ func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RP
 	// Send the request to the Ethereum node
 	resp, err := h.GetHttpClient().Do(proxyReq)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error sending request: %w", err))
+		return getErrorResponse(fmt.Errorf("error sending request: %w", err), rpcId)
 	}
 
 	defer func() {
@@ -47,7 +48,7 @@ func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RP
 
 	response, err := getJsonRPCResponse(resp)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err))
+		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err), rpcId)
 	}
 	return *response
 }
