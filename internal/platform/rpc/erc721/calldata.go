@@ -104,7 +104,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 
 	argdata := b[ShortAddressLength:]
 	if len(argdata)%CallDataLength != 0 {
-		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
+		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes but was %d", len(argdata))
 	}
 	erc721EnumerableAbi, err := abi.JSON(strings.NewReader(contract.EnumerableMetaData.ABI))
 	if err != nil {
