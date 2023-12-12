@@ -52,7 +52,7 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		}
 	}()
 
-	rpcRequests, err := parseBody(body)
+	rpcRequests, isArrayRequest, err := parseBody(body)
 	if err != nil {
 		http.Error(w, ErrMsgBadRequest, http.StatusBadRequest)
 		return
@@ -62,10 +62,10 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		responseBody = append(responseBody, h.GetRPCResponse(r, rpcRequest))
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if len(responseBody) == 1 {
-		err = json.NewEncoder(w).Encode(responseBody[0])
-	} else {
+	if isArrayRequest {
 		err = json.NewEncoder(w).Encode(responseBody)
+	} else {
+		err = json.NewEncoder(w).Encode(responseBody[0])
 	}
 
 	if err != nil {
@@ -158,11 +158,11 @@ func isUniversalMintingMethod(data string) (bool, error) {
 	return exists, nil
 }
 
-func parseBody(body []byte) ([]JSONRPCRequest, error) {
+func parseBody(body []byte) (request []JSONRPCRequest, isArray bool, err error) {
 	// First, try to unmarshal as a single JSONRPCRequest
 	var singleReq JSONRPCRequest
 	if err := json.Unmarshal(body, &singleReq); err == nil {
-		return []JSONRPCRequest{singleReq}, nil
+		return []JSONRPCRequest{singleReq}, false, nil
 	}
 
 	// If single unmarshalling fails, try as an array
@@ -170,8 +170,8 @@ func parseBody(body []byte) ([]JSONRPCRequest, error) {
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.DisallowUnknownFields() // Prevent unknown fields
 	if err := decoder.Decode(&multiReq); err != nil {
-		return nil, fmt.Errorf("error parsing JSON request: %w", err)
+		return nil, false, fmt.Errorf("error parsing JSON request: %w", err)
 	}
 
-	return multiReq, nil
+	return multiReq, true, nil
 }

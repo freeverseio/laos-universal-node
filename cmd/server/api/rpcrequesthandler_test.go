@@ -44,6 +44,19 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			},
 		},
 		{
+			name:           "Good request with eth_call method as an array",
+			method:         http.MethodPost,
+			contentType:    "application/json",
+			requestBody:    `[{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}]`,
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			expectedStatus: http.StatusOK,
+			expectedUniversalMintingHandlerCalledTimes: 1,
+			expectedBody: `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}]`,
+			storedContracts: [][]byte{
+				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
+			},
+		},
+		{
 			name:                            "Good request with eth_call method and no contract in list",
 			method:                          http.MethodPost,
 			contentType:                     "application/json",
