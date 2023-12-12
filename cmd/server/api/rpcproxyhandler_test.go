@@ -102,13 +102,12 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus: http.StatusBadGateway,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      0,
+				ID:      67,
 				Error: &api.RPCError{
 					Code:    -32600,
 					Message: "execution reverted",
 				},
 			},
-			// expectedBody:   "Bad Gateway\n",
 		},
 	}
 

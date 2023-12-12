@@ -72,7 +72,6 @@ func getRpcId(jsonRPCRequest JSONRPCRequest) uint {
 	} else {
 		return RPCId
 	}
-
 }
 
 func supportsInterface(id uint) RPCResponse {
@@ -191,7 +190,7 @@ func getErrorResponse(err error, id uint) RPCResponse {
 	slog.Error("Failed to send response", "err", err)
 	errorResponse := RPCResponse{
 		Jsonrpc: "2.0",
-		ID:      errorId,
+		ID:      id,
 		Error: &RPCError{
 			Code:    ErrorCodeInvalidRequest,
 			Message: "execution reverted",

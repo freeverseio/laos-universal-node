@@ -33,9 +33,9 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setupMerkeTreeMocks(t, tx)
 				setUpOwnerOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 			},
-			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":2}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a")
+				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a", 2)
 			},
 		},
 		{
@@ -47,7 +47,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+				validateResponse(t, rr, http.StatusBadRequest, "", 1)
 			},
 		},
 		{
@@ -58,7 +58,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+				validateResponse(t, rr, http.StatusBadRequest, "", 1)
 			},
 		},
 		{
@@ -70,7 +70,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringZero)
+				validateResponse(t, rr, http.StatusOK, hexStringZero, 1)
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+				validateResponse(t, rr, http.StatusOK, hexStringOne, 1)
 			},
 		},
 		{
@@ -92,9 +92,9 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setupMerkeTreeMocks(t, tx)
 				setUpBalanceOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x1b0b4a597c764400ea157ab84358c8788a89cd28", 15455)
 			},
-			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":111}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000003c5f")
+				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000003c5f", 111)
 			},
 		},
 		{
@@ -106,7 +106,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+				validateResponse(t, rr, http.StatusBadRequest, "", 1)
 			},
 		},
 		{
@@ -118,7 +118,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+				validateResponse(t, rr, http.StatusOK, hexStringOne, 1)
 			},
 		},
 		{
@@ -130,7 +130,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+				validateResponse(t, rr, http.StatusBadRequest, "", 1)
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+				validateResponse(t, rr, http.StatusOK, hexStringOne, 1)
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x18160ddd","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+				validateResponse(t, rr, http.StatusOK, hexStringOne, 1)
 			},
 		},
 
@@ -164,9 +164,9 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setUpTransactionMocks(t, storage, tx)
 				tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(42971043), nil).Times(1)
 			},
-			request: `{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}`,
+			request: `{"method":"eth_blockNumber","params":[],"id":11,"jsonrpc":"2.0"}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x28fafa2")
+				validateResponse(t, rr, http.StatusOK, "0x28fafa2", 11)
 			},
 		},
 	}
@@ -229,7 +229,7 @@ func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
 	return jsonRPCRequest
 }
 
-func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse string) {
+func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse string, expectedId uint) {
 	if expectedStatus == http.StatusOK {
 		if rr.Result != expectedResponse {
 			t.Errorf("handler returned unexpected result: got %v want %v", rr.Result, expectedResponse)
@@ -238,5 +238,8 @@ func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expe
 		if rr.Error.Code != api.ErrorCodeInvalidRequest {
 			t.Errorf("handler returned wrong status code: got %v want %v", rr.Error.Code, api.ErrorCodeInvalidRequest)
 		}
+	}
+	if rr.ID != expectedId {
+		t.Errorf("handler returned wrong id: got %v want %v", rr.ID, expectedId)
 	}
 }
