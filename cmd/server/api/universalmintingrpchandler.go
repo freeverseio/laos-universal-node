@@ -221,7 +221,7 @@ func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRe
 	// TODO test me
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
-		slog.Error("Error getting tokenId", "err", err)
+		slog.Error("error getting tokenId", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
@@ -230,12 +230,18 @@ func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRe
 	defer tx.Discard()
 	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
-		slog.Error("Error creating merkle trees", "err", err)
+		slog.Error("error creating merkle trees", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
 	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
-	sendResponse(w, tokenURI, err)
+	if err != nil {
+		slog.Error("error retrieving token URI", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	encodedValue, err := erc721.AbiEncodeString(tokenURI)
+	sendResponse(w, encodedValue, err)
 }
 
 func blockNumber(w http.ResponseWriter, stateService state.Service) {
