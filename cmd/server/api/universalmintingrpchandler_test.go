@@ -1,7 +1,7 @@
 package api_test
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -218,12 +218,16 @@ func setUpBalanceOfMocks(t *testing.T, tx *mockTx.MockTx, addressContract, owner
 	tx.EXPECT().BalanceOf(common.HexToAddress(addressContract), common.HexToAddress(ownerReturnAddress)).Return(big.NewInt(balance), nil).Times(1)
 }
 
-func createRequest(t *testing.T, requestBody string) *http.Request {
-	request, err := http.NewRequest("POST", "/your-endpoint", bytes.NewBufferString(requestBody))
-	if err != nil {
-		t.Fatal(err)
+func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
+
+	var jsonRPCRequest api.JSONRPCRequest
+	// tt.requestBody to []byte
+	body := []byte(requestBody)
+	if err := json.Unmarshal(body, &jsonRPCRequest); err != nil {
+		t.Fatalf("error unmarshalling request: %v", err)
 	}
-	return request
+
+	return jsonRPCRequest
 }
 
 func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse string) {

@@ -1,13 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"math/big"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -16,11 +13,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/state"
 )
 
-func (h *UniversalMintingRPCHandler) HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse {
-	jsonRPCRequest, err := getJsonRPCRequest(r)
-	if err != nil {
-		return getErrorResponse(fmt.Errorf("error parsing JSON request: %w", err))
-	}
+func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
 
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
@@ -219,19 +212,6 @@ func getParamAddress(callData erc721.CallData, paramName string) (common.Address
 	}
 
 	return addressParam, nil
-}
-
-func getJsonRPCRequest(r *http.Request) (*JSONRPCRequest, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading request body: %w", err)
-	}
-	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
-	var req JSONRPCRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		return nil, fmt.Errorf("error parsing JSON request: %w", err)
-	}
-	return &req, nil
 }
 
 func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) (state.Tx, error) {

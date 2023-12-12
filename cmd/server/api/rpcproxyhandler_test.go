@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -95,20 +96,6 @@ func TestPostRpcHandler(t *testing.T) {
 			},
 		},
 		{
-			name:           "non successful request with invalid json",
-			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67`,
-			mockResponse:   `{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error"}}`,
-			expectedStatus: http.StatusOK,
-			expectedBody: api.RPCResponse{
-				Jsonrpc: "2.0",
-				ID:      0,
-				Error: &api.RPCError{
-					Code:    -32700,
-					Message: "Parse error",
-				},
-			},
-		},
-		{
 			name:           "client error",
 			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}`,
 			mockError:      errors.New("client error"),
@@ -146,6 +133,13 @@ func TestPostRpcHandler(t *testing.T) {
 				}
 			}
 
+			var jsonRPCRequest api.JSONRPCRequest
+			// tt.requestBody to []byte
+			body := []byte(tt.requestBody)
+			if err := json.Unmarshal(body, &jsonRPCRequest); err != nil {
+				t.Fatalf("error unmarshalling request: %v", err)
+			}
+
 			// Mock the HTTP client behavior
 			if tt.mockError != nil {
 				mockHttpClient.EXPECT().Do(gomock.Any()).Return(nil, tt.mockError)
@@ -180,7 +174,7 @@ func TestPostRpcHandler(t *testing.T) {
 				}).Return(mockResponse, nil)
 			}
 
-			apiResponse := handler.HandleProxyRPC(request)
+			apiResponse := handler.HandleProxyRPC(request, jsonRPCRequest)
 			if apiResponse.ID != tt.expectedBody.ID {
 				t.Fatalf("got %v, expected %v", apiResponse.ID, tt.expectedBody.ID)
 			}

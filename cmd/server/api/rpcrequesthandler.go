@@ -73,12 +73,12 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *GlobalRPCHandler) HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse {
-	return h.UniversalMintingRPCHandler.HandleUniversalMinting(r, stateService)
+func (h *GlobalRPCHandler) HandleUniversalMinting(req JSONRPCRequest, stateService state.Service) RPCResponse {
+	return h.UniversalMintingRPCHandler.HandleUniversalMinting(req, stateService)
 }
 
-func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request) RPCResponse {
-	return h.ProxyRPCHandler.HandleProxyRPC(r)
+func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
+	return h.ProxyRPCHandler.HandleProxyRPC(r, req)
 }
 
 func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {
@@ -87,15 +87,15 @@ func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) R
 	}
 	switch req.Method {
 	case "eth_call":
-		return h.handleEthCallMethod(r, &req)
+		return h.handleEthCallMethod(r, req)
 	case "eth_blockNumber":
-		return h.HandleUniversalMinting(r, h.stateService)
+		return h.HandleUniversalMinting(req, h.stateService)
 	default:
-		return h.HandleProxyRPC(r)
+		return h.HandleProxyRPC(r, req)
 	}
 }
 
-func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req *JSONRPCRequest) RPCResponse {
+func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCRequest) RPCResponse {
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
 		return getErrorResponse(fmt.Errorf("error parsing params or missing params"))
@@ -109,7 +109,7 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req *JSONRPCRequ
 
 	// If not related to remote minting, delegate to standard handler.
 	if !isRemoteMinting {
-		return h.HandleProxyRPC(r)
+		return h.HandleProxyRPC(r, req)
 	}
 
 	// Check if contract is stored
@@ -120,9 +120,9 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req *JSONRPCRequ
 
 	// If contract is stored, use the specific handler for ERC721 universal minting.
 	if contractExists {
-		return h.HandleUniversalMinting(r, h.stateService)
+		return h.HandleUniversalMinting(req, h.stateService)
 	} else {
-		return h.HandleProxyRPC(r)
+		return h.HandleProxyRPC(r, req)
 	}
 }
 

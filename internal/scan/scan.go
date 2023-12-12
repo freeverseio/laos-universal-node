@@ -159,7 +159,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
-	slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
+	// slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
@@ -212,7 +212,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
-	slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
+	// slog.Info("scanning universal events ", "fromBlock", fromBlock, "toBlock", toBlock)
 	var lastBlock *big.Int
 	lastBlock = fromBlock
 	var addresses []common.Address

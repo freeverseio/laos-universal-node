@@ -10,19 +10,12 @@ import (
 )
 
 // ProxyRPCHandler
-func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request) RPCResponse {
-	// Read the body of the incoming request
-	body, err := io.ReadAll(r.Body)
+func (h *ProxyRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
+	// JSONRPCRequest to []byte
+	body, err := json.Marshal(req)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error reading request body: %w", err))
+		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err))
 	}
-	defer func() {
-		errClose := r.Body.Close()
-		if errClose != nil {
-			slog.Error("error closing response body", "err", errClose)
-		}
-	}() // Check error on Close
-
 	// Prepare the request to the BC node
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {

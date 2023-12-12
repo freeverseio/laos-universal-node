@@ -22,17 +22,17 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 }
 
 type RPCHandler interface {
-	HandleProxyRPC(r *http.Request) RPCResponse
-	HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse
+	HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse
+	HandleUniversalMinting(req JSONRPCRequest, stateService state.Service) RPCResponse
 	PostRPCRequestHandler(w http.ResponseWriter, r *http.Request)
 	SetStateService(stateService state.Service)
 }
 
 type RPCUniversalHandler interface {
-	HandleUniversalMinting(r *http.Request, stateService state.Service) RPCResponse
+	HandleUniversalMinting(req JSONRPCRequest, stateService state.Service) RPCResponse
 }
 type RPCProxyHandler interface {
-	HandleProxyRPC(r *http.Request) RPCResponse
+	HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse
 	GetRpcUrl() string
 	GetHttpClient() HTTPClientInterface
 	SetHttpClient(client HTTPClientInterface)
@@ -43,6 +43,14 @@ type GlobalRPCHandler struct {
 	stateService               state.Service
 	UniversalMintingRPCHandler RPCUniversalHandler
 	ProxyRPCHandler            RPCProxyHandler
+}
+
+func (h *GlobalRPCHandler) GetUniversalMintingRPCHandler() RPCUniversalHandler {
+	return h.UniversalMintingRPCHandler
+}
+
+func (h *GlobalRPCHandler) GetProxyRPCHandler() RPCProxyHandler {
+	return h.ProxyRPCHandler
 }
 
 type UniversalMintingRPCHandler struct{}
