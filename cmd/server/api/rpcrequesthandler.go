@@ -53,7 +53,7 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 		}
 	}()
 
-	rpcRequests, _, err := parseBody(body)
+	rpcRequests, isArrayRequest, err := parseBody(body)
 	if err != nil {
 		http.Error(w, ErrMsgBadRequest, http.StatusBadRequest)
 		return
@@ -64,7 +64,11 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(responseBody)
+	if isArrayRequest {
+		err = json.NewEncoder(w).Encode(responseBody)
+	} else {
+		err = json.NewEncoder(w).Encode(responseBody[0])
+	}
 
 	if err != nil {
 		slog.Error("Failed to send response", "err", err)
