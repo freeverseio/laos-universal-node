@@ -133,7 +133,7 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber stri
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
 	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
-	// TODO check if there is a better way to do this
+	// TODO check if there is a better way to do this - there is go-ethereum's abi.Arguments.Pack, but it uses reflection, it might be too slow
 	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
 	sendResponse(w, fullAddressString, err)
 }
@@ -155,7 +155,7 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber st
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	// TODO check if there is a better way to format the balance
+	// TODO check if there is a better way to format the balance - there is go-ethereum's abi.Arguments.Pack, but it uses reflection, it might be too slow
 	sendResponse(w, fmt.Sprintf("0x%064x", balance), err)
 }
 
