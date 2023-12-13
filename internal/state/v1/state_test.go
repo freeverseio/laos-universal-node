@@ -162,15 +162,89 @@ func TestMinting(t *testing.T) {
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
 		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
-		ownershipTree.EXPECT().Mint(big.NewInt(int64(1)), 1).Return(nil)
 
-		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1}
+		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
 		ownershipTree.EXPECT().TokenData(big.NewInt(1)).Return(&tokenData, nil)
 
 		enumeratedTree.EXPECT().Mint(big.NewInt(1), tokenData.SlotOwner).Return(nil)
 
-		err := tx.Mint(common.HexToAddress("0x500"), big.NewInt(1))
+		mintEvent := model.MintedWithExternalURI{
+			Slot:        big.NewInt(1),
+			To:          tokenData.SlotOwner,
+			TokenURI:    tokenData.TokenURI,
+			TokenId:     big.NewInt(1),
+			BlockNumber: 100,
+			Timestamp:   1000,
+		}
+
+		ownershipTree.EXPECT().Mint(&mintEvent, 1).Return(nil)
+
+		err := tx.Mint(common.HexToAddress("0x500"), &mintEvent)
 		assert.NilError(t, err)
+	})
+}
+
+func TestTokenURI(t *testing.T) {
+	t.Parallel()
+	t.Run(`tokenURI returns valid string when asset is minted`, func(t *testing.T) {
+		t.Parallel()
+		// TODO move the repeated setup code for test data to a helper method?
+		ctrl := gomock.NewController(t)
+
+		memoryService := memory.New()
+		stateService := v1.NewStateService(memoryService)
+
+		tx := stateService.NewTransaction()
+
+		enumeratedTree := enumeratedTreeMock.NewMockTree(ctrl)
+		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
+		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
+
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
+
+		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
+		tokenId := big.NewInt(1)
+		ownershipTree.EXPECT().TokenData(tokenId).Return(&tokenData, nil)
+
+		tokenURI, err := tx.TokenURI(common.HexToAddress("0x500"), tokenId)
+		if err != nil {
+			t.Errorf("got error %s when no error was expected", err.Error())
+		}
+		if tokenURI != tokenData.TokenURI {
+			t.Fatalf("got token URI %s, expected %s", tokenURI, tokenData.TokenURI)
+		}
+	})
+
+	t.Run(`tokenURI returns an error when asset is not minted`, func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+
+		memoryService := memory.New()
+		stateService := v1.NewStateService(memoryService)
+
+		tx := stateService.NewTransaction()
+
+		enumeratedTree := enumeratedTreeMock.NewMockTree(ctrl)
+		enumeratedTotalTree := enumeratedTotalTreeMock.NewMockTree(ctrl)
+		ownershipTree := ownershipTreeMock.NewMockTree(ctrl)
+
+		tx.SetTreesForContract(common.HexToAddress("0x500"), ownershipTree, enumeratedTree, enumeratedTotalTree)
+
+		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x0"), Minted: false, Idx: 0, TokenURI: ""}
+		tokenId := big.NewInt(1)
+		ownershipTree.EXPECT().TokenData(tokenId).Return(&tokenData, nil)
+
+		expectedErr := "tokenId 1 does not exist"
+		tokenURI, err := tx.TokenURI(common.HexToAddress("0x500"), tokenId)
+		if err == nil {
+			t.Error("got no error when error was expected")
+		}
+		if err.Error() != expectedErr {
+			t.Errorf("got error %s, expected %s", err.Error(), expectedErr)
+		}
+		if tokenURI != tokenData.TokenURI {
+			t.Fatalf("got token URI %s, expected %s", tokenURI, tokenData.TokenURI)
+		}
 	})
 }
 

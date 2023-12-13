@@ -54,6 +54,8 @@ func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONR
 			return tokenOfOwnerByIndex(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.TokenByIndex:
 			return tokenByIndex(calldata, params, blockNumber, stateService, rpcId)
+		case erc721.TokenURI:
+			return tokenURI(calldata, params, blockNumber, stateService, rpcId)
 		case erc721.SupportsInterface:
 			return supportsInterface(rpcId)
 		}
@@ -95,7 +97,7 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber stri
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
 	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
-	// TODO check if there is a better way to do this
+	// TODO check if there is a better way to do this - there is go-ethereum's abi.Arguments.Pack, but it uses reflection, it might be too slow
 	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
 	return getResponse(fullAddressString, id, err)
 }
@@ -252,4 +254,29 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 		}
 	}
 	return tx, nil
+}
+func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
+	// TODO test me and move me up after solving merge conflicts
+	tokenID, err := getParamBigInt(callData, "tokenId")
+	if err != nil {
+		slog.Error("error getting tokenId", "err", err)
+		return getErrorResponse(err, id)
+
+	}
+
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	if err != nil {
+		slog.Error("error creating merkle trees", "err", err)
+		return getErrorResponse(err, id)
+
+	}
+	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
+	if err != nil {
+		slog.Error("error retrieving token URI", "err", err)
+		return getErrorResponse(err, id)
+	}
+	encodedValue, err := erc721.AbiEncodeString(tokenURI)
+	return getResponse(encodedValue, id, err)
 }

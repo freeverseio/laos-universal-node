@@ -38,6 +38,7 @@ const (
 	TokenOfOwnerByIndex
 	TokenByIndex
 	SupportsInterface
+	TokenURI
 )
 
 // universalMintingMethodSigs represents the method signatures of the ERC721 methods that are part of the remote minting service.
@@ -48,6 +49,7 @@ var universalMintingMethodSigs = map[string]Erc721method{
 	hexutil.Encode(crypto.Keccak256([]byte("tokenOfOwnerByIndex(address,uint256)"))[:ShortAddressLength]): TokenOfOwnerByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("tokenByIndex(uint256)"))[:ShortAddressLength]):                TokenByIndex,
 	hexutil.Encode(crypto.Keccak256([]byte("supportsInterface(bytes4)"))[:ShortAddressLength]):            SupportsInterface,
+	hexutil.Encode(crypto.Keccak256([]byte("tokenURI(uint256)"))[:ShortAddressLength]):                    TokenURI,
 }
 
 // Method returns if the calldata is a supported remote minting ERC721 method and the method.
@@ -102,7 +104,7 @@ func (b CallData) getInputArgs() (map[string]interface{}, error) {
 
 	argdata := b[ShortAddressLength:]
 	if len(argdata)%CallDataLength != 0 {
-		return nil, fmt.Errorf("invalid call data; lengsth should be a multiple of 32 bytes but was %d", len(argdata))
+		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes but was %d", len(argdata))
 	}
 	erc721EnumerableAbi, err := abi.JSON(strings.NewReader(contract.EnumerableMetaData.ABI))
 	if err != nil {

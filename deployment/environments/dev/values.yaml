@@ -7,17 +7,17 @@ networks:
     blocksMargin: 0
     blocksRange: 30
     evoRpc: https://caladan.gorengine.com/own
-    evoStartingBlock: "279187"
+    evoStartingBlock: "279151"
     evoBlocksMargin: 0
     evoBlocksRange: 30
   - name: polygon-mainnet
     rpc: https://rpc-mainnet.maticvigil.com/
     host: polygon-mainnet.unode.gorengine.com
     debug: true
-    startingBlock: "0"
+    startingBlock: "50484097"
     blocksMargin: 0
     blocksRange: 30
     evoRpc: https://caladan.gorengine.com/own
-    evoStartingBlock: "0"
+    evoStartingBlock: "279151"
     evoBlocksMargin: 0
     evoBlocksRange: 30
