@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
@@ -72,6 +73,8 @@ type OwnershipBlockState interface {
 	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
 	SetCurrentOwnershipBlock(number uint64) error
 	GetCurrentOwnershipBlock() (uint64, error)
+	SetEndRangeOwnershipBlockHash(blockHash common.Hash) error
+	GetEndRangeOwnershipBlockHash() (common.Hash, error)
 }
 
 type EvolutionBlockState interface {

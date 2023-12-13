@@ -4,12 +4,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
 const (
 	contractEvoCurrentBlockPrefix = "ownership_contract_evo_current_block_"
 	currentBlock                  = "ownership_current_block"
+	endRangeBlockHash             = "ownership_parent_blockhash"
 )
 
 type service struct {
@@ -50,4 +53,19 @@ func (s *service) GetCurrentOwnershipBlock() (uint64, error) {
 
 func (s *service) SetCurrentOwnershipBlock(number uint64) error {
 	return s.tx.Set([]byte(currentBlock), []byte(strconv.FormatUint(number, 10)))
+}
+
+func (s *service) SetEndRangeOwnershipBlockHash(blockHash common.Hash) error {
+	return s.tx.Set([]byte(endRangeBlockHash), []byte(blockHash.Hex()))
+}
+
+func (s *service) GetEndRangeOwnershipBlockHash() (common.Hash, error) {
+	value, err := s.tx.Get([]byte(endRangeBlockHash))
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if value == nil {
+		value = common.Hash{}.Bytes()
+	}
+	return common.HexToHash(common.Bytes2Hex(value)), nil
 }
