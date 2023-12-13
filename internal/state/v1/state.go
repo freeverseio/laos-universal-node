@@ -296,7 +296,7 @@ func (t *tx) TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 		return "", err
 	}
 	if !tokenData.Minted {
-		return "", fmt.Errorf("tokenId %d does not exist", tokenId.Uint64())
+		return "", fmt.Errorf("tokenId %d does not exist", tokenId)
 	}
 	return tokenData.TokenURI, nil
 }
