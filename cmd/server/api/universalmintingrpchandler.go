@@ -255,13 +255,13 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 	}
 	return tx, nil
 }
+
 func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id uint) RPCResponse {
 	// TODO test me and move me up after solving merge conflicts
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		slog.Error("error getting tokenId", "err", err)
 		return getErrorResponse(err, id)
-
 	}
 
 	tx := stateService.NewTransaction()
@@ -270,7 +270,6 @@ func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber str
 	if err != nil {
 		slog.Error("error creating merkle trees", "err", err)
 		return getErrorResponse(err, id)
-
 	}
 	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
 	if err != nil {
