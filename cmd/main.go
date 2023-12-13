@@ -247,14 +247,16 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 
 			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
 			if err != nil {
-				slog.Error("error occurred while fetching new start range block", "err", err.Error())
+				slog.Error("error occurred while fetching new ownership chain start range block", "err", err.Error())
 				break
 			}
+
 			endRangeBlockHash, err := tx.GetEndRangeOwnershipBlockHash()
 			if err != nil {
-				slog.Error("error occurred while reading end range block hash", "err", err.Error())
+				slog.Error("error occurred while reading ownership chain end range block hash", "err", err.Error())
 				break
 			}
+
 			if header.ParentHash.Cmp(endRangeBlockHash) != 0 {
 				slog.Error("ownership chain reorganization detected")
 				ctx.Done()
@@ -395,6 +397,17 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				waitBeforeNextScan(ctx, c.WaitingTime)
 				break
 			}
+
+			endRangeBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+			if err != nil {
+				slog.Error("error occurred while fetching LaosEvolution end range block", "err", err.Error())
+				break
+			}
+			if err = tx.SetEndRangeEvoBlockHash(endRangeBlock.Hash()); err != nil {
+				slog.Error("error occurred while storing LaosEvolution end range block hash", "err", err.Error())
+				break
+			}
+
 			events, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
@@ -404,6 +417,23 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, lastScannedBlock, client)
 			if err != nil {
 				break
+			}
+
+			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
+			if err != nil {
+				slog.Error("error occurred while fetching new LaosEvolution start range block", "err", err.Error())
+				break
+			}
+
+			endRangeBlockHash, err := tx.GetEndRangeEvoBlockHash()
+			if err != nil {
+				slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
+				break
+			}
+
+			if header.ParentHash.Cmp(endRangeBlockHash) != 0 {
+				slog.Error("LaosEvolution chain reorganization detected")
+				ctx.Done()
 			}
 
 			startingBlock = nextStartingBlock
