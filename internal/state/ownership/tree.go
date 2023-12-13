@@ -30,6 +30,7 @@ const (
 // TokenData defines token data placed in data of the leaf of the tree
 type TokenData struct {
 	SlotOwner common.Address
+	TokenURI  string
 	Minted    bool
 	Idx       int
 }
@@ -38,7 +39,7 @@ type TokenData struct {
 type Tree interface {
 	Root() common.Hash
 	Transfer(eventTransfer *model.ERC721Transfer) error
-	Mint(tokenId *big.Int, idx int) error
+	Mint(mintEvent *model.MintedWithExternalURI, idx int) error
 	TokenData(tokenId *big.Int) (*TokenData, error)
 	SetTokenData(tokenData *TokenData, tokenId *big.Int) error
 	OwnerOf(tokenId *big.Int) (common.Address, error)
@@ -46,7 +47,6 @@ type Tree interface {
 	GetLastTaggedBlock() (int64, error)
 	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
-	FindBlockWithTag(blockNumber int64) (int64, error)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each SlotOwner
@@ -96,15 +96,16 @@ func (b *tree) Transfer(eventTransfer *model.ERC721Transfer) error {
 }
 
 // Mint creates a new token
-func (b *tree) Mint(tokenId *big.Int, idx int) error {
-	tokenData, err := b.TokenData(tokenId)
+func (b *tree) Mint(mintEvent *model.MintedWithExternalURI, idx int) error {
+	tokenData, err := b.TokenData(mintEvent.TokenId)
 	if err != nil {
 		return err
 	}
 
 	tokenData.Minted = true
 	tokenData.Idx = idx
-	if err := b.SetTokenData(tokenData, tokenId); err != nil {
+	tokenData.TokenURI = mintEvent.TokenURI
+	if err := b.SetTokenData(tokenData, mintEvent.TokenId); err != nil {
 		return err
 	}
 
@@ -130,21 +131,21 @@ func (b *tree) SetTokenData(tokenData *TokenData, tokenId *big.Int) error {
 func (b *tree) TokenData(tokenId *big.Int) (*TokenData, error) {
 	leaf, err := b.mt.Leaf(tokenId)
 	if err != nil {
-		return &TokenData{common.Address{}, false, 0}, err
+		return &TokenData{common.Address{}, "", false, 0}, err
 	}
 	if leaf.String() == sparsemt.Null {
 		slotOwner := initSlotOwner(tokenId)
-		return &TokenData{slotOwner, false, 0}, nil
+		return &TokenData{slotOwner, "", false, 0}, nil
 	}
 
 	buf, err := b.store.Get([]byte(tokenDataPrefix + b.contract.String() + "/" + leaf.String()))
 	if err != nil {
-		return &TokenData{common.Address{}, false, 0}, err
+		return &TokenData{common.Address{}, "", false, 0}, err
 	}
 
 	var tokenData TokenData
 	if err := json.Unmarshal(buf, &tokenData); err != nil {
-		return &TokenData{common.Address{}, false, 0}, err
+		return &TokenData{common.Address{}, "", false, 0}, err
 	}
 
 	return &tokenData, nil
@@ -237,25 +238,4 @@ func (b *tree) Checkout(blockNumber int64) error {
 	newRoot := common.BytesToHash(buf)
 	b.mt.SetRoot(newRoot)
 	return setHeadRoot(b.contract, b.store, newRoot)
-}
-
-// FindBlockWithTag returns the first previous blockNumber that has been tagged if the tag for the blockNumber does not
-// exist
-func (b *tree) FindBlockWithTag(blockNumber int64) (int64, error) {
-	for {
-		if blockNumber == 0 {
-			return 0, nil
-		}
-
-		buf, err := b.store.Get([]byte(tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)))
-		if err != nil {
-			return 0, err
-		}
-
-		if len(buf) != 0 {
-			return blockNumber, nil
-		}
-
-		blockNumber--
-	}
 }

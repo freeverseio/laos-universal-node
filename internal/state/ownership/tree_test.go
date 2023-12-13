@@ -50,19 +50,27 @@ func TestTree(t *testing.T) {
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF10")), 0)
+		assert.Equal(t, tokenData.TokenURI, "")
 		assert.Equal(t, tokenData.Minted, false)
 
 		owner, err := tr.OwnerOf(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, owner.Cmp(common.Address{}), 0)
 
-		err = tr.Mint(tokenId, 0)
+		mintEvent := model.MintedWithExternalURI{
+			To:       tokenData.SlotOwner,
+			TokenURI: "tokenURI",
+			TokenId:  tokenId,
+		}
+
+		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x68d0eae8c6603616c80449c10ad99c6dc94c67398db33ce94930cb4d544eb618")
+		assert.Equal(t, tr.Root().String(), "0x9f53960be4404d6d4308044e6631b2764a120a15ea7c8f2026a6afe290e907e8")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF10")), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -79,23 +87,36 @@ func TestTree(t *testing.T) {
 		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
 		assert.NilError(t, err)
 
-		err = tr.Mint(big.NewInt(1), 0)
+		firstMintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x1"),
+			TokenURI: "tokenURI",
+			TokenId:  big.NewInt(1),
+		}
+		err = tr.Mint(&firstMintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x42715022a8e7406f75319c7e031b2e55010e2bf57229acac2092bf31054aca6b")
+		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
 
-		tokenData, err := tr.TokenData(big.NewInt(1))
+		tokenData, err := tr.TokenData(firstMintEvent.TokenId)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(firstMintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, firstMintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
-		err = tr.Mint(big.NewInt(2), 1)
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x1619b4647bd8d33851e6d33c580a738597eae5d5dad79f256603561138bfa4aa")
+		secondMintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x2"),
+			TokenURI: "tokenURI",
+			TokenId:  big.NewInt(2),
+		}
 
-		tokenData, err = tr.TokenData(big.NewInt(2))
+		err = tr.Mint(&secondMintEvent, 1)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tr.Root().String(), "0x342911e2cba943dbcb5f0076d9a752fff74121d7b9be8ddf8554c782a323984e")
+
+		tokenData, err = tr.TokenData(secondMintEvent.TokenId)
+		assert.NilError(t, err)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(secondMintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, secondMintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 1)
 	})
@@ -108,26 +129,34 @@ func TestTree(t *testing.T) {
 		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
 		assert.NilError(t, err)
 
-		err = tr.Mint(big.NewInt(1), 0)
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x42715022a8e7406f75319c7e031b2e55010e2bf57229acac2092bf31054aca6b")
+		mintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x1"),
+			TokenURI: "tokenURI",
+			TokenId:  big.NewInt(1),
+		}
 
-		tokenData, err := tr.TokenData(big.NewInt(1))
+		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+
+		tokenData, err := tr.TokenData(mintEvent.TokenId)
+		assert.NilError(t, err)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
 		tr1, err := ownership.NewTree(common.HexToAddress("0x501"), tx)
 		assert.NilError(t, err)
 
-		err = tr1.Mint(big.NewInt(1), 0)
+		err = tr1.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr1.Root().String(), "0x42715022a8e7406f75319c7e031b2e55010e2bf57229acac2092bf31054aca6b")
+		assert.Equal(t, tr1.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
 
-		tokenData, err = tr1.TokenData(big.NewInt(1))
+		tokenData, err = tr1.TokenData(mintEvent.TokenId)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 	})
@@ -148,23 +177,31 @@ func TestTree(t *testing.T) {
 		})
 		assert.NilError(t, err)
 
-		assert.Equal(t, tr.Root().String(), "0x5644aa80f8ded20942de9ea943b74160865a55337e4df5ffe0196a4e27f619a9")
+		assert.Equal(t, tr.Root().String(), "0x4138780c2f786a1b6b5c9b5c58dcc47ca3a0e338a756a96daf7f7fa69300cbb2")
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tokenData.TokenURI, "")
 		assert.Equal(t, tokenData.Minted, false)
 
 		owner, err := tr.OwnerOf(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, owner.Cmp(common.Address{}), 0)
 
-		err = tr.Mint(tokenId, 0)
+		mintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x2"),
+			TokenURI: "tokenURI",
+			TokenId:  tokenId,
+		}
+
+		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x2f0b86bf3ad4921288012a2a77b3225fd671692e17b85f1a461dc33c381883fa")
+		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -182,13 +219,19 @@ func TestTree(t *testing.T) {
 		assert.NilError(t, err)
 
 		tokenId := big.NewInt(1)
-		err = tr.Mint(tokenId, 0)
+		mintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x1"),
+			TokenURI: "tokenURI",
+			TokenId:  tokenId,
+		}
+		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x42715022a8e7406f75319c7e031b2e55010e2bf57229acac2092bf31054aca6b")
+		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
 
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -202,11 +245,12 @@ func TestTree(t *testing.T) {
 			TokenId: tokenId,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x2f0b86bf3ad4921288012a2a77b3225fd671692e17b85f1a461dc33c381883fa")
+		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -227,9 +271,14 @@ func TestTag(t *testing.T) {
 		assert.NilError(t, err)
 
 		tokenId := big.NewInt(1)
-		err = tr.Mint(tokenId, 0)
+		mintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x1"),
+			TokenURI: "tokenURI",
+			TokenId:  tokenId,
+		}
+		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x42715022a8e7406f75319c7e031b2e55010e2bf57229acac2092bf31054aca6b")
+		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
 
 		err = tr.TagRoot(1)
 		assert.NilError(t, err)
@@ -237,7 +286,8 @@ func TestTag(t *testing.T) {
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
 
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -248,12 +298,13 @@ func TestTag(t *testing.T) {
 		})
 
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x2f0b86bf3ad4921288012a2a77b3225fd671692e17b85f1a461dc33c381883fa")
+		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
 
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -265,7 +316,8 @@ func TestTag(t *testing.T) {
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
 
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x1")), 0)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
@@ -276,6 +328,7 @@ func TestTag(t *testing.T) {
 		assert.NilError(t, err)
 
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
+		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 	})
@@ -290,37 +343,6 @@ func TestTag(t *testing.T) {
 
 		err = tr.Checkout(1)
 		assert.Error(t, err, "no tag found for this block number 1")
-	})
-	t.Run(`Find the first tag that has the same state as current block number`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-
-		blockNumber, err := tr.FindBlockWithTag(4)
-		assert.NilError(t, err)
-		assert.Equal(t, blockNumber, int64(2))
-	})
-
-	t.Run(`Find the first tag that has the same state as current block number. no tags return 0`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		blockNumber, err := tr.FindBlockWithTag(4)
-		assert.NilError(t, err)
-		assert.Equal(t, blockNumber, int64(0))
 	})
 
 	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {

@@ -87,6 +87,8 @@ func (h *GlobalRPCHandler) UniversalMintingRPCHandler(w http.ResponseWriter, r *
 			tokenOfOwnerByIndex(calldata, params, blockNumber, h.stateService, w)
 		case erc721.TokenByIndex:
 			tokenByIndex(calldata, params, blockNumber, h.stateService, w)
+		case erc721.TokenURI:
+			h.tokenURI(calldata, params, blockNumber, w)
 		case erc721.SupportsInterface:
 			supportsInterface(w)
 		}
@@ -131,7 +133,7 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber stri
 
 	owner, err := tx.OwnerOf(common.HexToAddress(params.To), tokenID)
 	// Format the address to include leading zeros as 40-character (160 bits) hexadecimal string
-	// TODO check if there is a better way to do this
+	// TODO check if there is a better way to do this - there is go-ethereum's abi.Arguments.Pack, but it uses reflection, it might be too slow
 	fullAddressString := fmt.Sprintf("0x000000000000000000000000%040x", owner)
 	sendResponse(w, fullAddressString, err)
 }
@@ -153,7 +155,7 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber st
 	}
 
 	balance, err := tx.BalanceOf(common.HexToAddress(params.To), ownerAddress)
-	// TODO check if there is a better way to format the balance
+	// TODO check if there is a better way to format the balance - there is go-ethereum's abi.Arguments.Pack, but it uses reflection, it might be too slow
 	sendResponse(w, fmt.Sprintf("0x%064x", balance), err)
 }
 
@@ -256,7 +258,6 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 
 func sendResponse(w http.ResponseWriter, result string, err error) {
 	if err != nil {
-		slog.Error("Failed to send response", "err", err)
 		sendErrorResponse(w, err)
 		return
 	}
@@ -323,4 +324,31 @@ func getParamAddress(callData erc721.CallData, paramName string) (common.Address
 	}
 
 	return addressParam, nil
+}
+
+func (h *GlobalRPCHandler) tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, w http.ResponseWriter) {
+	// TODO test me and move me up after solving merge conflicts
+	tokenID, err := getParamBigInt(callData, "tokenId")
+	if err != nil {
+		slog.Error("error getting tokenId", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+
+	tx := h.stateService.NewTransaction()
+	defer tx.Discard()
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	if err != nil {
+		slog.Error("error creating merkle trees", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
+	if err != nil {
+		slog.Error("error retrieving token URI", "err", err)
+		sendErrorResponse(w, err)
+		return
+	}
+	encodedValue, err := erc721.AbiEncodeString(tokenURI)
+	sendResponse(w, encodedValue, err)
 }

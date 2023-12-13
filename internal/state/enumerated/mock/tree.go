@@ -68,21 +68,6 @@ func (mr *MockTreeMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTree)(nil).DeleteRootTag), blockNumber)
 }
 
-// FindBlockWithTag mocks base method.
-func (m *MockTree) FindBlockWithTag(blockNumber int64) (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindBlockWithTag", blockNumber)
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindBlockWithTag indicates an expected call of FindBlockWithTag.
-func (mr *MockTreeMockRecorder) FindBlockWithTag(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBlockWithTag", reflect.TypeOf((*MockTree)(nil).FindBlockWithTag), blockNumber)
-}
-
 // GetLastTaggedBlock mocks base method.
 func (m *MockTree) GetLastTaggedBlock() (int64, error) {
 	m.ctrl.T.Helper()

@@ -29,6 +29,6 @@ func TestHandler(t *testing.T) {
 		t.Error("handler.HttpClient is nil")
 	}
 	if handler.GetRpcUrl() != rpcUrl {
-		t.Fatalf("RpcUrl got %v,  expected %v", handler.GetRpcUrl(), rpcUrl)
+		t.Fatalf("Got RPC URL %v,  expected %v", handler.GetRpcUrl(), rpcUrl)
 	}
 }

@@ -11,8 +11,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	apiMock "github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
-	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
+	stateMock "github.com/freeverseio/laos-universal-node/internal/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -28,6 +27,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 		expectedStatusCode                    int
 		expectedResponse                      string
 		proxyHandlerCalledTimes               int
+		txCalledTimes                         int
+		hasERC721UniversalContractReturn      bool
 		ercUniversalMintingHandlerCalledTimes int
 		storedContracts                       [][]byte
 	}{
@@ -42,18 +43,20 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
+			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
-			name:                    "Good request with eth_call method but contract not in list",
-			body:                    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:             "application/json",
-			method:                  "POST",
-			expectedStatusCode:      http.StatusOK,
-			expectedResponse:        "proxyHandler called",
-			proxyHandlerCalledTimes: 1,
-			storedContracts: [][]byte{
-				[]byte(""),
-			},
+			name:                             "Good request with eth_call method but contract not in list",
+			body:                             `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:                      "application/json",
+			method:                           "POST",
+			expectedStatusCode:               http.StatusOK,
+			expectedResponse:                 "proxyHandler called",
+			proxyHandlerCalledTimes:          1,
+			storedContracts:                  [][]byte{},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    1,
 		},
 		{
 			name: "Good request with eth_call method",
@@ -74,6 +77,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
+			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
 			name: "Good request with eth_call method supportsInterface 0x780e9d63",
@@ -94,6 +99,8 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
+			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
 			name: "Good request with eth_call method supportsInterface 0x80ac58cd",
@@ -115,76 +122,80 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 			storedContracts: [][]byte{
 				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
 			},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    0,
 		},
 		{
-			name:                    "Good request with eth_call method but no remote minting method",
-			body:                    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:             "application/json",
-			method:                  "POST",
-			expectedStatusCode:      http.StatusOK,
-			expectedResponse:        "proxyHandler called",
-			proxyHandlerCalledTimes: 1,
-			storedContracts:         [][]byte{[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")},
+			name:                             "Good request with eth_call method but no remote minting method",
+			body:                             `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:                      "application/json",
+			method:                           "POST",
+			expectedStatusCode:               http.StatusOK,
+			expectedResponse:                 "proxyHandler called",
+			proxyHandlerCalledTimes:          1,
+			storedContracts:                  [][]byte{[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    0,
 		},
 		{
-			name:                    "Good request with no erc721 method",
-			body:                    `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
-			contentType:             "application/json",
-			method:                  "POST",
-			expectedStatusCode:      http.StatusOK,
-			expectedResponse:        "proxyHandler called",
-			proxyHandlerCalledTimes: 1,
-			storedContracts: [][]byte{
-				[]byte(""),
-			},
+			name:                             "Good request with no erc721 method",
+			body:                             `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
+			contentType:                      "application/json",
+			method:                           "POST",
+			expectedStatusCode:               http.StatusOK,
+			expectedResponse:                 "proxyHandler called",
+			proxyHandlerCalledTimes:          1,
+			storedContracts:                  [][]byte{},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    0,
 		},
 		{
-			name:               "Bad request with GET method",
-			body:               `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:        "application/json",
-			method:             "GET",
-			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   "No JSON RPC call or invalid Content-Type\n",
-			storedContracts: [][]byte{
-				[]byte(""),
-			},
+			name:                             "Bad request with GET method",
+			body:                             `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:                      "application/json",
+			method:                           "GET",
+			expectedStatusCode:               http.StatusBadRequest,
+			expectedResponse:                 "No JSON RPC call or invalid Content-Type\n",
+			storedContracts:                  [][]byte{},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    0,
 		},
 		{
-			name:               "Bad request with jsonrpc 1.0",
-			body:               `{"jsonrpc":"1.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			contentType:        "application/json",
-			method:             "POST",
-			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   "Invalid JSON-RPC version\n",
-			storedContracts: [][]byte{
-				[]byte(""),
-			},
+			name:                             "Bad request with jsonrpc 1.0",
+			body:                             `{"jsonrpc":"1.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			contentType:                      "application/json",
+			method:                           "POST",
+			expectedStatusCode:               http.StatusBadRequest,
+			expectedResponse:                 "Invalid JSON-RPC version\n",
+			storedContracts:                  [][]byte{},
+			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    0,
 		},
 	}
 
-	// Run tests
 	for _, tt := range tests {
-		tt := tt // Shadow loop variable otherwise it could be overwrittens
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel() // Run tests in parallel
+			t.Parallel()
 			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockService(ctrl)
+			state := stateMock.NewMockService(ctrl)
 
-			tx := mockStorage.NewMockTx(ctrl)
-			// TODO fix AnyTimes
-			storage.EXPECT().NewTransaction().Return(tx).AnyTimes()
-			tx.EXPECT().Discard().AnyTimes()
+			tx := stateMock.NewMockTx(ctrl)
 			handlerMock := apiMock.NewMockRPCHandler(ctrl)
 			t.Cleanup(func() {
 				ctrl.Finish()
 			})
 			req := httptest.NewRequest(tt.method, "/rpc", strings.NewReader(tt.body))
 			req.Header.Set("Content-Type", tt.contentType)
-
 			// Record responses
 			w := httptest.NewRecorder()
-			tx.EXPECT().Get(gomock.Any()).Return(tt.storedContracts[0], nil).AnyTimes()
-			stateService := v1.NewStateService(storage)
+
+			state.EXPECT().NewTransaction().Return(tx).Times(tt.txCalledTimes)
+			tx.EXPECT().Discard().Times(tt.txCalledTimes)
+			tx.EXPECT().
+				HasERC721UniversalContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").
+				Return(tt.hasERC721UniversalContractReturn, nil).
+				Times(tt.txCalledTimes)
 
 			handlerMock.EXPECT().PostRPCProxyHandler(w, req).Do(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
@@ -208,11 +219,11 @@ func TestPostRpcRequestMiddleware(t *testing.T) {
 					slog.Error("error parsing JSON request", "err", err)
 					return
 				}
-				handlerMock.EXPECT().SetStateService(stateService).Times(1)
+				handlerMock.EXPECT().SetStateService(state).Times(1)
 			}
 
 			// Create the middleware and serve using the test handlers
-			middleware := api.PostRpcRequestMiddleware(handlerMock, stateService)
+			middleware := api.PostRpcRequestMiddleware(handlerMock, state)
 			middleware.ServeHTTP(w, req)
 
 			// Check the status code and body

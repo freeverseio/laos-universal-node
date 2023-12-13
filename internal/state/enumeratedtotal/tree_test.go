@@ -268,37 +268,6 @@ func TestTag(t *testing.T) {
 		err = tr.Checkout(1)
 		assert.Error(t, err, "no tag found for this block number 1")
 	})
-	t.Run(`Find the first tag that has the same state as current block number`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-
-		blockNumber, err := tr.FindBlockWithTag(4)
-		assert.NilError(t, err)
-		assert.Equal(t, blockNumber, int64(2))
-	})
-
-	t.Run(`Find the first tag that has the same state as current block number. no tags return 0`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		blockNumber, err := tr.FindBlockWithTag(4)
-		assert.NilError(t, err)
-		assert.Equal(t, blockNumber, int64(0))
-	})
 
 	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
 		t.Parallel()
