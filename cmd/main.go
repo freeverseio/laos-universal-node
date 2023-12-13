@@ -628,16 +628,15 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 
 func updateStateWithMintEvents(contract common.Address, tx state.Tx, mintedEvents []model.MintedWithExternalURI, timestampContract uint64) (uint64, error) {
 	var ownershipContractEvoBlock uint64
-	for _, mEvent := range mintedEvents {
-		mintedEvent := mEvent
-		if mintedEvent.Timestamp > timestampContract {
+	for i := range mintedEvents {
+		if mintedEvents[i].Timestamp > timestampContract {
 			break
 		}
-		if err := tx.Mint(contract, &mintedEvent); err != nil {
+		if err := tx.Mint(contract, &mintedEvents[i]); err != nil {
 			return 0, fmt.Errorf("error updating mint state for contract %s and token id %d: %w",
-				contract, mintedEvent.TokenId, err)
+				contract, mintedEvents[i].TokenId, err)
 		}
-		ownershipContractEvoBlock = mintedEvent.BlockNumber
+		ownershipContractEvoBlock = mintedEvents[i].BlockNumber
 	}
 	return ownershipContractEvoBlock, nil
 }
