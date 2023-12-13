@@ -271,6 +271,21 @@ func (mr *MockTxMockRecorder) GetCurrentOwnershipBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetCurrentOwnershipBlock))
 }
 
+// GetEndRangeOwnershipBlockHash mocks base method.
+func (m *MockTx) GetEndRangeOwnershipBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEndRangeOwnershipBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndRangeOwnershipBlockHash indicates an expected call of GetEndRangeOwnershipBlockHash.
+func (mr *MockTxMockRecorder) GetEndRangeOwnershipBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndRangeOwnershipBlockHash", reflect.TypeOf((*MockTx)(nil).GetEndRangeOwnershipBlockHash))
+}
+
 // GetExistingERC721UniversalContracts mocks base method.
 func (m *MockTx) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -428,6 +443,20 @@ func (m *MockTx) SetCurrentOwnershipBlock(number uint64) error {
 func (mr *MockTxMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetCurrentOwnershipBlock), number)
+}
+
+// SetEndRangeOwnershipBlockHash mocks base method.
+func (m *MockTx) SetEndRangeOwnershipBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEndRangeOwnershipBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEndRangeOwnershipBlockHash indicates an expected call of SetEndRangeOwnershipBlockHash.
+func (mr *MockTxMockRecorder) SetEndRangeOwnershipBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEndRangeOwnershipBlockHash", reflect.TypeOf((*MockTx)(nil).SetEndRangeOwnershipBlockHash), blockHash)
 }
 
 // SetTreesForContract mocks base method.
@@ -985,6 +1014,21 @@ func (mr *MockOwnershipBlockStateMockRecorder) GetCurrentOwnershipBlock() *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockOwnershipBlockState)(nil).GetCurrentOwnershipBlock))
 }
 
+// GetEndRangeOwnershipBlockHash mocks base method.
+func (m *MockOwnershipBlockState) GetEndRangeOwnershipBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEndRangeOwnershipBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndRangeOwnershipBlockHash indicates an expected call of GetEndRangeOwnershipBlockHash.
+func (mr *MockOwnershipBlockStateMockRecorder) GetEndRangeOwnershipBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndRangeOwnershipBlockHash", reflect.TypeOf((*MockOwnershipBlockState)(nil).GetEndRangeOwnershipBlockHash))
+}
+
 // SetCurrentEvoBlockForOwnershipContract mocks base method.
 func (m *MockOwnershipBlockState) SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error {
 	m.ctrl.T.Helper()
@@ -1011,6 +1055,20 @@ func (m *MockOwnershipBlockState) SetCurrentOwnershipBlock(number uint64) error 
 func (mr *MockOwnershipBlockStateMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockOwnershipBlockState)(nil).SetCurrentOwnershipBlock), number)
+}
+
+// SetEndRangeOwnershipBlockHash mocks base method.
+func (m *MockOwnershipBlockState) SetEndRangeOwnershipBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEndRangeOwnershipBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEndRangeOwnershipBlockHash indicates an expected call of SetEndRangeOwnershipBlockHash.
+func (mr *MockOwnershipBlockStateMockRecorder) SetEndRangeOwnershipBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEndRangeOwnershipBlockHash", reflect.TypeOf((*MockOwnershipBlockState)(nil).SetEndRangeOwnershipBlockHash), blockHash)
 }
 
 // MockEvolutionBlockState is a mock of EvolutionBlockState interface.
