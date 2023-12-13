@@ -9,8 +9,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
-	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
+	stateMock "github.com/freeverseio/laos-universal-node/internal/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -28,7 +27,8 @@ func TestPostRPCRequestHandler(t *testing.T) {
 		expectedUniversalMintingHandlerCalledTimes int
 		expectedProxyHandlerCalledTimes            int
 		expectedBody                               string
-		storedContracts                            [][]byte
+		txCalledTimes                              int
+		hasERC721UniversalContractReturn           bool
 	}{
 		{
 			name:           "Good request with eth_call method",
@@ -38,10 +38,8 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 33, Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
-			expectedBody: `{"jsonrpc":"2.0","id":33,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			expectedBody:                     `{"jsonrpc":"2.0","id":33,"result":"0x00000000000"}`,
+			hasERC721UniversalContractReturn: true,
 		},
 		{
 			name:           "Good request with eth_call method as an array",
@@ -51,23 +49,19 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
-			expectedBody: `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}]`,
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			expectedBody:                     `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}]`,
+			hasERC721UniversalContractReturn: true,
 		},
 		{
-			name:                            "Good request with eth_call method and no contract in list",
-			method:                          http.MethodPost,
-			contentType:                     "application/json",
-			requestBody:                     `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			mockResponseProxy:               []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
-			expectedStatus:                  http.StatusOK,
-			expectedProxyHandlerCalledTimes: 1,
-			expectedBody:                    `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte(""),
-			},
+			name:                             "Good request with eth_call method and no contract in list",
+			method:                           http.MethodPost,
+			contentType:                      "application/json",
+			requestBody:                      `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
+			mockResponseProxy:                []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			expectedStatus:                   http.StatusOK,
+			expectedProxyHandlerCalledTimes:  1,
+			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
+			hasERC721UniversalContractReturn: false,
 		},
 		{
 			name:              "Good request with one eth_call method and one eth_getBlockByNumber method",
@@ -80,9 +74,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"},{"jsonrpc":"2.0","id":2,"result":"0x00000000000"}]`,
-			storedContracts: [][]byte{
-				[]byte("contract_0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:        "Good request with eth_call method supportsInterface 0x780e9d63",
@@ -100,10 +92,8 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
-			expectedBody: `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
+			hasERC721UniversalContractReturn: true,
 		},
 		{
 			name:        "Good request with eth_call method supportsInterface 0x80ac58cd",
@@ -123,9 +113,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:              "Good request with eth_call method but no remote minting method",
@@ -137,9 +125,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:              "Good request with eth_call method but no remote minting method",
@@ -151,9 +137,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:              "Good request with no erc721 method",
@@ -165,9 +149,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:           "Good request with no erc721 method but eth_blockNumber call",
@@ -179,9 +161,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedProxyHandlerCalledTimes:            0,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:           "Bad request with GET method",
@@ -193,9 +173,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            0,
 			expectedBody:                               `No JSON RPC call or invalid Content-Type`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 		{
 			name:           "Bad request with jsonrpc 1.0",
@@ -207,9 +185,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            0,
 			expectedBody:                               `{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"execution reverted"}}`,
-			storedContracts: [][]byte{
-				[]byte("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"),
-			},
+			hasERC721UniversalContractReturn:           true,
 		},
 	}
 
@@ -221,7 +197,10 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			request.Header.Set("Content-Type", tc.contentType)
 			recorder := httptest.NewRecorder()
 			ctrl := gomock.NewController(t)
-			storage := mockStorage.NewMockService(ctrl)
+			state := stateMock.NewMockService(ctrl)
+
+			tx := stateMock.NewMockTx(ctrl)
+
 			universalHandler := mock.NewMockRPCUniversalHandler(ctrl)
 			proxyHandler := mock.NewMockProxyHandler(ctrl)
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
@@ -240,14 +219,14 @@ func TestPostRPCRequestHandler(t *testing.T) {
 				api.WithRPCProxyHandler(proxyHandler),
 			)
 
-			tx := mockStorage.NewMockTx(ctrl)
-			storage.EXPECT().NewTransaction().Return(tx).AnyTimes()
+			state.EXPECT().NewTransaction().Return(tx).AnyTimes()
 			tx.EXPECT().Discard().AnyTimes()
-			if len(tc.storedContracts) > 0 {
-				tx.EXPECT().Get(gomock.Any()).Return(tc.storedContracts[0], nil).AnyTimes()
-			}
-			stateService := v1.NewStateService(storage)
-			handler.SetStateService(stateService)
+			tx.EXPECT().
+				HasERC721UniversalContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").
+				Return(tc.hasERC721UniversalContractReturn, nil).
+				AnyTimes()
+
+			handler.SetStateService(state)
 			http.HandlerFunc(handler.PostRPCRequestHandler).ServeHTTP(recorder, request)
 
 			response := recorder.Result()
