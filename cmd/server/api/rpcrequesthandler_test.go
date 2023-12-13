@@ -40,6 +40,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":33,"result":"0x00000000000"}`,
 			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
 			name:           "Good request with eth_call method as an array",
@@ -51,6 +52,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}]`,
 			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
 			name:                             "Good request with eth_call method and no contract in list",
@@ -62,6 +64,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedProxyHandlerCalledTimes:  1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
 			hasERC721UniversalContractReturn: false,
+			txCalledTimes:                    1,
 		},
 		{
 			name:              "Good request with one eth_call method and one eth_getBlockByNumber method",
@@ -75,6 +78,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedProxyHandlerCalledTimes:            1,
 			expectedBody:                               `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"},{"jsonrpc":"2.0","id":2,"result":"0x00000000000"}]`,
 			hasERC721UniversalContractReturn:           true,
+			txCalledTimes:                              1,
 		},
 		{
 			name:        "Good request with eth_call method supportsInterface 0x780e9d63",
@@ -94,6 +98,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
 			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
 		},
 		{
 			name:        "Good request with eth_call method supportsInterface 0x80ac58cd",
@@ -108,18 +113,6 @@ func TestPostRPCRequestHandler(t *testing.T) {
 		    }, "latest"],
 		    "id": 1
 		}`,
-			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
-			expectedStatus:    http.StatusOK,
-			expectedUniversalMintingHandlerCalledTimes: 0,
-			expectedProxyHandlerCalledTimes:            1,
-			expectedBody:                               `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
-			hasERC721UniversalContractReturn:           true,
-		},
-		{
-			name:              "Good request with eth_call method but no remote minting method",
-			method:            http.MethodPost,
-			contentType:       "application/json",
-			requestBody:       `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
 			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
 			expectedStatus:    http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 0,
@@ -219,12 +212,12 @@ func TestPostRPCRequestHandler(t *testing.T) {
 				api.WithRPCProxyHandler(proxyHandler),
 			)
 
-			state.EXPECT().NewTransaction().Return(tx).AnyTimes()
-			tx.EXPECT().Discard().AnyTimes()
+			state.EXPECT().NewTransaction().Return(tx).Times(tc.txCalledTimes)
+			tx.EXPECT().Discard().Times(tc.txCalledTimes)
 			tx.EXPECT().
 				HasERC721UniversalContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").
 				Return(tc.hasERC721UniversalContractReturn, nil).
-				AnyTimes()
+				Times(tc.txCalledTimes)
 
 			handler.SetStateService(state)
 			http.HandlerFunc(handler.PostRPCRequestHandler).ServeHTTP(recorder, request)
