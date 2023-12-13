@@ -14,6 +14,8 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -22,7 +24,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/state"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
-	"golang.org/x/sync/errgroup"
 )
 
 var version = "undefined"
@@ -222,6 +223,16 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			}
 			evoSynced = true
 
+			block, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+			if err != nil {
+				slog.Error("error occurred while fetching end range block", "err", err.Error())
+				break
+			}
+			if err = tx.SetEndRangeOwnershipBlockHash(block.Hash()); err != nil {
+				slog.Error("error occurred while storing end range block hash", "err", err.Error())
+				break
+			}
+
 			// discovering new contracts deployed on the ownership chain
 			// choosing which contracts to scan
 			// if contracts come from flag, consider only those that have been discovered (whether in this iteration or previously)
@@ -233,6 +244,22 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 			if err != nil {
 				break
 			}
+
+			header, err := client.HeaderByNumber(ctx, big.NewInt(int64(nextStartingBlock)))
+			if err != nil {
+				slog.Error("error occurred while fetching new start range block", "err", err.Error())
+				break
+			}
+			endRangeBlockHash, err := tx.GetEndRangeOwnershipBlockHash()
+			if err != nil {
+				slog.Error("error occurred while reading end range block hash", "err", err.Error())
+				break
+			}
+			if header.ParentHash.Cmp(endRangeBlockHash) != 0 {
+				slog.Error("ownership chain reorganization detected")
+				ctx.Done()
+			}
+
 			startingBlock = nextStartingBlock
 		}
 	}
