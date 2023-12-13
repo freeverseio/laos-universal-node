@@ -3,12 +3,15 @@ package evolution
 import (
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
 const (
 	currentBlock          = "evo_current_block"
 	currentBlockTimestamp = "evo_current_block_timestamp"
+	endRangeBlockHash     = "evo_parent_blockhash"
 )
 
 type service struct {
@@ -49,4 +52,19 @@ func (s *service) GetCurrentEvoBlockTimestamp() (uint64, error) {
 
 func (s *service) SetCurrentEvoBlockTimestamp(number uint64) error {
 	return s.tx.Set([]byte(currentBlockTimestamp), []byte(strconv.FormatUint(number, 10)))
+}
+
+func (s *service) SetEndRangeEvoBlockHash(blockHash common.Hash) error {
+	return s.tx.Set([]byte(endRangeBlockHash), []byte(blockHash.Hex()))
+}
+
+func (s *service) GetEndRangeEvoBlockHash() (common.Hash, error) {
+	value, err := s.tx.Get([]byte(endRangeBlockHash))
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if value == nil {
+		value = common.Hash{}.Bytes()
+	}
+	return common.HexToHash(common.Bytes2Hex(value)), nil
 }

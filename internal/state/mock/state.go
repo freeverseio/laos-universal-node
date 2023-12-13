@@ -271,6 +271,21 @@ func (mr *MockTxMockRecorder) GetCurrentOwnershipBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetCurrentOwnershipBlock))
 }
 
+// GetEndRangeEvoBlockHash mocks base method.
+func (m *MockTx) GetEndRangeEvoBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEndRangeEvoBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndRangeEvoBlockHash indicates an expected call of GetEndRangeEvoBlockHash.
+func (mr *MockTxMockRecorder) GetEndRangeEvoBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndRangeEvoBlockHash", reflect.TypeOf((*MockTx)(nil).GetEndRangeEvoBlockHash))
+}
+
 // GetEndRangeOwnershipBlockHash mocks base method.
 func (m *MockTx) GetEndRangeOwnershipBlockHash() (common.Hash, error) {
 	m.ctrl.T.Helper()
@@ -443,6 +458,20 @@ func (m *MockTx) SetCurrentOwnershipBlock(number uint64) error {
 func (mr *MockTxMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetCurrentOwnershipBlock), number)
+}
+
+// SetEndRangeEvoBlockHash mocks base method.
+func (m *MockTx) SetEndRangeEvoBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEndRangeEvoBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEndRangeEvoBlockHash indicates an expected call of SetEndRangeEvoBlockHash.
+func (mr *MockTxMockRecorder) SetEndRangeEvoBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEndRangeEvoBlockHash", reflect.TypeOf((*MockTx)(nil).SetEndRangeEvoBlockHash), blockHash)
 }
 
 // SetEndRangeOwnershipBlockHash mocks base method.
@@ -1124,6 +1153,21 @@ func (mr *MockEvolutionBlockStateMockRecorder) GetCurrentEvoBlockTimestamp() *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionBlockState)(nil).GetCurrentEvoBlockTimestamp))
 }
 
+// GetEndRangeEvoBlockHash mocks base method.
+func (m *MockEvolutionBlockState) GetEndRangeEvoBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEndRangeEvoBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndRangeEvoBlockHash indicates an expected call of GetEndRangeEvoBlockHash.
+func (mr *MockEvolutionBlockStateMockRecorder) GetEndRangeEvoBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndRangeEvoBlockHash", reflect.TypeOf((*MockEvolutionBlockState)(nil).GetEndRangeEvoBlockHash))
+}
+
 // SetCurrentEvoBlock mocks base method.
 func (m *MockEvolutionBlockState) SetCurrentEvoBlock(number uint64) error {
 	m.ctrl.T.Helper()
@@ -1150,4 +1194,18 @@ func (m *MockEvolutionBlockState) SetCurrentEvoBlockTimestamp(number uint64) err
 func (mr *MockEvolutionBlockStateMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionBlockState)(nil).SetCurrentEvoBlockTimestamp), number)
+}
+
+// SetEndRangeEvoBlockHash mocks base method.
+func (m *MockEvolutionBlockState) SetEndRangeEvoBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEndRangeEvoBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEndRangeEvoBlockHash indicates an expected call of SetEndRangeEvoBlockHash.
+func (mr *MockEvolutionBlockStateMockRecorder) SetEndRangeEvoBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEndRangeEvoBlockHash", reflect.TypeOf((*MockEvolutionBlockState)(nil).SetEndRangeEvoBlockHash), blockHash)
 }

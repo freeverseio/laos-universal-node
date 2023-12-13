@@ -82,4 +82,6 @@ type EvolutionBlockState interface {
 	GetCurrentEvoBlock() (uint64, error)
 	SetCurrentEvoBlockTimestamp(number uint64) error
 	GetCurrentEvoBlockTimestamp() (uint64, error)
+	SetEndRangeEvoBlockHash(blockHash common.Hash) error
+	GetEndRangeEvoBlockHash() (common.Hash, error)
 }
