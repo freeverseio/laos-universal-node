@@ -35,7 +35,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":2}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a", getJsonRawMessagePointer("2"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a"), getJsonRawMessagePointer("2"))
 			},
 		},
 		{
@@ -47,7 +47,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"]}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a", nil)
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a"), nil)
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "", getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -70,7 +70,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "", getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringZero, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringZero), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -94,7 +94,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -106,7 +106,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":111}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000003c5f", getJsonRawMessagePointer("111"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x0000000000000000000000000000000000000000000000000000000000003c5f"), getJsonRawMessagePointer("111"))
 			},
 		},
 		{
@@ -118,7 +118,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "", getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -130,7 +130,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusBadRequest, "", getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -166,7 +166,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x18160ddd","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000064","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e697066733a2f2f6d79746f6b656e000000000000000000000000000000000000", getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e697066733a2f2f6d79746f6b656e000000000000000000000000000000000000"), getJsonRawMessagePointer("1"))
 			},
 		},
 
@@ -190,7 +190,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			},
 			request: `{"method":"eth_blockNumber","params":[],"id":11,"jsonrpc":"2.0"}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, "0x28fafa2", getJsonRawMessagePointer("11"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x28fafa2"), getJsonRawMessagePointer("11"))
 			},
 		},
 	}
@@ -253,15 +253,11 @@ func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
 	return jsonRPCRequest
 }
 
-func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse string, expectedId *json.RawMessage) {
+func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse, expectedId *json.RawMessage) {
 	if expectedStatus == http.StatusOK {
-		if rr.Result != expectedResponse {
-			t.Errorf("handler returned unexpected result: got %v want %v", rr.Result, expectedResponse)
-		}
-	} else {
-		if rr.Error.Code != api.ErrorCodeInvalidRequest {
-			t.Errorf("handler returned wrong status code: got %v want %v", rr.Error.Code, api.ErrorCodeInvalidRequest)
-		}
+		compareRawMessage(t, rr.Result, expectedResponse)
+	} else if rr.Error.Code != api.ErrorCodeInvalidRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v", rr.Error.Code, api.ErrorCodeInvalidRequest)
 	}
 	compareRawMessage(t, rr.ID, expectedId)
 }

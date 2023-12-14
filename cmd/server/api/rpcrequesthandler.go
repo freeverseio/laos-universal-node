@@ -15,7 +15,7 @@ import (
 type RPCResponse struct {
 	Jsonrpc string           `json:"jsonrpc"`
 	ID      *json.RawMessage `json:"id"`
-	Result  string           `json:"result,omitempty"`
+	Result  *json.RawMessage `json:"result,omitempty"`
 	Error   *RPCError        `json:"error,omitempty"`
 }
 
@@ -161,10 +161,12 @@ func getResponse(result string, id *json.RawMessage, err error) RPCResponse {
 	if err != nil {
 		return getErrorResponse(err, id)
 	}
+	quotedResult := fmt.Sprintf(`%q`, result)
+	r := json.RawMessage(quotedResult)
 	return RPCResponse{
 		Jsonrpc: "2.0",
 		ID:      id,
-		Result:  result,
+		Result:  &r,
 	}
 }
 

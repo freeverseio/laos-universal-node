@@ -36,7 +36,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
 				ID:      getJsonRawMessagePointer("67"),
-				Result:  "1001",
+				Result:  getHexJsonRawMessagePointer("1001"),
 			},
 		},
 		{
@@ -57,7 +57,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
 				ID:      getJsonRawMessagePointer("1"),
-				Result:  "0x00477777730000000000",
+				Result:  getHexJsonRawMessagePointer("0x00477777730000000000"),
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
 				ID:      getJsonRawMessagePointer("1"),
-				Result:  "0x00477777730000000000",
+				Result:  getHexJsonRawMessagePointer("0x00477777730000000000"),
 			},
 		},
 		{
@@ -180,9 +180,8 @@ func TestPostRpcHandler(t *testing.T) {
 			if apiResponse.Jsonrpc != tt.expectedBody.Jsonrpc {
 				t.Fatalf("got %v, expected %v", apiResponse.Jsonrpc, tt.expectedBody.Jsonrpc)
 			}
-			if apiResponse.Result != tt.expectedBody.Result {
-				t.Fatalf("got %v, expected %v", apiResponse.Result, tt.expectedBody.Result)
-			}
+
+			compareRawMessage(t, apiResponse.Result, tt.expectedBody.Result)
 			if tt.expectedBody.Error != nil && apiResponse.Error.Code != tt.expectedBody.Error.Code {
 				t.Fatalf("got %v, expected %v", apiResponse.Error.Code, tt.expectedBody.Error.Code)
 			}
