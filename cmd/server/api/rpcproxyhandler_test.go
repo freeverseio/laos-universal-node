@@ -193,6 +193,7 @@ func TestPostRpcHandler(t *testing.T) {
 }
 
 func compareRawMessage(t *testing.T, raw1, raw2 *json.RawMessage) {
+	t.Helper()
 	// Check if both are nil or both are not nil
 	if (raw1 == nil) != (raw2 == nil) {
 		t.Fatalf("One of the RawMessage is nil and the other is not. Got %v, expected %v", raw1, raw2)
