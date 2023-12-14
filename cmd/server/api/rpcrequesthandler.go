@@ -84,7 +84,7 @@ func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) R
 
 func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {
 	if req.JSONRPC != "2.0" {
-		return getErrorResponse(fmt.Errorf("invalid JSON-RPC version"), getRpcId(req))
+		return getErrorResponse(fmt.Errorf("invalid JSON-RPC version"), req.ID)
 	}
 	switch req.Method {
 	case "eth_call":
@@ -97,16 +97,15 @@ func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) R
 }
 
 func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCRequest) RPCResponse {
-	rpcId := getRpcId(req)
 	var params ParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
-		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), rpcId)
+		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), req.ID)
 	}
 
 	// Check for universal minting method.
 	isRemoteMinting, err := isUniversalMintingMethod(params.Data)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error checking for universal minting method: %w", err), rpcId)
+		return getErrorResponse(fmt.Errorf("error checking for universal minting method: %w", err), req.ID)
 	}
 
 	// If not related to remote minting, delegate to standard handler.
@@ -117,7 +116,7 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCReque
 	// Check if contract is stored
 	contractExists, err := isContractStored(params.To, h.stateService)
 	if err != nil {
-		return getErrorResponse(fmt.Errorf("error checking contract list: %w", err), rpcId)
+		return getErrorResponse(fmt.Errorf("error checking contract list: %w", err), req.ID)
 	}
 
 	// If contract is stored, use the specific handler for ERC721 universal minting.
@@ -165,23 +164,23 @@ func parseBody(body []byte) (request []JSONRPCRequest, isArray bool, err error) 
 	return multiReq, true, nil
 }
 
-func getResponse(result string, id *uint, err error) RPCResponse {
+func getResponse(result string, id *json.RawMessage, err error) RPCResponse {
 	if err != nil {
 		return getErrorResponse(err, id)
 	}
 	return RPCResponse{
 		Jsonrpc: "2.0",
-		ID:      getJsonRawMessagePointer(id),
+		ID:      id,
 		Result:  result,
 	}
 }
 
-func getErrorResponse(err error, id *uint) RPCResponse {
+func getErrorResponse(err error, id *json.RawMessage) RPCResponse {
 	slog.Error("Failed to send response", "err", err)
 
 	errorResponse := RPCResponse{
 		Jsonrpc: "2.0",
-		ID:      getJsonRawMessagePointer(id),
+		ID:      id,
 		Error: &RPCError{
 			Code:    ErrorCodeInvalidRequest,
 			Message: "execution reverted",
@@ -190,6 +189,7 @@ func getErrorResponse(err error, id *uint) RPCResponse {
 
 	return errorResponse
 }
+
 func getJsonRawMessagePointer(id *uint) *json.RawMessage {
 	if id != nil {
 		idStr := fmt.Sprintf("%d", *id)  // Convert id to string
