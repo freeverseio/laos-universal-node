@@ -243,6 +243,7 @@ func setUpBalanceOfMocks(t *testing.T, tx *mockTx.MockTx, addressContract, owner
 }
 
 func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
+	t.Helper()
 	var jsonRPCRequest api.JSONRPCRequest
 	// tt.requestBody to []byte
 	body := []byte(requestBody)
@@ -254,6 +255,7 @@ func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
 }
 
 func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse, expectedId *json.RawMessage) {
+	t.Helper()
 	if expectedStatus == http.StatusOK {
 		compareRawMessage(t, rr.Result, expectedResponse)
 	} else if rr.Error.Code != api.ErrorCodeInvalidRequest {
