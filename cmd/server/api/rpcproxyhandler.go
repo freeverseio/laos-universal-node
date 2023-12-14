@@ -25,7 +25,7 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RP
 	// Forward headers the request
 	for name, values := range r.Header {
 		for _, value := range values {
-			// we don't want to forward the Accept-Encoding header because we don't want to receive a gzipped response
+			// we don't want to forward the Accept-Encoding header because we don't want to receive a encoded response (e.g. gzip)
 			if name != "Accept-Encoding" {
 				proxyReq.Header.Set(name, value)
 			}
