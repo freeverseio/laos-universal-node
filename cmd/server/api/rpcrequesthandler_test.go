@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -35,10 +36,22 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:         http.MethodPost,
 			contentType:    "application/json",
 			requestBody:    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 33, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("33"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":33,"result":"0x00000000000"}`,
+			hasERC721UniversalContractReturn: true,
+			txCalledTimes:                    1,
+		},
+		{
+			name:           "Good request with eth_call method and no id",
+			method:         http.MethodPost,
+			contentType:    "application/json",
+			requestBody:    `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}]}`,
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: nil, Result: "0x00000000000"}},
+			expectedStatus: http.StatusOK,
+			expectedUniversalMintingHandlerCalledTimes: 1,
+			expectedBody:                     `{"jsonrpc":"2.0","id":null,"result":"0x00000000000"}`,
 			hasERC721UniversalContractReturn: true,
 			txCalledTimes:                    1,
 		},
@@ -47,7 +60,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:         http.MethodPost,
 			contentType:    "application/json",
 			requestBody:    `[{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}]`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `[{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}]`,
@@ -59,7 +72,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:                           http.MethodPost,
 			contentType:                      "application/json",
 			requestBody:                      `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			mockResponseProxy:                []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponseProxy:                []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus:                   http.StatusOK,
 			expectedProxyHandlerCalledTimes:  1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
@@ -71,8 +84,8 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:            http.MethodPost,
 			contentType:       "application/json",
 			requestBody:       `[{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1},{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}]`,
-			mockResponse:      []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
-			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 2, Result: "0x00000000000"}},
+			mockResponse:      []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
+			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("2"), Result: "0x00000000000"}},
 			expectedStatus:    http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedProxyHandlerCalledTimes:            1,
@@ -93,7 +106,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 		      }, "latest"],
 		      "id": 1
 		  }`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedBody:                     `{"jsonrpc":"2.0","id":1,"result":"0x00000000000"}`,
@@ -113,7 +126,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 		    }, "latest"],
 		    "id": 1
 		}`,
-			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus:    http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
@@ -125,7 +138,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:            http.MethodPost,
 			contentType:       "application/json",
 			requestBody:       `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x95d89b41","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}],"id":1}`,
-			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus:    http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
@@ -137,7 +150,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:            http.MethodPost,
 			contentType:       "application/json",
 			requestBody:       `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
-			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponseProxy: []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus:    http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            1,
@@ -149,7 +162,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:         http.MethodPost,
 			contentType:    "application/json",
 			requestBody:    `{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 1,
 			expectedProxyHandlerCalledTimes:            0,
@@ -161,7 +174,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:         http.MethodGet,
 			contentType:    "application/json",
 			requestBody:    `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"2.0"}`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusBadRequest,
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            0,
@@ -173,7 +186,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			method:         http.MethodPost,
 			contentType:    "application/json",
 			requestBody:    `{"method":"eth_getBlockByNumber","params":["latest",false],"id":1,"jsonrpc":"1.0"}`,
-			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: 1, Result: "0x00000000000"}},
+			mockResponse:   []api.RPCResponse{{Jsonrpc: "2.0", ID: getJsonRawMessagePointer("1"), Result: "0x00000000000"}},
 			expectedStatus: http.StatusOK,
 			expectedUniversalMintingHandlerCalledTimes: 0,
 			expectedProxyHandlerCalledTimes:            0,
@@ -241,4 +254,9 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getJsonRawMessagePointer(idStr string) *json.RawMessage {
+	rawMsg := json.RawMessage(idStr)
+	return &rawMsg
 }

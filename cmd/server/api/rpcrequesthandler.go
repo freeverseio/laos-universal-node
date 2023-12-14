@@ -20,10 +20,10 @@ const (
 type RPCResponder interface{}
 
 type RPCResponse struct {
-	Jsonrpc string    `json:"jsonrpc"`
-	ID      uint      `json:"id"`
-	Result  string    `json:"result,omitempty"`
-	Error   *RPCError `json:"error,omitempty"`
+	Jsonrpc string           `json:"jsonrpc"`
+	ID      *json.RawMessage `json:"id"`
+	Result  string           `json:"result,omitempty"`
+	Error   *RPCError        `json:"error,omitempty"`
 }
 
 type RPCError struct {
@@ -163,4 +163,38 @@ func parseBody(body []byte) (request []JSONRPCRequest, isArray bool, err error) 
 	}
 
 	return multiReq, true, nil
+}
+
+func getResponse(result string, id *uint, err error) RPCResponse {
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
+	return RPCResponse{
+		Jsonrpc: "2.0",
+		ID:      getJsonRawMessagePointer(id),
+		Result:  result,
+	}
+}
+
+func getErrorResponse(err error, id *uint) RPCResponse {
+	slog.Error("Failed to send response", "err", err)
+
+	errorResponse := RPCResponse{
+		Jsonrpc: "2.0",
+		ID:      getJsonRawMessagePointer(id),
+		Error: &RPCError{
+			Code:    ErrorCodeInvalidRequest,
+			Message: "execution reverted",
+		},
+	}
+
+	return errorResponse
+}
+func getJsonRawMessagePointer(id *uint) *json.RawMessage {
+	if id != nil {
+		idStr := fmt.Sprintf("%d", *id)  // Convert id to string
+		rawMsg := json.RawMessage(idStr) // Convert string to RawMessage
+		return &rawMsg                   // Return pointer to RawMessage
+	}
+	return nil
 }

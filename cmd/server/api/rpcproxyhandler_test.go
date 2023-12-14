@@ -35,7 +35,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      67,
+				ID:      getJsonRawMessagePointer("67"),
 				Result:  "1001",
 			},
 		},
@@ -56,7 +56,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus:  http.StatusOK,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      1,
+				ID:      getJsonRawMessagePointer("1"),
 				Result:  "0x00477777730000000000",
 			},
 		},
@@ -77,7 +77,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus:  http.StatusOK,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      1,
+				ID:      getJsonRawMessagePointer("1"),
 				Result:  "0x00477777730000000000",
 			},
 		},
@@ -88,7 +88,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      0,
+				ID:      nil,
 				Error: &api.RPCError{
 					Code:    -32601,
 					Message: "The method net_version does not exist/is not available",
@@ -102,7 +102,7 @@ func TestPostRpcHandler(t *testing.T) {
 			expectedStatus: http.StatusBadGateway,
 			expectedBody: api.RPCResponse{
 				Jsonrpc: "2.0",
-				ID:      67,
+				ID:      getJsonRawMessagePointer("67"),
 				Error: &api.RPCError{
 					Code:    -32600,
 					Message: "execution reverted",
@@ -174,9 +174,9 @@ func TestPostRpcHandler(t *testing.T) {
 			}
 
 			apiResponse := handler.HandleProxyRPC(request, jsonRPCRequest)
-			if apiResponse.ID != tt.expectedBody.ID {
-				t.Fatalf("got %v, expected %v", apiResponse.ID, tt.expectedBody.ID)
-			}
+			// compare apiResponse.ID with tt.expectedBody.ID
+			compareRawMessage(t, apiResponse.ID, tt.expectedBody.ID)
+
 			if apiResponse.Jsonrpc != tt.expectedBody.Jsonrpc {
 				t.Fatalf("got %v, expected %v", apiResponse.Jsonrpc, tt.expectedBody.Jsonrpc)
 			}
@@ -190,5 +190,19 @@ func TestPostRpcHandler(t *testing.T) {
 				t.Fatalf("got %v, expected %v", apiResponse.Error.Message, tt.expectedBody.Error.Message)
 			}
 		})
+	}
+}
+
+func compareRawMessage(t *testing.T, raw1 *json.RawMessage, raw2 *json.RawMessage) {
+	// Check if both are nil or both are not nil
+	if (raw1 == nil) != (raw2 == nil) {
+		t.Fatalf("One of the RawMessage is nil and the other is not. Got %v, expected %v", raw1, raw2)
+	}
+
+	// Compare the values if both are not nil
+	if raw1 != nil && raw2 != nil {
+		if !bytes.Equal(*raw1, *raw2) {
+			t.Fatalf("RawMessage values are not equal. Got %v, expected %v", *raw1, *raw2)
+		}
 	}
 }
