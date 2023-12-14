@@ -14,7 +14,6 @@ import (
 )
 
 func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
-
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
 		return blockNumber(stateService, jsonRPCRequest.ID)

@@ -189,12 +189,3 @@ func getErrorResponse(err error, id *json.RawMessage) RPCResponse {
 
 	return errorResponse
 }
-
-func getJsonRawMessagePointer(id *uint) *json.RawMessage {
-	if id != nil {
-		idStr := fmt.Sprintf("%d", *id)  // Convert id to string
-		rawMsg := json.RawMessage(idStr) // Convert string to RawMessage
-		return &rawMsg                   // Return pointer to RawMessage
-	}
-	return nil
-}
