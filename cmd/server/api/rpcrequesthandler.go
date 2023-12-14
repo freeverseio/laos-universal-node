@@ -103,13 +103,13 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCReque
 	}
 
 	// Check for universal minting method.
-	isRemoteMinting, err := isUniversalMintingMethod(params.Data)
+	isUniversalMinting, err := isUniversalMintingMethod(params.Data)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error checking for universal minting method: %w", err), req.ID)
 	}
 
 	// If not related to remote minting, delegate to standard handler.
-	if !isRemoteMinting {
+	if !isUniversalMinting {
 		return h.HandleProxyRPC(r, req)
 	}
 
