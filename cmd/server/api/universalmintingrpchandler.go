@@ -150,6 +150,29 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
+func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+	tokenID, err := getParamBigInt(callData, "tokenId")
+	if err != nil {
+		slog.Error("error getting tokenId", "err", err)
+		return getErrorResponse(err, id)
+	}
+
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	if err != nil {
+		slog.Error("error creating merkle trees", "err", err)
+		return getErrorResponse(err, id)
+	}
+	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
+	if err != nil {
+		slog.Error("error retrieving token URI", "err", err)
+		return getErrorResponse(err, id)
+	}
+	encodedValue, err := erc721.AbiEncodeString(tokenURI)
+	return getResponse(encodedValue, id, err)
+}
+
 func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
@@ -213,28 +236,4 @@ func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber str
 		}
 	}
 	return tx, nil
-}
-
-func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
-	// TODO test me and move me up after solving merge conflicts
-	tokenID, err := getParamBigInt(callData, "tokenId")
-	if err != nil {
-		slog.Error("error getting tokenId", "err", err)
-		return getErrorResponse(err, id)
-	}
-
-	tx := stateService.NewTransaction()
-	defer tx.Discard()
-	tx, err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
-	if err != nil {
-		slog.Error("error creating merkle trees", "err", err)
-		return getErrorResponse(err, id)
-	}
-	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
-	if err != nil {
-		slog.Error("error retrieving token URI", "err", err)
-		return getErrorResponse(err, id)
-	}
-	encodedValue, err := erc721.AbiEncodeString(tokenURI)
-	return getResponse(encodedValue, id, err)
 }

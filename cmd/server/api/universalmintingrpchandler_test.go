@@ -169,6 +169,18 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				validateResponse(t, rr, http.StatusOK, hexStringOne, getJsonRawMessagePointer("1"))
 			},
 		},
+		{
+			name: "Should execute TokenURI",
+			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+				setUpTransactionMocks(t, storage, tx)
+				setupMerkeTreeMocks(t, tx)
+				tx.EXPECT().TokenURI(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), big.NewInt(100)).Return("ipfs://mytoken", nil).Times(1)
+			},
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000064","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e697066733a2f2f6d79746f6b656e000000000000000000000000000000000000", getJsonRawMessagePointer("1"))
+			},
+		},
 
 		{
 			name: "Should execute blocknumber",
