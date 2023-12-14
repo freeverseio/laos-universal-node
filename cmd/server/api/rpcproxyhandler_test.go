@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -25,81 +26,122 @@ func TestPostRpcHandler(t *testing.T) {
 		mockResponse    string
 		mockError       error
 		expectedStatus  int
-		expectedBody    string
+		expectedBody    api.RPCResponse
 	}{
 		{
 			name:           "successful request",
 			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}`,
 			mockResponse:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
 			expectedStatus: http.StatusOK,
-			expectedBody:   `{"jsonrpc":"2.0","result":"1001","id":67}`,
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      getJsonRawMessagePointer("67"),
+				Result:  getHexJsonRawMessagePointer("1001"),
+			},
 		},
 		{
 			name: "successful eth_call request with params and headers",
 			requestBody: `{
-        "jsonrpc": "2.0",
-        "method": "eth_call",
-        "params": [{
-            "to": "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
-            "data": "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000"
-        }, "latest"],
-        "id": 1
-    }`,
+		    "jsonrpc": "2.0",
+		    "method": "eth_call",
+		    "params": [{
+		        "to": "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
+		        "data": "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000"
+		    }, "latest"],
+		    "id": 1
+		}`,
 			requestHeaders:  map[string]string{"X-Custom-Header": "custom_value"},
 			expectedHeaders: map[string]string{"X-Custom-Header": "custom_value"},
 			mockResponse:    `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      getJsonRawMessagePointer("1"),
+				Result:  getHexJsonRawMessagePointer("0x00477777730000000000"),
+			},
+		},
+		{
+			name: "successful eth_call request with params and Accept-Encoding headers",
+			requestBody: `{
+		    "jsonrpc": "2.0",
+		    "method": "eth_call",
+		    "params": [{
+		        "to": "0xc4d9faef49ec1e604a76ee78bc992abadaa29527",
+		        "data": "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000000"
+		    }, "latest"],
+		    "id": 1
+		}`,
+			requestHeaders:  map[string]string{"X-Custom-Header": "custom_value", "Accept-Encoding": "gzip, deflate, br"},
+			expectedHeaders: map[string]string{"X-Custom-Header": "custom_value"},
+			mockResponse:    `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`,
+			expectedStatus:  http.StatusOK,
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      getJsonRawMessagePointer("1"),
+				Result:  getHexJsonRawMessagePointer("0x00477777730000000000"),
+			},
 		},
 		{
 			name:           "non successful request",
 			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}`,
 			mockResponse:   `{"jsonrpc":"2.0","error":{"code":-32601,"message":"The method net_version does not exist/is not available"}}`,
 			expectedStatus: http.StatusOK,
-			expectedBody:   `{"jsonrpc":"2.0","error":{"code":-32601,"message":"The method net_version does not exist/is not available"}}`,
-		},
-		{
-			name:           "non successful request with invalid json",
-			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67`,
-			mockResponse:   `{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error"}}`,
-			expectedStatus: http.StatusOK,
-			expectedBody:   `{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error"}}`,
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      nil,
+				Error: &api.RPCError{
+					Code:    -32601,
+					Message: "The method net_version does not exist/is not available",
+				},
+			},
 		},
 		{
 			name:           "client error",
 			requestBody:    `{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}`,
 			mockError:      errors.New("client error"),
 			expectedStatus: http.StatusBadGateway,
-			expectedBody:   "Bad Gateway\n",
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      getJsonRawMessagePointer("67"),
+				Error: &api.RPCError{
+					Code:    -32600,
+					Message: "execution reverted",
+				},
+			},
 		},
 	}
 
-	for _, ttest := range tests {
-		tt := ttest // Shadow loop variable otherwise it could be overwrittens
+	for _, tt := range tests {
+		tt := tt // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // Run tests in parallel
 			ctrl := gomock.NewController(t)
-			t.Cleanup(func() {
-				ctrl.Finish()
-			})
+			defer ctrl.Finish()
+
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 			handler := api.NewGlobalRPCHandler(
-				"https://polygon-mumbai.g.alchemy.com/",
+				"https://example.com/",
 				api.WithHttpClient(mockHttpClient),
 			)
 
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
-			if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
+			if tt.requestHeaders != nil {
 				// Setting headers in the request
 				for key, value := range tt.requestHeaders {
 					request.Header.Set(key, value)
 				}
 			}
 
-			recorder := httptest.NewRecorder()
+			var jsonRPCRequest api.JSONRPCRequest
+			// tt.requestBody to []byte
+			body := []byte(tt.requestBody)
+			if err := json.Unmarshal(body, &jsonRPCRequest); err != nil {
+				t.Fatalf("error unmarshalling request: %v", err)
+			}
 
+			// Mock the HTTP client behavior
 			if tt.mockError != nil {
-				mockHttpClient.EXPECT().Do(gomock.Any()).Return(nil, tt.mockError).Times(1)
+				mockHttpClient.EXPECT().Do(gomock.Any()).Return(nil, tt.mockError)
 			} else {
 				mockResponse := &http.Response{
 					StatusCode: http.StatusOK,
@@ -111,32 +153,56 @@ func TestPostRpcHandler(t *testing.T) {
 					if !ok {
 						t.Fatalf("got %T, expected *http.Request", arg)
 					}
-					if tt.requestHeaders != nil && tt.requestHeaders["X-Custom-Header"] != "" {
-						customHeaderValue := req.Header.Get("X-Custom-Header")
-						if customHeaderValue != tt.expectedHeaders["X-Custom-Header"] {
-							t.Fatalf("got %v, expected header %v, ", customHeaderValue, tt.expectedHeaders["X-Custom-Header"])
+					if tt.requestHeaders != nil {
+						if tt.requestHeaders["Accept-Encoding"] != "" {
+							if req.Header.Get("Accept-Encoding") != "" {
+								t.Fatalf("got %v, expected header %v, ", req.Header.Get("Accept-Encoding"), "")
+							}
+						}
+						for name, values := range req.Header {
+							for _, value := range values {
+								// we don't want to forward the Accept-Encoding header because we don't want to receive a gzipped response
+								if name != "Accept-Encoding" {
+									if value != tt.expectedHeaders[name] {
+										t.Fatalf("got %v, expected header %v, ", value, tt.expectedHeaders[name])
+									}
+								}
+							}
 						}
 					}
-				}).Return(mockResponse, nil).Times(1)
+				}).Return(mockResponse, nil)
 			}
 
-			handler.PostRPCProxyHandler(recorder, request)
+			apiResponse := handler.HandleProxyRPC(request, jsonRPCRequest)
+			// compare apiResponse.ID with tt.expectedBody.ID
+			compareRawMessage(t, apiResponse.ID, tt.expectedBody.ID)
 
-			response := recorder.Result()
-			body, _ := io.ReadAll(response.Body)
-			defer func() {
-				errClose := response.Body.Close()
-				if errClose != nil {
-					t.Fatalf("got: %v, expected: no error", errClose)
-				}
-			}()
-
-			if response.StatusCode != tt.expectedStatus {
-				t.Fatalf("got %v, expected status %v", response.StatusCode, tt.expectedStatus)
+			if apiResponse.Jsonrpc != tt.expectedBody.Jsonrpc {
+				t.Fatalf("got %v, expected %v", apiResponse.Jsonrpc, tt.expectedBody.Jsonrpc)
 			}
-			if string(body) != tt.expectedBody {
-				t.Fatalf("got %v, expected body %v", string(body), tt.expectedBody)
+
+			compareRawMessage(t, apiResponse.Result, tt.expectedBody.Result)
+			if tt.expectedBody.Error != nil && apiResponse.Error.Code != tt.expectedBody.Error.Code {
+				t.Fatalf("got %v, expected %v", apiResponse.Error.Code, tt.expectedBody.Error.Code)
+			}
+			if tt.expectedBody.Error != nil && apiResponse.Error.Message != tt.expectedBody.Error.Message {
+				t.Fatalf("got %v, expected %v", apiResponse.Error.Message, tt.expectedBody.Error.Message)
 			}
 		})
+	}
+}
+
+func compareRawMessage(t *testing.T, raw1, raw2 *json.RawMessage) {
+	t.Helper()
+	// Check if both are nil or both are not nil
+	if (raw1 == nil) != (raw2 == nil) {
+		t.Fatalf("One of the RawMessage is nil and the other is not. Got %v, expected %v", raw1, raw2)
+	}
+
+	// Compare the values if both are not nil
+	if raw1 != nil && raw2 != nil {
+		if !bytes.Equal(*raw1, *raw2) {
+			t.Fatalf("RawMessage values are not equal. Got %v, expected %v", *raw1, *raw2)
+		}
 	}
 }

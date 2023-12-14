@@ -1,13 +1,10 @@
 package api_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +24,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 		name       string
 		setupMocks func(*mockTx.MockService, *mockTx.MockTx)
 		request    string
-		validate   func(*testing.T, *httptest.ResponseRecorder)
+		validate   func(*testing.T, api.RPCResponse)
 	}{
 		{
 			name: "Should execute OwnerOf",
@@ -36,9 +33,21 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setupMerkeTreeMocks(t, tx)
 				setUpOwnerOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
 			},
-			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, "0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a")
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":2}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a"), getJsonRawMessagePointer("2"))
+			},
+		},
+		{
+			name: "Should execute OwnerOf without id",
+			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+				setUpTransactionMocks(t, storage, tx)
+				setupMerkeTreeMocks(t, tx)
+				setUpOwnerOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")
+			},
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"]}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x00000000000000000000000026cb70039fe1bd36b4659858d4c4d0cbcafd743a"), nil)
 			},
 		},
 		{
@@ -49,8 +58,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().OwnerOf(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), gomock.Any()).Return(common.Address{}, fmt.Errorf("error")).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -60,8 +69,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().CreateTreesForContract(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil, nil, nil, fmt.Errorf("error")).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -72,8 +81,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setUpBalanceOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x1b0b4a597c764400ea157ab84358c8788a89cd28", 0)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringZero)
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringZero), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -84,8 +93,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setUpBalanceOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x1b0b4a597c764400ea157ab84358c8788a89cd28", 1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -95,9 +104,9 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setupMerkeTreeMocks(t, tx)
 				setUpBalanceOfMocks(t, tx, "0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", "0x1b0b4a597c764400ea157ab84358c8788a89cd28", 15455)
 			},
-			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, "0x0000000000000000000000000000000000000000000000000000000000003c5f")
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":111}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x0000000000000000000000000000000000000000000000000000000000003c5f"), getJsonRawMessagePointer("111"))
 			},
 		},
 		{
@@ -108,8 +117,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().BalanceOf(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), common.HexToAddress("0x1b0b4a597c764400ea157ab84358c8788a89cd28")).Return(nil, fmt.Errorf("error")).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x70a082310000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -120,8 +129,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().TokenOfOwnerByIndex(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), common.HexToAddress("0x1b0b4a597c764400ea157ab84358c8788a89cd28"), 1).Return(big.NewInt(1), nil).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -132,8 +141,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().TokenOfOwnerByIndex(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), common.HexToAddress("0x1b0b4a597c764400ea157ab84358c8788a89cd28"), 1).Return(nil, fmt.Errorf("error")).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x2f745c590000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd280000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusBadRequest, "")
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusBadRequest, getHexJsonRawMessagePointer(""), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -144,8 +153,8 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().TokenByIndex(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), 1).Return(big.NewInt(1), nil).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x4f6ccce70000000000000000000000000000000000000000000000000000000000000001","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
 			},
 		},
 		{
@@ -156,8 +165,20 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				tx.EXPECT().TotalSupply(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(int64(1), nil).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x18160ddd","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, hexStringOne)
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer(hexStringOne), getJsonRawMessagePointer("1"))
+			},
+		},
+		{
+			name: "Should execute TokenURI",
+			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
+				setUpTransactionMocks(t, storage, tx)
+				setupMerkeTreeMocks(t, tx)
+				tx.EXPECT().TokenURI(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"), big.NewInt(100)).Return("ipfs://mytoken", nil).Times(1)
+			},
+			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000064","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e697066733a2f2f6d79746f6b656e000000000000000000000000000000000000"), getJsonRawMessagePointer("1"))
 			},
 		},
 
@@ -167,9 +188,9 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 				setUpTransactionMocks(t, storage, tx)
 				tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(42971043), nil).Times(1)
 			},
-			request: `{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}`,
-			validate: func(t *testing.T, rr *httptest.ResponseRecorder) {
-				validateResponse(t, rr, http.StatusOK, "0x28fafa2")
+			request: `{"method":"eth_blockNumber","params":[],"id":11,"jsonrpc":"2.0"}`,
+			validate: func(t *testing.T, rr api.RPCResponse) {
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x28fafa2"), getJsonRawMessagePointer("11"))
 			},
 		},
 	}
@@ -183,8 +204,10 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			defer ctrl.Finish()
 
 			request := createRequest(t, tt.request)
-			rr := runHandler(t, request, storage)
-			tt.validate(t, rr)
+			h := api.UniversalMintingRPCHandler{}
+			result := h.HandleUniversalMinting(request, storage)
+			fmt.Println(result)
+			tt.validate(t, result)
 		})
 	}
 }
@@ -219,56 +242,24 @@ func setUpBalanceOfMocks(t *testing.T, tx *mockTx.MockTx, addressContract, owner
 	tx.EXPECT().BalanceOf(common.HexToAddress(addressContract), common.HexToAddress(ownerReturnAddress)).Return(big.NewInt(balance), nil).Times(1)
 }
 
-func createRequest(t *testing.T, requestBody string) *http.Request {
-	request, err := http.NewRequest("POST", "/your-endpoint", bytes.NewBufferString(requestBody))
-	if err != nil {
-		t.Fatal(err)
+func createRequest(t *testing.T, requestBody string) api.JSONRPCRequest {
+	t.Helper()
+	var jsonRPCRequest api.JSONRPCRequest
+	// tt.requestBody to []byte
+	body := []byte(requestBody)
+	if err := json.Unmarshal(body, &jsonRPCRequest); err != nil {
+		t.Fatalf("error unmarshalling request: %v", err)
 	}
-	return request
+
+	return jsonRPCRequest
 }
 
-func runHandler(t *testing.T, request *http.Request, storage *mockTx.MockService) *httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("Error reading request body: %v", err)
-		}
-		r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
-
-		var req api.JSONRPCRequest
-		if err := json.Unmarshal(body, &req); err != nil {
-			t.Errorf("Error unmarshalling request body: %v", err)
-		}
-
-		h := api.GlobalRPCHandler{}
-		h.SetStateService(storage)
-		h.UniversalMintingRPCHandler(w, r)
-	})
-
-	handler.ServeHTTP(rr, request)
-	return rr
-}
-
-func validateResponse(t *testing.T, rr *httptest.ResponseRecorder, expectedStatus int, expectedResponse string) {
-	if status := rr.Code; status != expectedStatus {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, expectedStatus)
-	}
+func validateResponse(t *testing.T, rr api.RPCResponse, expectedStatus int, expectedResponse, expectedId *json.RawMessage) {
+	t.Helper()
 	if expectedStatus == http.StatusOK {
-		var response api.RPCResponse
-		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
-			t.Errorf("Error unmarshalling response body: %v", err)
-		}
-		if response.Result != expectedResponse {
-			t.Errorf("handler returned unexpected result: got %v want %v", response.Result, expectedResponse)
-		}
-	} else {
-		var response api.JSONRPCErrorResponse
-		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
-			t.Errorf("Error unmarshalling response body: %v", err)
-		}
-		if response.Error.Code != api.ErrorCodeInvalidRequest {
-			t.Errorf("handler returned wrong status code: got %v want %v", response.Error.Code, api.ErrorCodeInvalidRequest)
-		}
+		compareRawMessage(t, rr.Result, expectedResponse)
+	} else if rr.Error.Code != api.ErrorCodeInvalidRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v", rr.Error.Code, api.ErrorCodeInvalidRequest)
 	}
+	compareRawMessage(t, rr.ID, expectedId)
 }
