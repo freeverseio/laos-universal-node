@@ -12,13 +12,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/state"
 )
 
-const (
-	RPCId      = 1
-	RPCErrorId = 0
-)
-
-type RPCResponder interface{}
-
 type RPCResponse struct {
 	Jsonrpc string           `json:"jsonrpc"`
 	ID      *json.RawMessage `json:"id"`
