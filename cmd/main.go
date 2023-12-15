@@ -244,8 +244,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				}
 
 				if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-					slog.Error("ownership chain reorganization detected")
-					ctx.Done()
+					return fmt.Errorf("ownership chain reorganization detected at block number %d: got chain hash %s, expected %s",
+						startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
 				}
 			}
 
@@ -425,8 +425,8 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				}
 
 				if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-					slog.Error("LaosEvolution chain reorganization detected")
-					ctx.Done()
+					return fmt.Errorf("evo chain reorganization detected at block number %d: got chain hash %s, expected %s",
+						startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
 				}
 			}
 
