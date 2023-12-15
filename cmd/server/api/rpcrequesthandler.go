@@ -52,7 +52,7 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 	}
 	responseBody := make([]RPCResponse, 0, len(rpcRequests))
 	for _, rpcRequest := range rpcRequests {
-		responseBody = append(responseBody, h.GetRPCResponse(r, rpcRequest))
+		responseBody = append(responseBody, h.getRPCResponse(r, rpcRequest))
 	}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -75,7 +75,7 @@ func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) R
 	return h.rpcProxyHandler.HandleProxyRPC(r, req)
 }
 
-func (h *GlobalRPCHandler) GetRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {
+func (h *GlobalRPCHandler) getRPCResponse(r *http.Request, req JSONRPCRequest) RPCResponse {
 	if req.JSONRPC != "2.0" {
 		return getErrorResponse(fmt.Errorf("invalid JSON-RPC version"), req.ID)
 	}
