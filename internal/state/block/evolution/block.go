@@ -11,7 +11,7 @@ import (
 const (
 	currentBlock          = "evo_current_block"
 	currentBlockTimestamp = "evo_current_block_timestamp"
-	endRangeBlockHash     = "evo_end_range_block_hash"
+	endRangeBlockHash     = "evo_end_range_block_hash" //nolint:gosec // this is not a hardcoded credential
 )
 
 type service struct {

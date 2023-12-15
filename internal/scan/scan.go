@@ -136,7 +136,7 @@ func generateEventSignatureHash(event string, params ...string) string {
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
 	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error)
-	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error)
+	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts []string) ([]Event, error)
 }
 
 type scanner struct {
@@ -211,9 +211,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 }
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, *big.Int, error) { // TODO change contracts from []string to ...string
-	var lastBlock *big.Int
-	lastBlock = fromBlock
+func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]Event, error) { // TODO change contracts from []string to ...string
 	var addresses []common.Address
 	for _, c := range contracts {
 		addresses = append(addresses, common.HexToAddress(c))
@@ -221,26 +219,26 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error filtering events: %w", err)
+		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
 	if len(eventLogs) == 0 {
 		slog.Debug("no events found for block range", "from_block", fromBlock.Int64(), "to_block", toBlock.Int64())
-		return nil, toBlock, nil
+		return nil, nil
 	}
 
 	erc721UniversalAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
 	if err != nil {
-		return nil, nil, fmt.Errorf("error instantiating ABI: %w", err)
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
 	collectionAbi, err := abi.JSON(strings.NewReader(contract.CollectionMetaData.ABI))
 	if err != nil {
-		return nil, nil, fmt.Errorf("error instantiating ABI: %w", err)
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
 	evoAbi, err := abi.JSON(strings.NewReader(contract.EvolutionMetaData.ABI))
 	if err != nil {
-		return nil, nil, fmt.Errorf("error instantiating ABI: %w", err)
+		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
 	var parsedEvents []Event
@@ -253,7 +251,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				transfer, err := parseTransfer(&eventLogs[i], &erc721UniversalAbi)
 				if err != nil {
 					if err != eventTopicsError {
-						return nil, nil, err
+						return nil, err
 					}
 					slog.Warn("incorrect number of topics found in Transfer event",
 						"topics_found", len(eventLogs[i].Topics),
@@ -266,7 +264,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				approval, err := parseApproval(&eventLogs[i], &erc721UniversalAbi)
 				if err != nil {
 					if err != eventTopicsError {
-						return nil, nil, err
+						return nil, err
 					}
 					slog.Warn("incorrect number of topics found in Approval event",
 						"topics_found", len(eventLogs[i].Topics),
@@ -279,7 +277,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				approvalForAll, err := parseApprovalForAll(&eventLogs[i], &erc721UniversalAbi)
 				if err != nil {
 					if err != eventTopicsError {
-						return nil, nil, err
+						return nil, err
 					}
 					slog.Warn("incorrect number of topics found in ApprovalForAll event",
 						"topics_found", len(eventLogs[i].Topics),
@@ -292,7 +290,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			case eventNewCollectionSigHash:
 				ev, err := parseNewCollection(&eventLogs[i], &collectionAbi)
 				if err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 
 				parsedEvents = append(parsedEvents, ev)
@@ -302,13 +300,13 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			case eventMintedWithExternalURISigHash:
 				ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
 				if err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 
 				blockNum := eventLogs[i].BlockNumber
 				h, err := s.client.HeaderByNumber(ctx, big.NewInt(int64(blockNum)))
 				if err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 
 				ev.Contract = eventLogs[i].Address
@@ -321,7 +319,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			case eventEvolvedWithExternalURISigHash:
 				ev, err := parseEvolvedWithExternalURI(&eventLogs[i], &evoAbi)
 				if err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 
 				parsedEvents = append(parsedEvents, ev)
@@ -329,11 +327,10 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			default:
 				slog.Debug("unrecognized event", "event_type", eventLogs[i].Topics[0].String())
 			}
-			lastBlock = new(big.Int).SetUint64(eventLogs[i].BlockNumber)
 		}
 	}
 
-	return parsedEvents, lastBlock, nil
+	return parsedEvents, nil
 }
 
 func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {

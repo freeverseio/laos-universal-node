@@ -176,14 +176,11 @@ func TestParseEvents(t *testing.T) {
 
 			cli.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(tt.eventLogs[0].BlockNumber))).Return(&types.Header{Time: uint64(time.Now().Unix())}, nil).Times(tt.headerByNumberTimes)
 
-			events, lastScannedBlock, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
+			events, err := s.ScanEvents(context.Background(), tt.fromBlock, tt.toBlock, []string{tt.address.String()})
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
 
-			if tt.eventLogs[0].BlockNumber != lastScannedBlock.Uint64() {
-				t.Fatalf("lastScannedBlock should not be equal to eventLogs[0].BlockNumber")
-			}
 			switch eventType := events[0].(type) {
 			case scan.EventTransfer:
 				_, ok := events[0].(scan.EventTransfer)
@@ -328,7 +325,7 @@ func TestScanOnlyValidEvents(t *testing.T) {
 				Addresses: []common.Address{address},
 			}).Return(tt.eventLogs, nil)
 
-			events, _, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 			if err != nil {
 				t.Fatalf("error occurred when scanning events %v", err.Error())
 			}
@@ -365,13 +362,9 @@ func TestScanEvents(t *testing.T) {
 			Addresses: []common.Address{address},
 		}).Return(eventLogs, nil)
 
-		events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 		if err != nil {
 			t.Fatalf("nil error expected, got %v", err)
-		}
-		expectedLastScannedBlock := big.NewInt(100)
-		if lastScannedBlock.Cmp(expectedLastScannedBlock) != 0 {
-			t.Fatalf("got %v, lastScannedBlock expected %v, ", lastScannedBlock, expectedLastScannedBlock)
 		}
 
 		if events != nil {
@@ -393,13 +386,9 @@ func TestScanEvents(t *testing.T) {
 			Addresses: nil,
 		}).Return(nil, nil)
 
-		events, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
 		if err != nil {
 			t.Errorf("got error %s when scanning events while no error was expected", err.Error())
-		}
-		expectedLastScannedBlock := big.NewInt(100)
-		if lastScannedBlock.Cmp(expectedLastScannedBlock) != 0 {
-			t.Fatalf("got %v, lastScannedBlock expected %v, ", lastScannedBlock, expectedLastScannedBlock)
 		}
 
 		if len(events) > 0 {
@@ -443,12 +432,9 @@ func TestScanEvents(t *testing.T) {
 					Addresses: []common.Address{address},
 				}).Return(nil, tt.error)
 
-				_, lastScannedBlock, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 				if err == nil {
 					t.Fatalf("got nil error, expected %v", tt.error.Error())
-				}
-				if lastScannedBlock != nil {
-					t.Fatalf("got lastScannedBlock %v, expected nil", lastScannedBlock)
 				}
 			})
 		}

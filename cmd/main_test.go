@@ -160,7 +160,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
-				Return(tt.scannedEvents, big.NewInt(int64(tt.l1LatestBlock)), nil).
+				Return(tt.scannedEvents, nil).
 				Times(tt.scanEventsTimes)
 
 			tx2.EXPECT().GetAllERC721UniversalContracts().
@@ -386,7 +386,7 @@ func TestRunScanOk(t *testing.T) {
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
-				Return(nil, big.NewInt(int64(tt.l1LatestBlock)), nil).
+				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 
 			if tt.c.Contracts == nil || len(tt.c.Contracts) == 0 {
@@ -791,7 +791,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 					Times(1)
 
 				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
-					Return(nil, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).
+					Return(nil, tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {
 							cancel() // we cancel the loop since we only want one iteration
@@ -907,7 +907,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 				Times(1)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
-				Return([]scan.Event{event}, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).Times(1)
+				Return([]scan.Event{event}, tt.errorScanEvents).Times(1)
 
 			tx.EXPECT().GetCurrentEvoBlock().
 				Return(tt.blockNumberDB, tt.errorGetBlockNumber).

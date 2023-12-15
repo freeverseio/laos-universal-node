@@ -333,10 +333,9 @@ func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Co
 		return 0, err
 	}
 
-	var lastScannedBlock *big.Int
 	if len(contractsAddress) > 0 {
 		var scanEvents []scan.Event
-		scanEvents, lastScannedBlock, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contractsAddress)
+		scanEvents, err = s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contractsAddress)
 		if err != nil {
 			slog.Error("error occurred while scanning events", "err", err.Error())
 			return 0, err
@@ -353,11 +352,9 @@ func scanAndDigest(ctx context.Context, stateService state.Service, c *config.Co
 			slog.Error("error occurred", "err", err.Error())
 			return 0, err
 		}
-	} else {
-		lastScannedBlock = big.NewInt(int64(lastBlock))
 	}
 
-	nextStartingBlock := lastScannedBlock.Uint64() + 1
+	nextStartingBlock := lastBlock + 1
 
 	if err = tagRootsUntilBlock(tx, contractsAddress, nextStartingBlock); err != nil {
 		slog.Error("error occurred while tagging roots", "err", err.Error())
@@ -445,13 +442,13 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			events, lastScannedBlock, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
+			events, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 			if err != nil {
 				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
 				break
 			}
 
-			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, lastScannedBlock, client)
+			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, big.NewInt(int64(lastBlock)), client)
 			if err != nil {
 				break
 			}
