@@ -73,8 +73,8 @@ type OwnershipBlockState interface {
 	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
 	SetCurrentOwnershipBlock(number uint64) error
 	GetCurrentOwnershipBlock() (uint64, error)
-	SetEndRangeOwnershipBlockHash(blockHash common.Hash) error
-	GetEndRangeOwnershipBlockHash() (common.Hash, error)
+	SetOwnershipEndRangeBlockHash(blockHash common.Hash) error
+	GetOwnershipEndRangeBlockHash() (common.Hash, error)
 }
 
 type EvolutionBlockState interface {
@@ -82,6 +82,6 @@ type EvolutionBlockState interface {
 	GetCurrentEvoBlock() (uint64, error)
 	SetCurrentEvoBlockTimestamp(number uint64) error
 	GetCurrentEvoBlockTimestamp() (uint64, error)
-	SetEndRangeEvoBlockHash(blockHash common.Hash) error
-	GetEndRangeEvoBlockHash() (common.Hash, error)
+	SetEvoEndRangeBlockHash(blockHash common.Hash) error
+	GetEvoEndRangeBlockHash() (common.Hash, error)
 }

@@ -11,7 +11,7 @@ import (
 const (
 	currentBlock          = "evo_current_block"
 	currentBlockTimestamp = "evo_current_block_timestamp"
-	endRangeBlockHash     = "evo_parent_blockhash"
+	endRangeBlockHash     = "evo_end_range_block_hash"
 )
 
 type service struct {
@@ -54,11 +54,11 @@ func (s *service) SetCurrentEvoBlockTimestamp(number uint64) error {
 	return s.tx.Set([]byte(currentBlockTimestamp), []byte(strconv.FormatUint(number, 10)))
 }
 
-func (s *service) SetEndRangeEvoBlockHash(blockHash common.Hash) error {
-	return s.tx.Set([]byte(endRangeBlockHash), []byte(blockHash.Hex()))
+func (s *service) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
+	return s.tx.Set([]byte(endRangeBlockHash), blockHash.Bytes())
 }
 
-func (s *service) GetEndRangeEvoBlockHash() (common.Hash, error) {
+func (s *service) GetEvoEndRangeBlockHash() (common.Hash, error) {
 	value, err := s.tx.Get([]byte(endRangeBlockHash))
 	if err != nil {
 		return common.Hash{}, err
@@ -66,5 +66,6 @@ func (s *service) GetEndRangeEvoBlockHash() (common.Hash, error) {
 	if value == nil {
 		value = common.Hash{}.Bytes()
 	}
-	return common.HexToHash(common.Bytes2Hex(value)), nil
+
+	return common.BytesToHash(value), nil
 }
