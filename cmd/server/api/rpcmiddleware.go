@@ -15,7 +15,7 @@ type JSONRPCRequest struct {
 	ID      *json.RawMessage  `json:"id,omitempty"`
 }
 
-type ParamsRPCRequest struct {
+type EthCallParamsRPCRequest struct {
 	Data  string `json:"data,omitempty"`
 	To    string `json:"to,omitempty"`
 	From  string `json:"from,omitempty"`

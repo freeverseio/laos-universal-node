@@ -19,7 +19,7 @@ func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONR
 		return blockNumber(stateService, jsonRPCRequest.ID)
 	}
 
-	var params ParamsRPCRequest
+	var params EthCallParamsRPCRequest
 	if len(jsonRPCRequest.Params) == 0 || json.Unmarshal(jsonRPCRequest.Params[0], &params) != nil {
 		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), jsonRPCRequest.ID)
 	}
@@ -68,7 +68,7 @@ func supportsInterface(id *json.RawMessage) RPCResponse {
 	return getResponse("0x0000000000000000000000000000000000000000000000000000000000000001", id, nil)
 }
 
-func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func ownerOf(callData erc721.CallData, params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		return getErrorResponse(err, id)
@@ -87,7 +87,7 @@ func ownerOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber stri
 	return getResponse(fullAddressString, id, err)
 }
 
-func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func balanceOf(callData erc721.CallData, params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	ownerAddress, err := getParamAddress(callData, "owner")
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting owner: %w", err), id)
@@ -103,7 +103,7 @@ func balanceOf(callData erc721.CallData, params ParamsRPCRequest, blockNumber st
 	return getResponse(fmt.Sprintf("0x%064x", balance), id, err)
 }
 
-func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func totalSupply(params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	tx, err := loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
@@ -114,7 +114,7 @@ func totalSupply(params ParamsRPCRequest, blockNumber string, stateService state
 	return getResponse(fmt.Sprintf("0x%064x", totalSupply), id, err)
 }
 
-func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func tokenOfOwnerByIndex(callData erc721.CallData, params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		slog.Error("Error getting tokenId", "err", err)
@@ -134,7 +134,7 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ParamsRPCRequest, bloc
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func tokenByIndex(callData erc721.CallData, params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	index, err := getParamBigInt(callData, "index")
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err), id)
@@ -150,7 +150,7 @@ func tokenByIndex(callData erc721.CallData, params ParamsRPCRequest, blockNumber
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func tokenURI(callData erc721.CallData, params ParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
+func tokenURI(callData erc721.CallData, params EthCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	tokenID, err := getParamBigInt(callData, "tokenId")
 	if err != nil {
 		slog.Error("error getting tokenId", "err", err)
