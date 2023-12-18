@@ -15,11 +15,9 @@ const (
 	RPCMethodEthCall RPCMethod = iota
 	RPCMethodEthGetBalance
 	RPCMethodEthGetBlockByNumber
-	RPCMethodEthGetBlockReceipts
 	RPCMethodEthGetBlockTransactionCountByNumber
 	RPCMethodEthGetCode
 	RPCMethodEthGetLogs
-	RPCMethodEthGetProof
 	RPCMethodEthGetStorageAt
 	RPCMethodEthGetTransactionByBlockHashAndIndex
 	RPCMethodEthGetTransactionByBlockNumberAndIndex
