@@ -635,7 +635,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          100,
 			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
@@ -653,7 +653,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       2,
 			blockNumberDB:          0,
 			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
@@ -671,7 +671,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
 			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
@@ -723,7 +723,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
 			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
@@ -774,6 +774,8 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Times(1)
 
 			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
+				state.EXPECT().NewTransaction().Return(tx2).Times(1)
+				tx2.EXPECT().Discard().Times(1)
 				tx2.EXPECT().GetEvoEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
 
 				if tt.endRangeBlockHash != (common.Hash{}) {

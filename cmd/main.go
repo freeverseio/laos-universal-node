@@ -405,50 +405,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			// retrieve the hash of the final block of the previous iteration.
-			prevLastBlockHash, err := tx.GetEvoEndRangeBlockHash()
-			if err != nil {
-				slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
-				break
-			}
-
-			// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
-			// Verify whether the hash of the last block from the previous iteration remains unchanged; if it differs,
-			// it indicates a reorganization has taken place.
-			if prevLastBlockHash != (common.Hash{}) {
-				var prevIterLastBlock *types.Block
-				prevIterLastBlockNumber := startingBlock - 1
-				prevIterLastBlock, err = client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
-				if err != nil {
-					slog.Error("error occurred while fetching new LaosEvolution start range block", "err", err.Error())
-					break
-				}
-
-				if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-					return fmt.Errorf("evo chain reorganization detected at block number %d: got chain hash %s, expected %s",
-						startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
-				}
-			}
-
-			// Retrieve information about the final block in the current block range
-			endRangeBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
-			if err != nil {
-				slog.Error("error occurred while fetching LaosEvolution end range block", "err", err.Error())
-				break
-			}
-			// Store the final block hash to verify in next iteration if a reorganization has taken place.
-			if err = tx.SetEvoEndRangeBlockHash(endRangeBlock.Hash()); err != nil {
-				slog.Error("error occurred while storing LaosEvolution end range block hash", "err", err.Error())
-				break
-			}
-
-			events, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
-			if err != nil {
-				slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
-				break
-			}
-
-			nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, stateService, events, big.NewInt(int64(lastBlock)), client)
+			nextStartingBlock, err := processEvoBlockRange(ctx, client, stateService, s, startingBlock, lastBlock)
 			if err != nil {
 				break
 			}
@@ -458,9 +415,67 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 	}
 }
 
-func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Service, events []scan.Event, lastBlock *big.Int, client scan.EthClient) (uint64, error) {
+func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock uint64) (uint64, error) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
+
+	// retrieve the hash of the final block of the previous iteration.
+	prevLastBlockHash, err := tx.GetEvoEndRangeBlockHash()
+	if err != nil {
+		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
+		return 0, nil
+	}
+
+	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
+	// Verify whether the hash of the last block from the previous iteration remains unchanged; if it differs,
+	// it indicates a reorganization has taken place.
+	if prevLastBlockHash != (common.Hash{}) {
+		var prevIterLastBlock *types.Block
+		prevIterLastBlockNumber := startingBlock - 1
+		prevIterLastBlock, err = client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
+		if err != nil {
+			slog.Error("error occurred while fetching new LaosEvolution start range block", "err", err.Error())
+			return 0, nil
+		}
+
+		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
+			return 0, fmt.Errorf("evo chain reorganization detected at block number %d: got chain hash %s, expected %s",
+				startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
+		}
+	}
+
+	// Retrieve information about the final block in the current block range
+	endRangeBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+	if err != nil {
+		slog.Error("error occurred while fetching LaosEvolution end range block", "err", err.Error())
+		return 0, nil
+	}
+	// Store the final block hash to verify in next iteration if a reorganization has taken place.
+	if err = tx.SetEvoEndRangeBlockHash(endRangeBlock.Hash()); err != nil {
+		slog.Error("error occurred while storing LaosEvolution end range block hash", "err", err.Error())
+		return 0, nil
+	}
+
+	events, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
+	if err != nil {
+		slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
+		return 0, nil
+	}
+
+	nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, tx, events, big.NewInt(int64(lastBlock)), client)
+	if err != nil {
+		return 0, nil
+	}
+
+	if err = tx.Commit(); err != nil {
+		slog.Error("error committing transaction", "err", err.Error())
+		return 0, nil
+	}
+
+	return nextStartingBlock, nil
+}
+
+func storeMintEventsAndUpdateBlock(ctx context.Context, tx state.Tx, events []scan.Event, lastBlock *big.Int, client scan.EthClient) (uint64, error) {
 	err := storeMintedWithExternalURIEventsByContract(tx, events)
 	if err != nil {
 		slog.Error("error occurred while storing minted events", "err", err.Error())
@@ -484,10 +499,7 @@ func storeMintEventsAndUpdateBlock(ctx context.Context, stateService state.Servi
 		slog.Error("error storing block headers", "err", err.Error())
 		return 0, err
 	}
-	if err = tx.Commit(); err != nil {
-		slog.Error("error committing transaction", "err", err.Error())
-		return 0, err
-	}
+
 	return nextStartingBlock, nil
 }
 
