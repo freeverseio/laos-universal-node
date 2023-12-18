@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	contractEvoCurrentBlockPrefix = "ownership_contract_evo_current_block_"
+	contractEvoCurrentIndexPrefix = "ownership_contract_evo_current_index_"
 	currentBlock                  = "ownership_current_block"
 	endRangeBlockHash             = "ownership_end_range_block_hash"
 )
@@ -25,12 +25,12 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) SetCurrentEvoBlockForOwnershipContract(contract string, number uint64) error {
-	return s.tx.Set([]byte(contractEvoCurrentBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(number, 10)))
+func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {
+	return s.tx.Set([]byte(contractEvoCurrentIndexPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(number, 10)))
 }
 
-func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
-	value, err := s.tx.Get([]byte(contractEvoCurrentBlockPrefix + strings.ToLower(contract)))
+func (s *service) GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error) {
+	value, err := s.tx.Get([]byte(contractEvoCurrentIndexPrefix + strings.ToLower(contract)))
 	if err != nil {
 		return 0, err
 	}

@@ -29,30 +29,31 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		c                                config.Config
-		l1LatestBlock                    uint64
-		name                             string
-		blockNumberDB                    uint64
-		blockNumberTimes                 int
-		scanEventsTimes                  int
-		scanNewUniversalEventsTimes      int
-		txCommitTimes                    int
-		txDiscardTimes                   int
-		expectedStartingBlock            uint64
-		newLatestBlock                   uint64
-		collectionAddressForContract     []string
-		expectedContracts                []string
-		discoveredContracts              []model.ERC721UniversalContract
-		scannedEvents                    []scan.Event
-		blockNumberTransferEvents        uint64
-		timeStampTransferEvents          uint64
-		blocknumberMintedEvents          uint64
-		ownershipContractInitialEvoBlock uint64
-		timeStampMintedEvents            uint64
-		timeStampLastOwnershipBlock      uint64
-		timeStampLastEvoBlock            uint64
-		expectedTxMintCalls              int
-		endRangeBlockHash                common.Hash
+		c                                              config.Config
+		l1LatestBlock                                  uint64
+		name                                           string
+		blockNumberDB                                  uint64
+		blockNumberTimes                               int
+		scanEventsTimes                                int
+		scanNewUniversalEventsTimes                    int
+		txCommitTimes                                  int
+		txDiscardTimes                                 int
+		expectedStartingBlock                          uint64
+		newLatestBlock                                 uint64
+		collectionAddressForContract                   []string
+		expectedContracts                              []string
+		discoveredContracts                            []model.ERC721UniversalContract
+		scannedEvents                                  []scan.Event
+		blockNumberTransferEvents                      uint64
+		timeStampTransferEvents                        uint64
+		blocknumberMintedEvents                        uint64
+		timeStampMintedEvents                          uint64
+		timeStampLastOwnershipBlock                    uint64
+		ownershipContractInitialEvoIndexBeforeDiscover uint64
+		ownershipContractInitialEvoIndex               uint64
+		timeStampLastEvoBlock                          uint64
+		expectedTxMintCalls                            int
+		endRangeBlockHash                              common.Hash
 	}{
 		{
 			c: config.Config{
@@ -61,27 +62,28 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				BlocksRange:   100,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:                    101,
-			expectedStartingBlock:            1,
-			name:                             "scan events one time with stored contracts and updateStateWithTransfer",
-			blockNumberTimes:                 2,
-			scanEventsTimes:                  1,
-			scanNewUniversalEventsTimes:      1,
-			txCommitTimes:                    1,
-			txDiscardTimes:                   1,
-			newLatestBlock:                   102,
-			collectionAddressForContract:     []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
-			expectedContracts:                []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
-			discoveredContracts:              getERC721UniversalContracts(),
-			scannedEvents:                    createERC721TransferEvents(),
-			blockNumberTransferEvents:        1,
-			timeStampTransferEvents:          1000,
-			blocknumberMintedEvents:          1,
-			ownershipContractInitialEvoBlock: 1,
-			timeStampLastOwnershipBlock:      3000,
-			timeStampLastEvoBlock:            3000,
-			timeStampMintedEvents:            0,
-			endRangeBlockHash:                common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:                101,
+			expectedStartingBlock:        1,
+			name:                         "scan events one time with stored contracts and updateStateWithTransfer",
+			blockNumberTimes:             2,
+			scanEventsTimes:              1,
+			scanNewUniversalEventsTimes:  1,
+			txCommitTimes:                1,
+			txDiscardTimes:               1,
+			newLatestBlock:               102,
+			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
+			expectedContracts:            []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
+			discoveredContracts:          getERC721UniversalContracts(),
+			scannedEvents:                createERC721TransferEvents(),
+			blockNumberTransferEvents:    1,
+			timeStampTransferEvents:      1000,
+			blocknumberMintedEvents:      1,
+			ownershipContractInitialEvoIndexBeforeDiscover: 1,
+			ownershipContractInitialEvoIndex:               1,
+			timeStampLastOwnershipBlock:                    3000,
+			timeStampLastEvoBlock:                          3000,
+			timeStampMintedEvents:                          0,
+			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 		},
 		{
 			c: config.Config{
@@ -90,28 +92,29 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				BlocksRange:   100,
 				WaitingTime:   1 * time.Second,
 			},
-			l1LatestBlock:                    101,
-			expectedStartingBlock:            1,
-			name:                             "scan events one time with stored contracts and updateStateWithTransfer",
-			blockNumberTimes:                 2,
-			scanEventsTimes:                  1,
-			scanNewUniversalEventsTimes:      1,
-			txCommitTimes:                    1,
-			txDiscardTimes:                   1,
-			newLatestBlock:                   102,
-			collectionAddressForContract:     []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
-			expectedContracts:                []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
-			discoveredContracts:              getERC721UniversalContracts(),
-			scannedEvents:                    createERC721TransferEvents(),
-			blockNumberTransferEvents:        1,
-			timeStampTransferEvents:          1000,
-			blocknumberMintedEvents:          101,
-			ownershipContractInitialEvoBlock: 0,
-			timeStampMintedEvents:            2000,
-			timeStampLastOwnershipBlock:      3000,
-			timeStampLastEvoBlock:            3000,
-			expectedTxMintCalls:              1,
-			endRangeBlockHash:                common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:                101,
+			expectedStartingBlock:        1,
+			name:                         "scan events one time with stored contracts and updateStateWithTransfer",
+			blockNumberTimes:             2,
+			scanEventsTimes:              1,
+			scanNewUniversalEventsTimes:  1,
+			txCommitTimes:                1,
+			txDiscardTimes:               1,
+			newLatestBlock:               102,
+			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
+			expectedContracts:            []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
+			discoveredContracts:          getERC721UniversalContracts(),
+			scannedEvents:                createERC721TransferEvents(),
+			blockNumberTransferEvents:    1,
+			timeStampTransferEvents:      1000,
+			blocknumberMintedEvents:      101,
+			ownershipContractInitialEvoIndexBeforeDiscover: 0,
+			ownershipContractInitialEvoIndex:               1,
+			timeStampMintedEvents:                          2000,
+			timeStampLastOwnershipBlock:                    3000,
+			timeStampLastEvoBlock:                          3000,
+			expectedTxMintCalls:                            1,
+			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 		},
 	}
 	for _, tt := range tests {
@@ -175,7 +178,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 					Time: tt.timeStampTransferEvents,
 				}, nil).Times(1)
 				tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contract.Address.String(), tt.ownershipContractInitialEvoBlock).Return(nil).Times(1)
+				tx2.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(contract.Address.String(), tt.ownershipContractInitialEvoIndexBeforeDiscover).Return(nil).Times(1)
 			}
 
 			for i, contract := range tt.expectedContracts {
@@ -183,8 +186,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				tx2.EXPECT().GetMintedWithExternalURIEvents(tt.collectionAddressForContract[i]).
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
-				tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract(contract).Return(uint64(1), nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract(contract, tt.blocknumberMintedEvents).Return(nil).Times(1)
+				tx2.EXPECT().GetCurrentEvoEventsIndexForOwnershipContract(contract).Return(tt.ownershipContractInitialEvoIndexBeforeDiscover, nil).Times(1)
+				tx2.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(contract, tt.ownershipContractInitialEvoIndex).Return(nil).Times(1)
 			}
 			if len(tt.scannedEvents) > 0 {
 				// TODO remove any
@@ -227,7 +230,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			err := scanUniversalChain(ctx, &tt.c, client, scanner, mockState)
 			if err != nil {
-				t.Fatalf(`got error "%v" when no error was expeceted`, err)
+				t.Fatalf(`got error "%v" when no error was expected`, err)
 			}
 		})
 	}
@@ -407,8 +410,8 @@ func TestRunScanOk(t *testing.T) {
 			tx2.EXPECT().GetCollectionAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(common.HexToAddress("0x0"), nil).Times(1)
 			tx2.EXPECT().GetMintedWithExternalURIEvents("0x0000000000000000000000000000000000000000").
 				Return(getMockMintedEvents(uint64(0), uint64(0)), nil).Times(1)
-			tx2.EXPECT().GetCurrentEvoBlockForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(uint64(1), nil).Times(1)
-			tx2.EXPECT().SetCurrentEvoBlockForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", uint64(1)).Return(nil).Times(1)
+			tx2.EXPECT().GetCurrentEvoEventsIndexForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(uint64(1), nil).Times(1)
+			tx2.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A", uint64(1)).Return(nil).Times(1)
 			tx2.EXPECT().SetCurrentOwnershipBlock(newLatestBlock).Return(nil).Times(1)
 			tx2.EXPECT().Commit().Return(nil).Times(tt.txCommitTimes)
 			tx2.EXPECT().Discard().Times(tt.txDiscardTimes)
