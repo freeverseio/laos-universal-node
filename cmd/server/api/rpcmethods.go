@@ -10,6 +10,14 @@ type RPCMethod int
 
 type BlockTag string
 
+type FilterObject struct {
+	FromBlock string            `json:"fromBlock,omitempty"`
+	ToBlock   string            `json:"toBlock,omitempty"`
+	Address   string            `json:"address,omitempty"`
+	Topics    []json.RawMessage `json:"topics,omitempty"`
+	Blockhash *json.RawMessage  `json:"blockhash,omitempty"`
+}
+
 // Constants for each RPC method
 const (
 	RPCMethodEthCall RPCMethod = iota
@@ -46,19 +54,19 @@ var rpcMethodsWithBlockNumber = map[string]RPCMethod{
 	"eth_getBlockByNumber":                    RPCMethodEthGetBlockByNumber,
 	"eth_getBlockTransactionCountByNumber":    RPCMethodEthGetBlockTransactionCountByNumber,
 	"eth_getCode":                             RPCMethodEthGetCode,
-	"eth_getLogs":                             RPCMethodEthGetLogs,
 	"eth_getStorageAt":                        RPCMethodEthGetStorageAt,
-	"eth_getTransactionByBlockHashAndIndex":   RPCMethodEthGetTransactionByBlockHashAndIndex,
 	"eth_getTransactionByBlockNumberAndIndex": RPCMethodEthGetTransactionByBlockNumberAndIndex,
 	"eth_getTransactionCount":                 RPCMethodEthGetTransactionCount,
 	"eth_getUncleCountByBlockNumber":          RPCMethodEthGetUncleCountByBlockNumber,
+	"eth_getLogs":                             RPCMethodEthGetLogs,
 	"eth_newFilter":                           RPCMethodEthNewFilter,
 }
 
 var rpcMethodsWithHash = map[string]RPCMethod{
-	"eth_getBlockByHash":        RPCMethodEthGetBlockByHash,
-	"eth_getTransactionReceipt": RPCMethodEthGetTransactionReceipt,
-	"eth_getTransactionByHash":  RPCMethodEthGetTransactionByHash,
+	"eth_getBlockByHash":                    RPCMethodEthGetBlockByHash,
+	"eth_getTransactionReceipt":             RPCMethodEthGetTransactionReceipt,
+	"eth_getTransactionByHash":              RPCMethodEthGetTransactionByHash,
+	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
 }
 
 var rpcMethodsWithCountByHash = map[string]RPCMethod{
@@ -78,12 +86,35 @@ func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode str
 	}
 
 	switch method {
-	case RPCMethodEthGetBlockByNumber:
+	case RPCMethodEthGetBlockByNumber,
+		RPCMethodEthGetBlockTransactionCountByNumber,
+		RPCMethodEthGetTransactionByBlockNumberAndIndex,
+		RPCMethodEthGetUncleCountByBlockNumber:
 		// blocknumber is the first param for this method
-		ReplaceBlockTagWithHash(req, 0, blockNumberUnode)
-	case RPCMethodEthGetBalance, RPCMethodEthCall:
+		err := ReplaceBlockTagWithHash(req, 0, blockNumberUnode)
+		if err != nil {
+			return nil, err
+		}
+	case RPCMethodEthGetBalance,
+		RPCMethodEthCall,
+		RPCMethodEthGetCode,
+		RPCMethodEthGetTransactionCount:
 		// blocknumber is the second param for this method
-		ReplaceBlockTagWithHash(req, 1, blockNumberUnode)
+		err := ReplaceBlockTagWithHash(req, 1, blockNumberUnode)
+		if err != nil {
+			return nil, err
+		}
+	case RPCMethodEthGetStorageAt:
+		// blocknumber is the third param for this method
+		err := ReplaceBlockTagWithHash(req, 2, blockNumberUnode)
+		if err != nil {
+			return nil, err
+		}
+	case RPCMethodEthGetLogs, RPCMethodEthNewFilter:
+		err := ReplaceBlockTagFromObject(req, blockNumberUnode)
+		if err != nil {
+			return nil, err
+		}
 		// case RPCMethodEthGetBlockTransactionCountByNumber:
 		// 	params.Params = []string{blockNumber}
 		// case RPCMethodEthGetTransactionByBlockHashAndIndex:
@@ -107,19 +138,76 @@ func ReplaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash 
 	if err != nil {
 		return err
 	}
+	blockNumber, err := getBlockNumber(blockNumberRequest, blockNumberHash, 0)
+	if err != nil {
+		return err
+	}
+	req.Params[position] = stringToRawMessage(blockNumber)
+	return nil
+}
+
+func ReplaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) error {
+	var filterObject FilterObject
+	err := json.Unmarshal(req.Params[0], &filterObject)
+	if err != nil {
+		return err
+	}
+
+	changed := false
+	if filterObject.FromBlock != "" {
+		blockNumber, err := getBlockNumber(filterObject.FromBlock, blockNumberHash, 0)
+		if err != nil {
+			return err
+		}
+		if blockNumber != filterObject.FromBlock {
+			filterObject.FromBlock = blockNumber
+			changed = true
+		}
+	}
+
+	if filterObject.ToBlock != "" {
+		blockNumber, err := getBlockNumber(filterObject.ToBlock, blockNumberHash, 0)
+		if err != nil {
+			return err
+		}
+		if blockNumber != filterObject.ToBlock {
+			filterObject.ToBlock = blockNumber
+			changed = true
+		}
+	}
+
+	if changed {
+		req.Params[0], err = json.Marshal(filterObject)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getBlockNumber(blockNumberRequest, blockNumberHash string, position int) (string, error) {
 	// check if blockNumberRequest starts with 0x
 	if len(blockNumberRequest) > 2 && blockNumberRequest[:2] == "0x" {
 		c, err := CompareHex(blockNumberRequest, blockNumberHash)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if c == 1 {
-			return fmt.Errorf("invalid block number: %s", blockNumberRequest)
+			return "", fmt.Errorf("invalid block number: %s", blockNumberRequest)
 		}
-	} else if BlockTag(blockNumberRequest) == Latest || BlockTag(blockNumberRequest) == Pending {
-		req.Params[position] = stringToRawMessage(blockNumberHash)
+		return blockNumberRequest, nil
+	} else if BlockTag(blockNumberRequest) == Latest {
+		return blockNumberHash, nil
+	} else if BlockTag(blockNumberRequest) == Pending {
+		pendingBlockNumber, err := addIntNumberToHex(blockNumberHash, 1)
+		if err != nil {
+			return "", err
+		}
+		return pendingBlockNumber, nil
 	}
-	return nil
+
+	return blockNumberRequest, nil
 }
 
 func rawMessageToString(raw json.RawMessage) (string, error) {
@@ -142,15 +230,30 @@ func stringToRawMessage(str string) json.RawMessage {
 //	0 if hex1 == hex2
 //	1 if hex1 > hex2
 func CompareHex(hex1, hex2 string) (int, error) {
-	bigInt1, ok := new(big.Int).SetString(hex1, 16)
+	bigInt1, ok := new(big.Int).SetString(hex1[2:], 16)
 	if !ok {
 		return 0, fmt.Errorf("invalid hexadecimal number: %s", hex1)
 	}
 
-	bigInt2, ok := new(big.Int).SetString(hex2, 16)
+	bigInt2, ok := new(big.Int).SetString(hex2[2:], 16)
 	if !ok {
 		return 0, fmt.Errorf("invalid hexadecimal number: %s", hex2)
 	}
 
 	return bigInt1.Cmp(bigInt2), nil
+}
+
+func addIntNumberToHex(hex string, value int) (string, error) {
+	// Convert the hex string to a big.Int
+	bigInt1, ok := new(big.Int).SetString(hex[2:], 16)
+	if !ok {
+		return "", fmt.Errorf("invalid hexadecimal number: %s", hex)
+	}
+
+	// Convert the int value to big.Int and add it to the first big.Int
+	bigInt2 := big.NewInt(int64(value))
+	bigInt1.Add(bigInt1, bigInt2)
+
+	// Convert the result back to a hex string
+	return fmt.Sprintf("0x%x", bigInt1), nil
 }
