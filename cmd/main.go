@@ -30,8 +30,10 @@ import (
 
 var version = "undefined"
 
-const historyLength = 256
-const klaosChainID = 2718
+const (
+	historyLength = 256
+	klaosChainID  = 2718
+)
 
 type ReorgError struct{}
 
@@ -437,7 +439,7 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			nextStartingBlock, err := processEvoBlockRange(ctx, client, stateService, s, startingBlock, lastBlock)
+			err = processEvoBlockRange(ctx, client, stateService, s, startingBlock, lastBlock)
 			if err != nil {
 				if errors.Is(err, ReorgError{}) {
 					return err
@@ -445,12 +447,12 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				break
 			}
 
-			startingBlock = nextStartingBlock
+			startingBlock = lastBlock + 1
 		}
 	}
 }
 
-func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock uint64) (uint64, error) {
+func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock uint64) error {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 
@@ -458,7 +460,7 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 	prevLastBlockHash, err := tx.GetEvoEndRangeBlockHash()
 	if err != nil {
 		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
-		return 0, nil
+		return nil
 	}
 
 	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
@@ -470,12 +472,12 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 		prevIterLastBlock, err = client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
 		if err != nil {
 			slog.Error("error occurred while fetching new LaosEvolution start range block", "err", err.Error())
-			return 0, nil
+			return nil
 		}
 
 		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
 			slog.Error("evolution chain reorganization detected", "block number", startingBlock-1, "chain hash", prevIterLastBlock.Hash().String(), "storage hash", prevLastBlockHash.String())
-			return 0, ReorgError{}
+			return ReorgError{}
 		}
 	}
 
@@ -483,59 +485,59 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 	endRangeBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while fetching LaosEvolution end range block", "err", err.Error())
-		return 0, nil
+		return nil
 	}
 	// Store the final block hash to verify in next iteration if a reorganization has taken place.
 	if err = tx.SetEvoEndRangeBlockHash(endRangeBlock.Hash()); err != nil {
 		slog.Error("error occurred while storing LaosEvolution end range block hash", "err", err.Error())
-		return 0, nil
+		return nil
 	}
 
 	events, err := s.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 	if err != nil {
 		slog.Error("error occurred while scanning LaosEvolution events", "err", err.Error())
-		return 0, nil
+		return nil
 	}
 
-	nextStartingBlock, err := storeMintEventsAndUpdateBlock(ctx, tx, events, big.NewInt(int64(lastBlock)), client)
+	err = storeMintEventsAndUpdateBlock(ctx, tx, events, big.NewInt(int64(lastBlock)), client)
 	if err != nil {
-		return 0, nil
+		return nil
 	}
 
 	if err = tx.Commit(); err != nil {
 		slog.Error("error committing transaction", "err", err.Error())
-		return 0, nil
+		return nil
 	}
 
-	return nextStartingBlock, nil
+	return nil
 }
 
-func storeMintEventsAndUpdateBlock(ctx context.Context, tx state.Tx, events []scan.Event, lastBlock *big.Int, client scan.EthClient) (uint64, error) {
+func storeMintEventsAndUpdateBlock(ctx context.Context, tx state.Tx, events []scan.Event, lastBlock *big.Int, client scan.EthClient) error {
 	err := storeMintedWithExternalURIEventsByContract(tx, events)
 	if err != nil {
 		slog.Error("error occurred while storing minted events", "err", err.Error())
-		return 0, err
+		return err
 	}
 
 	nextStartingBlock := lastBlock.Uint64() + 1
 	if err = tx.SetCurrentEvoBlock(nextStartingBlock); err != nil {
 		slog.Error("error occurred while storing current block", "err", err.Error())
-		return 0, err
+		return err
 	}
 
 	// asking for timestamp of lastBlock as nextStartingBlock does not exist yet
 	timestamp, err := getTimestampForBlockNumber(ctx, client, lastBlock.Uint64())
 	if err != nil {
 		slog.Error("error retrieving block headers", "err", err.Error())
-		return 0, err
+		return err
 	}
 
 	if err = tx.SetCurrentEvoBlockTimestamp(timestamp); err != nil {
 		slog.Error("error storing block headers", "err", err.Error())
-		return 0, err
+		return err
 	}
 
-	return nextStartingBlock, nil
+	return nil
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
