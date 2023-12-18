@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -30,6 +31,12 @@ import (
 var version = "undefined"
 
 const historyLength = 256
+
+type ReorgError struct{}
+
+func (e ReorgError) Error() string {
+	return "reorg error"
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -230,6 +237,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 
 			nextStartingBlock, err := processUniversalBlockRange(ctx, c, client, stateService, s, startingBlock, lastBlock, lastOwnershipBlockTimestamp)
 			if err != nil {
+				if errors.Is(err, ReorgError{}) {
+					return err
+				}
 				break
 			}
 
@@ -261,8 +271,8 @@ func processUniversalBlockRange(ctx context.Context, c *config.Config, client sc
 		}
 
 		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-			return 0, fmt.Errorf("ownership chain reorganization detected at block number %d: got chain hash %s, expected %s",
-				startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
+			slog.Error("ownership chain reorganization detected", "block number", startingBlock-1, "chain hash", prevIterLastBlock.Hash().String(), "storage hash", prevLastBlockHash.String())
+			return 0, ReorgError{}
 		}
 	}
 
@@ -415,6 +425,9 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 
 			nextStartingBlock, err := processEvoBlockRange(ctx, client, stateService, s, startingBlock, lastBlock)
 			if err != nil {
+				if errors.Is(err, ReorgError{}) {
+					return err
+				}
 				break
 			}
 
@@ -447,8 +460,8 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 		}
 
 		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-			return 0, fmt.Errorf("evo chain reorganization detected at block number %d: got chain hash %s, expected %s",
-				startingBlock-1, prevIterLastBlock.Hash().String(), prevLastBlockHash.String())
+			slog.Error("evolution chain reorganization detected", "block number", startingBlock-1, "chain hash", prevIterLastBlock.Hash().String(), "storage hash", prevLastBlockHash.String())
+			return 0, ReorgError{}
 		}
 	}
 
