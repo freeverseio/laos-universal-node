@@ -28,6 +28,7 @@ import (
 var version = "undefined"
 
 const historyLength = 256
+const klaosChainID = 2718
 
 func main() {
 	if err := run(); err != nil {
@@ -112,6 +113,19 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("error instantiating eth client: %w", err)
 		}
+
+		chainID, err := client.ChainID(ctx)
+		if err != nil {
+			return err
+		}
+		if chainID.Cmp(big.NewInt(klaosChainID)) == 0 {
+			slog.Info("***********************************************************************************************")
+			slog.Info("The KLAOS Parachain on Kusama is a test chain for the LAOS Parachain on Polkadot.")
+			slog.Info("KLAOS is not endorsed by the LAOS Foundation nor Freeverse")
+			slog.Info("for real-value transactions involving the KLAOS token https://www.laosfoundation.io/disclaimer-klaos")
+			slog.Info("***********************************************************************************************")
+		}
+
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(client)
 		return scanEvoChain(ctx, c, client, s, stateService)
