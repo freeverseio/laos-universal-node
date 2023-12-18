@@ -298,45 +298,6 @@ func TestReplaceBlockTagTT(t *testing.T) {
 	}
 }
 
-func TestReplaceBlockTagFromObject(t *testing.T) {
-	t.Run("valid block tag for eth_newFilter", func(t *testing.T) {
-		req := &api.JSONRPCRequest{
-			Params: []json.RawMessage{
-				json.RawMessage(`{
-          "fromBlock": "0x1",
-          "toBlock": "0x2",
-          "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-          "topics": [
-            "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-            null,
-            [
-              "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-              "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-            ]
-          ]
-        }`),
-			},
-		}
-		blockNumber := "0x1b4"
-
-		err := api.ReplaceBlockTagFromObject(req, blockNumber)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		var filterObject api.FilterObject
-		err = json.Unmarshal(req.Params[0], &filterObject)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if filterObject.FromBlock != "0x1" {
-			t.Fatalf("unexpected fromBlock: %v", filterObject.FromBlock)
-		}
-		if filterObject.ToBlock != "0x2" {
-			t.Fatalf("unexpected toBlock: %v", filterObject.ToBlock)
-		}
-	})
-}
-
 func compareRawMessageObject(t *testing.T, raw1, raw2 json.RawMessage) {
 	t.Helper()
 	var obj1, obj2 interface{}

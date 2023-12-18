@@ -33,7 +33,7 @@ type RPCUniversalHandler interface {
 }
 
 type ProxyHandler interface {
-	HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse
+	HandleProxyRPC(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse
 	GetRpcUrl() string
 	GetHttpClient() HTTPClientInterface
 	SetHttpClient(client HTTPClientInterface)

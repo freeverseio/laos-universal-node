@@ -7,10 +7,12 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/freeverseio/laos-universal-node/internal/state"
 )
 
 // RPCProxyHandler
-func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
+func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse {
 	// JSONRPCRequest to []byte
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -20,6 +22,19 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RP
 	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating request: %w", err), req.ID)
+	}
+
+	// check if we have to replace the block tag
+	method, hasBlockNumber := HasRPCMethodWithBlocknumber(req.Method)
+	if hasBlockNumber {
+		blockNumber, errBlock := getBlockNumberFromDb(stateService)
+		if errBlock != nil {
+			return getErrorResponse(fmt.Errorf("error getting block number from db: %w", errBlock), req.ID)
+		}
+		req, errBlockTag := ReplaceBlockTag(&req, method, blockNumber)
+		if errBlockTag != nil {
+			return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
+		}
 	}
 
 	// Forward headers the request
@@ -63,4 +78,15 @@ func getJsonRPCResponse(r *http.Response) (*RPCResponse, error) {
 		return nil, fmt.Errorf("error parsing JSON request: %w", err)
 	}
 	return &req, nil
+}
+
+func getBlockNumberFromDb(stateService state.Service) (string, error) {
+	tx := stateService.NewTransaction()
+	defer tx.Discard()
+	blockNumber, err := tx.GetCurrentOwnershipBlock()
+	if err != nil {
+		return "", fmt.Errorf("error getting current block number: %w", err)
+	}
+	// minus 1 because we want to return the last tagged block
+	return fmt.Sprintf("0x%x", blockNumber-1), nil
 }

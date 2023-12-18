@@ -12,6 +12,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
+	stateMock "github.com/freeverseio/laos-universal-node/internal/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -124,6 +125,12 @@ func TestPostRpcHandler(t *testing.T) {
 				api.WithHttpClient(mockHttpClient),
 			)
 
+			state := stateMock.NewMockService(ctrl)
+			tx := stateMock.NewMockTx(ctrl)
+			state.EXPECT().NewTransaction().Return(tx).AnyTimes()
+			tx.EXPECT().Discard().AnyTimes()
+			tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(1001), nil).AnyTimes()
+			handler.SetStateService(state)
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
 			if tt.requestHeaders != nil {
 				// Setting headers in the request

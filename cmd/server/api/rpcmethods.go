@@ -62,6 +62,18 @@ var rpcMethodsWithBlockNumber = map[string]RPCMethod{
 	"eth_newFilter":                           RPCMethodEthNewFilter,
 }
 
+// var rpcMethodsWithHash = map[string]RPCMethod{
+// 	"eth_getBlockByHash":                    RPCMethodEthGetBlockByHash,
+// 	"eth_getTransactionReceipt":             RPCMethodEthGetTransactionReceipt,
+// 	"eth_getTransactionByHash":              RPCMethodEthGetTransactionByHash,
+// 	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
+// }
+
+// var rpcMethodsWithCountByHash = map[string]RPCMethod{
+// 	"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
+// 	"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
+// }
+
 func HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithBlockNumber[methodName]
 	return method, exists
@@ -78,7 +90,7 @@ func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode str
 		RPCMethodEthGetTransactionByBlockNumberAndIndex,
 		RPCMethodEthGetUncleCountByBlockNumber:
 		// blocknumber is the first param for this method
-		err := ReplaceBlockTagWithHash(req, 0, blockNumberUnode)
+		err := replaceBlockTagWithHash(req, 0, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
@@ -87,39 +99,27 @@ func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode str
 		RPCMethodEthGetCode,
 		RPCMethodEthGetTransactionCount:
 		// blocknumber is the second param for this method
-		err := ReplaceBlockTagWithHash(req, 1, blockNumberUnode)
+		err := replaceBlockTagWithHash(req, 1, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
 	case RPCMethodEthGetStorageAt:
 		// blocknumber is the third param for this method
-		err := ReplaceBlockTagWithHash(req, 2, blockNumberUnode)
+		err := replaceBlockTagWithHash(req, 2, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
 	case RPCMethodEthGetLogs, RPCMethodEthNewFilter:
-		err := ReplaceBlockTagFromObject(req, blockNumberUnode)
+		err := replaceBlockTagFromObject(req, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
-		// case RPCMethodEthGetBlockTransactionCountByNumber:
-		// 	params.Params = []string{blockNumber}
-		// case RPCMethodEthGetTransactionByBlockHashAndIndex:
-		// 	params.Params = []string{blockNumber, params.Params[1]}
-		// case RPCMethodEthGetTransactionByBlockNumberAndIndex:
-		// 	params.Params = []string{blockNumber, params.Params[1]}
-		// case RPCMethodEthGetTransactionCount:
-		// 	params.Params = []string{params.Params[0], blockNumber}
-		// case RPCMethodEthGetUncleCountByBlockNumber:
-		// 	params.Params = []string{blockNumber}
-		// case RPCMethodEthNewFilter:
-		// 	params.Params = []string{params.Params[0], blockNumber}
 	}
 
 	return req, nil
 }
 
-func ReplaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash string) error {
+func replaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash string) error {
 	blockNumberRequest, err := rawMessageToString(req.Params[position])
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func ReplaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash 
 	return nil
 }
 
-func ReplaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) error {
+func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) error {
 	var filterObject FilterObject
 	err := json.Unmarshal(req.Params[0], &filterObject)
 	if err != nil {
