@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -335,23 +334,7 @@ func TestReplaceBlockTagFromObject(t *testing.T) {
 		if filterObject.ToBlock != "0x2" {
 			t.Fatalf("unexpected toBlock: %v", filterObject.ToBlock)
 		}
-
 	})
-}
-
-func compareRawMessageString(t *testing.T, raw1, raw2 json.RawMessage) {
-	t.Helper()
-	// Check if both are nil or both are not nil
-	if (raw1 == nil) != (raw2 == nil) {
-		t.Fatalf("One of the RawMessage is nil and the other is not. Got %v, expected %v", raw1, raw2)
-	}
-
-	// Compare the values if both are not nil
-	if raw1 != nil && raw2 != nil {
-		if !bytes.Equal(raw1, raw2) {
-			t.Fatalf("RawMessage values are not equal. Got %v, expected %v", string(raw1), string(raw2))
-		}
-	}
 }
 
 func compareRawMessageObject(t *testing.T, raw1, raw2 json.RawMessage) {

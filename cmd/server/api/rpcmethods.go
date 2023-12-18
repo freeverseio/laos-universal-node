@@ -62,25 +62,12 @@ var rpcMethodsWithBlockNumber = map[string]RPCMethod{
 	"eth_newFilter":                           RPCMethodEthNewFilter,
 }
 
-var rpcMethodsWithHash = map[string]RPCMethod{
-	"eth_getBlockByHash":                    RPCMethodEthGetBlockByHash,
-	"eth_getTransactionReceipt":             RPCMethodEthGetTransactionReceipt,
-	"eth_getTransactionByHash":              RPCMethodEthGetTransactionByHash,
-	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
-}
-
-var rpcMethodsWithCountByHash = map[string]RPCMethod{
-	"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
-	"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
-}
-
 func HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithBlockNumber[methodName]
 	return method, exists
 }
 
 func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error) {
-
 	if len(req.Params) == 0 {
 		return req, nil
 	}
@@ -130,7 +117,6 @@ func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode str
 	}
 
 	return req, nil
-
 }
 
 func ReplaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash string) error {
@@ -138,7 +124,7 @@ func ReplaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash 
 	if err != nil {
 		return err
 	}
-	blockNumber, err := getBlockNumber(blockNumberRequest, blockNumberHash, 0)
+	blockNumber, err := getBlockNumber(blockNumberRequest, blockNumberHash)
 	if err != nil {
 		return err
 	}
@@ -155,9 +141,9 @@ func ReplaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) erro
 
 	changed := false
 	if filterObject.FromBlock != "" {
-		blockNumber, err := getBlockNumber(filterObject.FromBlock, blockNumberHash, 0)
-		if err != nil {
-			return err
+		blockNumber, errBlock := getBlockNumber(filterObject.FromBlock, blockNumberHash)
+		if errBlock != nil {
+			return errBlock
 		}
 		if blockNumber != filterObject.FromBlock {
 			filterObject.FromBlock = blockNumber
@@ -166,9 +152,9 @@ func ReplaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) erro
 	}
 
 	if filterObject.ToBlock != "" {
-		blockNumber, err := getBlockNumber(filterObject.ToBlock, blockNumberHash, 0)
-		if err != nil {
-			return err
+		blockNumber, errBlock := getBlockNumber(filterObject.ToBlock, blockNumberHash)
+		if errBlock != nil {
+			return errBlock
 		}
 		if blockNumber != filterObject.ToBlock {
 			filterObject.ToBlock = blockNumber
@@ -186,9 +172,10 @@ func ReplaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) erro
 	return nil
 }
 
-func getBlockNumber(blockNumberRequest, blockNumberHash string, position int) (string, error) {
-	// check if blockNumberRequest starts with 0x
-	if len(blockNumberRequest) > 2 && blockNumberRequest[:2] == "0x" {
+func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) {
+	// Using switch to handle different cases
+	switch {
+	case len(blockNumberRequest) > 2 && blockNumberRequest[:2] == "0x":
 		c, err := CompareHex(blockNumberRequest, blockNumberHash)
 		if err != nil {
 			return "", err
@@ -197,17 +184,20 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string, position int) (s
 			return "", fmt.Errorf("invalid block number: %s", blockNumberRequest)
 		}
 		return blockNumberRequest, nil
-	} else if BlockTag(blockNumberRequest) == Latest {
+
+	case BlockTag(blockNumberRequest) == Latest:
 		return blockNumberHash, nil
-	} else if BlockTag(blockNumberRequest) == Pending {
+
+	case BlockTag(blockNumberRequest) == Pending:
 		pendingBlockNumber, err := addIntNumberToHex(blockNumberHash, 1)
 		if err != nil {
 			return "", err
 		}
 		return pendingBlockNumber, nil
-	}
 
-	return blockNumberRequest, nil
+	default:
+		return blockNumberRequest, nil
+	}
 }
 
 func rawMessageToString(raw json.RawMessage) (string, error) {

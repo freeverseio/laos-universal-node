@@ -52,15 +52,6 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RP
 	return *response
 }
 
-func (h *RPCProxyHandler) replaceLatestBlockNumber(req JSONRPCRequest) JSONRPCRequest {
-	_, hasBlocknumber := HasRPCMethodWithBlocknumber(req.Method)
-	if hasBlocknumber {
-		return JSONRPCRequest{}
-	} else {
-		return req
-	}
-}
-
 func getJsonRPCResponse(r *http.Response) (*RPCResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
