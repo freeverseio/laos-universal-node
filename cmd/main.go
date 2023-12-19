@@ -35,7 +35,11 @@ const (
 	klaosChainID  = 2718
 )
 
-type ReorgError struct{}
+type ReorgError struct {
+	block       uint64
+	chainHash   common.Hash
+	storageHash common.Hash
+}
 
 func (e ReorgError) Error() string {
 	return "reorg error"
@@ -253,8 +257,10 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 
 			err = processUniversalBlockRange(ctx, c, client, stateService, s, startingBlock, lastBlock, lastOwnershipBlockTimestamp)
 			if err != nil {
-				if errors.Is(err, ReorgError{}) {
-					return err
+				var reorgErr ReorgError
+				if errors.As(err, &reorgErr) {
+					slog.Error("ownership chain reorganization detected", "block number", reorgErr.block, "chain hash", reorgErr.chainHash.String(), "storage hash", reorgErr.storageHash.String())
+					return reorgErr
 				}
 				break
 			}
@@ -274,22 +280,9 @@ func processUniversalBlockRange(ctx context.Context, c *config.Config, client sc
 		return err
 	}
 
-	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
-	// Verify whether the hash of the last block from the previous iteration remains unchanged; if it differs,
-	// it indicates a reorganization has taken place.
-	if prevLastBlockHash != (common.Hash{}) {
-		var prevIterLastBlock *types.Block
-		prevIterLastBlockNumber := startingBlock - 1
-		prevIterLastBlock, err = client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
-		if err != nil {
-			slog.Error("error occurred while retrieving new ownership start range block", "err", err.Error())
-			return err
-		}
-
-		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-			slog.Error("ownership chain reorganization detected", "block number", startingBlock-1, "chain hash", prevIterLastBlock.Hash().String(), "storage hash", prevLastBlockHash.String())
-			return ReorgError{}
-		}
+	err = verifyChainConsistency(ctx, client, prevLastBlockHash, startingBlock)
+	if err != nil {
+		return err
 	}
 
 	// Retrieve information about the final block in the current block range
@@ -318,6 +311,27 @@ func processUniversalBlockRange(ctx context.Context, c *config.Config, client sc
 	if err = tx.Commit(); err != nil {
 		slog.Error("error committing transaction", "err", err.Error())
 		return nil
+	}
+
+	return nil
+}
+
+func verifyChainConsistency(ctx context.Context, client scan.EthClient, prevLastBlockHash common.Hash, startingBlock uint64) error {
+	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
+	// Verify whether the hash of the last block from the previous iteration remains unchanged; if it differs,
+	// it indicates a reorganization has taken place.
+	if prevLastBlockHash != (common.Hash{}) {
+		var prevIterLastBlock *types.Block
+		prevIterLastBlockNumber := startingBlock - 1
+		prevIterLastBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
+		if err != nil {
+			slog.Error("error occurred while retrieving new ownership start range block", "err", err.Error())
+			return err
+		}
+
+		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
+			return ReorgError{block: startingBlock - 1, chainHash: prevIterLastBlock.Hash(), storageHash: prevLastBlockHash}
+		}
 	}
 
 	return nil
@@ -441,8 +455,10 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 
 			err = processEvoBlockRange(ctx, client, stateService, s, startingBlock, lastBlock)
 			if err != nil {
-				if errors.Is(err, ReorgError{}) {
-					return err
+				var reorgErr ReorgError
+				if errors.As(err, &reorgErr) {
+					slog.Error("evolution chain reorganization detected", "block number", reorgErr.block, "chain hash", reorgErr.chainHash.String(), "storage hash", reorgErr.storageHash.String())
+					return reorgErr
 				}
 				break
 			}
@@ -463,22 +479,9 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 		return nil
 	}
 
-	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
-	// Verify whether the hash of the last block from the previous iteration remains unchanged; if it differs,
-	// it indicates a reorganization has taken place.
-	if prevLastBlockHash != (common.Hash{}) {
-		var prevIterLastBlock *types.Block
-		prevIterLastBlockNumber := startingBlock - 1
-		prevIterLastBlock, err = client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
-		if err != nil {
-			slog.Error("error occurred while fetching new LaosEvolution start range block", "err", err.Error())
-			return nil
-		}
-
-		if prevIterLastBlock.Hash().Cmp(prevLastBlockHash) != 0 {
-			slog.Error("evolution chain reorganization detected", "block number", startingBlock-1, "chain hash", prevIterLastBlock.Hash().String(), "storage hash", prevLastBlockHash.String())
-			return ReorgError{}
-		}
+	err = verifyChainConsistency(ctx, client, prevLastBlockHash, startingBlock)
+	if err != nil {
+		return err
 	}
 
 	// Retrieve information about the final block in the current block range
