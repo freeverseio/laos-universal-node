@@ -64,7 +64,7 @@ func (s *service) GetEvoEndRangeBlockHash() (common.Hash, error) {
 		return common.Hash{}, err
 	}
 	if value == nil {
-		value = common.Hash{}.Bytes()
+		return common.Hash{}, nil
 	}
 
 	return common.BytesToHash(value), nil
