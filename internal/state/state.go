@@ -23,8 +23,8 @@ type Tx interface {
 	State
 	OwnershipContractState
 	EvolutionContractState
-	OwnershipBlockState
-	EvolutionBlockState
+	OwnershipSyncState
+	EvolutionSyncState
 }
 
 // State interface defines functions to interact with state of the blockchain
@@ -64,14 +64,14 @@ type EvolutionContractState interface {
 	StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error
 }
 
-type OwnershipBlockState interface {
-	SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error
-	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
+type OwnershipSyncState interface {
+	SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error
+	GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error)
 	SetCurrentOwnershipBlock(number uint64) error
 	GetCurrentOwnershipBlock() (uint64, error)
 }
 
-type EvolutionBlockState interface {
+type EvolutionSyncState interface {
 	SetCurrentEvoBlock(number uint64) error
 	GetCurrentEvoBlock() (uint64, error)
 	SetCurrentEvoBlockTimestamp(number uint64) error
