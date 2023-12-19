@@ -270,18 +270,17 @@ func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
+		tt := tc
 		t.Run(tc.name, func(t *testing.T) {
 			rpcResponse := api.RPCResponse{
-				Result: &tc.response,
+				Result: &tt.response,
 			}
 			err := api.CheckBlockNumberFromResponseFromHashCalls(&rpcResponse, tc.method, tc.blockNumber)
-
 			if err != nil {
 				if err.Error() != tc.expectedBlockError {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}
-
 		})
 	}
 }
