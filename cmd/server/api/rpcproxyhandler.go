@@ -25,13 +25,13 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 	}
 
 	// check if we have to replace the block tag
-	method, hasBlockNumber := HasRPCMethodWithBlocknumber(req.Method)
+	method, hasBlockNumber := h.proxyRPCMethodManager.HasRPCMethodWithBlocknumber(req.Method)
 	if hasBlockNumber {
 		blockNumber, errBlock := getBlockNumberFromDb(stateService)
 		if errBlock != nil {
 			return getErrorResponse(fmt.Errorf("error getting block number from db: %w", errBlock), req.ID)
 		}
-		req, errBlockTag := ReplaceBlockTag(&req, method, blockNumber)
+		req, errBlockTag := h.proxyRPCMethodManager.ReplaceBlockTag(&req, method, blockNumber)
 		if errBlockTag != nil {
 			return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
 		}
@@ -65,13 +65,13 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err), req.ID)
 	}
 	// check if we have to replace the block tag
-	method, hasBlockHash := HasRPCMethodWithHash(req.Method)
+	method, hasBlockHash := h.proxyRPCMethodManager.HasRPCMethodWithHash(req.Method)
 	if hasBlockHash {
 		blockNumber, errBlock := getBlockNumberFromDb(stateService)
 		if errBlock != nil {
 			return getErrorResponse(fmt.Errorf("error getting block number from db: %w", errBlock), req.ID)
 		}
-		errCheck := CheckBlockNumberFromResponseFromHashCalls(response, method, blockNumber)
+		errCheck := h.proxyRPCMethodManager.CheckBlockNumberFromResponseFromHashCalls(response, method, blockNumber)
 		if errCheck != nil {
 			return getErrorResponse(errCheck, req.ID)
 		}

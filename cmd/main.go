@@ -27,8 +27,10 @@ import (
 
 var version = "undefined"
 
-const historyLength = 256
-const klaosChainID = 2718
+const (
+	historyLength = 256
+	klaosChainID  = 2718
+)
 
 func main() {
 	if err := run(); err != nil {

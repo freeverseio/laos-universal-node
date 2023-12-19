@@ -114,22 +114,34 @@ var rpcMethodsWithHash = map[string]RPCMethod{
 	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
 }
 
-// var rpcMethodsWithCountByHash = map[string]RPCMethod{
-// 	"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
-// 	"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
-// }
+//	var rpcMethodsWithCountByHash = map[string]RPCMethod{
+//		"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
+//		"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
+//	}
+type RPCMethodManager interface {
+	HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool)
+	HasRPCMethodWithHash(methodName string) (RPCMethod, bool)
+	CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error
+	ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error)
+}
 
-func HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
+type ProxyRPCMethodManager struct{}
+
+func NewProxyRPCMethodManager() RPCMethodManager {
+	return &ProxyRPCMethodManager{}
+}
+
+func (b *ProxyRPCMethodManager) HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithBlockNumber[methodName]
 	return method, exists
 }
 
-func HasRPCMethodWithHash(methodName string) (RPCMethod, bool) {
+func (b *ProxyRPCMethodManager) HasRPCMethodWithHash(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithHash[methodName]
 	return method, exists
 }
 
-func CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error {
+func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error {
 	var blockNumber string
 	var err error
 
@@ -153,31 +165,13 @@ func CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMeth
 	if c > 0 { // blockNumber > blockNumberUnode
 		return fmt.Errorf("invalid block number: %s", blockNumber)
 	}
-
 	return nil
 }
 
-func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error) {
-	err := json.Unmarshal(*resp.Result, v)
-	if err != nil {
-		return "", err
-	}
-
-	switch value := v.(type) {
-	case *Block:
-		return value.Number, nil
-	case *Transaction:
-		return value.BlockNumber, nil
-	}
-
-	return "", fmt.Errorf("unknown type for unmarshalling")
-}
-
-func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error) {
+func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error) {
 	if len(req.Params) == 0 {
 		return req, nil
 	}
-
 	switch method {
 	case RPCMethodEthGetBlockByNumber,
 		RPCMethodEthGetBlockTransactionCountByNumber,
@@ -211,6 +205,22 @@ func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode str
 	}
 
 	return req, nil
+}
+
+func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error) {
+	err := json.Unmarshal(*resp.Result, v)
+	if err != nil {
+		return "", err
+	}
+
+	switch value := v.(type) {
+	case *Block:
+		return value.Number, nil
+	case *Transaction:
+		return value.BlockNumber, nil
+	}
+
+	return "", fmt.Errorf("unknown type for unmarshalling")
 }
 
 func replaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash string) error {
