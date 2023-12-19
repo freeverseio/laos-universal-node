@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetRPCMethod(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		methodName    string
@@ -22,7 +23,9 @@ func TestGetRPCMethod(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gotRPCMethod, gotExists := api.HasRPCMethodWithBlocknumber(tt.methodName)
 
 			if gotExists != tt.wantExists {
@@ -37,6 +40,7 @@ func TestGetRPCMethod(t *testing.T) {
 }
 
 func TestReplaceBlockTag(t *testing.T) {
+	t.Parallel()
 	type test struct {
 		name              string
 		req               *api.JSONRPCRequest
@@ -196,7 +200,9 @@ func TestReplaceBlockTag(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := api.ReplaceBlockTag(tc.req, tc.method, tc.blockNumber)
 
 			if tc.expectError {
@@ -217,6 +223,7 @@ func TestReplaceBlockTag(t *testing.T) {
 }
 
 func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
+	t.Parallel()
 	type test struct {
 		name               string
 		method             api.RPCMethod
@@ -272,12 +279,13 @@ func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
 	for _, tc := range tests {
 		tt := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			rpcResponse := api.RPCResponse{
 				Result: &tt.response,
 			}
-			err := api.CheckBlockNumberFromResponseFromHashCalls(&rpcResponse, tc.method, tc.blockNumber)
+			err := api.CheckBlockNumberFromResponseFromHashCalls(&rpcResponse, tt.method, tt.blockNumber)
 			if err != nil {
-				if err.Error() != tc.expectedBlockError {
+				if err.Error() != tt.expectedBlockError {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}
