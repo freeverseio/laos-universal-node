@@ -13,16 +13,6 @@ import (
 
 // RPCProxyHandler
 func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse {
-	// JSONRPCRequest to []byte
-	body, err := json.Marshal(req)
-	if err != nil {
-		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err), req.ID)
-	}
-	// Prepare the request to the BC node
-	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
-	if err != nil {
-		return getErrorResponse(fmt.Errorf("error creating request: %w", err), req.ID)
-	}
 
 	// check if we have to replace the block tag
 	method, hasBlockNumber := h.proxyRPCMethodManager.HasRPCMethodWithBlocknumber(req.Method)
@@ -35,6 +25,17 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 		if errBlockTag != nil {
 			return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
 		}
+	}
+	// JSONRPCRequest to []byte
+	body, err := json.Marshal(req)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err), req.ID)
+	}
+
+	// Prepare the request to the BC node
+	proxyReq, err := http.NewRequest(r.Method, h.GetRpcUrl(), io.NopCloser(bytes.NewReader(body)))
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error creating request: %w", err), req.ID)
 	}
 
 	// Forward headers the request
