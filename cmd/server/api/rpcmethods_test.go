@@ -36,7 +36,7 @@ func TestGetRPCMethod(t *testing.T) {
 	}
 }
 
-func TestReplaceBlockTagTT(t *testing.T) {
+func TestReplaceBlockTag(t *testing.T) {
 	type test struct {
 		name              string
 		req               *api.JSONRPCRequest
