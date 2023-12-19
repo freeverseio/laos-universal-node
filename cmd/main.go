@@ -260,6 +260,9 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 				var reorgErr ReorgError
 				if errors.As(err, &reorgErr) {
 					slog.Error("ownership chain reorganization detected", "block number", reorgErr.block, "chain hash", reorgErr.chainHash.String(), "storage hash", reorgErr.storageHash.String())
+					slog.Info("***********************************************************************************************")
+					slog.Info("Please wipe out the database before running the node again.")
+					slog.Info("***********************************************************************************************")
 					return reorgErr
 				}
 				break
@@ -458,6 +461,9 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 				var reorgErr ReorgError
 				if errors.As(err, &reorgErr) {
 					slog.Error("evolution chain reorganization detected", "block number", reorgErr.block, "chain hash", reorgErr.chainHash.String(), "storage hash", reorgErr.storageHash.String())
+					slog.Info("***********************************************************************************************")
+					slog.Info("Please wipe out the database before running the node again.")
+					slog.Info("***********************************************************************************************")
 					return reorgErr
 				}
 				break
