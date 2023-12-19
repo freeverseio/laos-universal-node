@@ -93,17 +93,17 @@ func (mr *MockRPCHandlerMockRecorder) HandleProxyRPC(r, req any) *gomock.Call {
 }
 
 // HandleUniversalMinting mocks base method.
-func (m *MockRPCHandler) HandleUniversalMinting(req api.JSONRPCRequest, stateService state.Service) api.RPCResponse {
+func (m *MockRPCHandler) HandleUniversalMinting(req api.JSONRPCRequest) api.RPCResponse {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HandleUniversalMinting", req, stateService)
+	ret := m.ctrl.Call(m, "HandleUniversalMinting", req)
 	ret0, _ := ret[0].(api.RPCResponse)
 	return ret0
 }
 
 // HandleUniversalMinting indicates an expected call of HandleUniversalMinting.
-func (mr *MockRPCHandlerMockRecorder) HandleUniversalMinting(req, stateService any) *gomock.Call {
+func (mr *MockRPCHandlerMockRecorder) HandleUniversalMinting(req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUniversalMinting", reflect.TypeOf((*MockRPCHandler)(nil).HandleUniversalMinting), req, stateService)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUniversalMinting", reflect.TypeOf((*MockRPCHandler)(nil).HandleUniversalMinting), req)
 }
 
 // PostRPCRequestHandler mocks base method.

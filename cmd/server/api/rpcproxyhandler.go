@@ -13,7 +13,6 @@ import (
 
 // RPCProxyHandler
 func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse {
-
 	// check if we have to replace the block tag
 	method, hasBlockNumber := h.proxyRPCMethodManager.HasRPCMethodWithBlocknumber(req.Method)
 	if hasBlockNumber {

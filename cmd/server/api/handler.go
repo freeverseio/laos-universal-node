@@ -23,7 +23,7 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 
 type RPCHandler interface {
 	HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse
-	HandleUniversalMinting(req JSONRPCRequest, stateService state.Service) RPCResponse
+	HandleUniversalMinting(req JSONRPCRequest) RPCResponse
 	PostRPCRequestHandler(w http.ResponseWriter, r *http.Request)
 	SetStateService(stateService state.Service)
 }
