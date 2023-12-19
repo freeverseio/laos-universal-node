@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
+	"github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
 )
 
 func TestGetRPCMethod(t *testing.T) {
@@ -110,36 +111,12 @@ func TestReplaceBlockTagTT(t *testing.T) {
 			name: "valid block tag for eth_newFilter",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{
-					json.RawMessage(`{
-		        "fromBlock": "0x1",
-		        "toBlock": "0x2",
-		        "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-		        "topics": [
-		          ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"],
-		          null,
-		          [
-		            "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		            "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-		          ]
-		        ]
-		      }`),
+					mock.GetFilterRequest("0x1", "0x2"),
 				},
 			},
-			method:      api.RPCMethodEthNewFilter,
-			blockNumber: "0x1b4",
-			expectedParam: json.RawMessage(`{
-		    "fromBlock": "0x1",
-		    "toBlock": "0x2",
-		    "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-		    "topics": [
-		      ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"],
-		      null,
-		      [
-		        "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		        "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-		      ]
-		    ]
-		  }`),
+			method:            api.RPCMethodEthNewFilter,
+			blockNumber:       "0x1b4",
+			expectedParam:     mock.GetFilterRequest("0x1", "0x2"),
 			expectError:       false,
 			parameterPosition: 0,
 		},
@@ -147,36 +124,12 @@ func TestReplaceBlockTagTT(t *testing.T) {
 			name: "valid block tag for eth_newFilter and toBlock is latest",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{
-					json.RawMessage(`{
-		        "fromBlock": "latest",
-		        "toBlock": "latest",
-		        "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-		        "topics": [
-		          "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		          null,
-		          [
-		            "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		            "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-		          ]
-		        ]
-		      }`),
+					mock.GetFilterRequest("latest", "latest"),
 				},
 			},
-			method:      api.RPCMethodEthNewFilter,
-			blockNumber: "0x1b4",
-			expectedParam: json.RawMessage(`{
-		    "fromBlock": "0x1b4",
-		    "toBlock": "0x1b4",
-		    "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-		    "topics": [
-		      "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		      null,
-		      [
-		        "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b",
-		        "0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc"
-		      ]
-		    ]
-		  }`),
+			method:            api.RPCMethodEthNewFilter,
+			blockNumber:       "0x1b4",
+			expectedParam:     mock.GetFilterRequest("0x1b4", "0x1b4"),
 			expectError:       false,
 			parameterPosition: 0,
 		},
@@ -205,26 +158,12 @@ func TestReplaceBlockTagTT(t *testing.T) {
 			name: "valid block tag for eth_getLogs with latest",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{
-					json.RawMessage(`{
-            "fromBlock": "latest",
-            "toBlock": "latest",
-            "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-            "topics": [
-              "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-            ]
-          }`),
+					mock.GetLogsRequest("latest", "latest"),
 				},
 			},
-			method:      api.RPCMethodEthGetLogs,
-			blockNumber: "0x1b4",
-			expectedParam: json.RawMessage(`{
-        "fromBlock": "0x1b4",
-        "toBlock": "0x1b4",
-        "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-        "topics": [
-          "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-        ]
-      }`),
+			method:            api.RPCMethodEthGetLogs,
+			blockNumber:       "0x1b4",
+			expectedParam:     mock.GetLogsRequest("0x1b4", "0x1b4"),
 			expectError:       false,
 			parameterPosition: 0,
 		},
@@ -232,26 +171,12 @@ func TestReplaceBlockTagTT(t *testing.T) {
 			name: "valid block tag for eth_getLogs with latest and pending",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{
-					json.RawMessage(`{
-            "fromBlock": "latest",
-            "toBlock": "pending",
-            "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-            "topics": [
-              "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-            ]
-          }`),
+					mock.GetLogsRequest("latest", "pending"),
 				},
 			},
-			method:      api.RPCMethodEthGetLogs,
-			blockNumber: "0x1b4",
-			expectedParam: json.RawMessage(`{
-        "fromBlock": "0x1b4",
-        "toBlock": "0x1b5",
-        "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-        "topics": [
-          "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-        ]
-      }`),
+			method:            api.RPCMethodEthGetLogs,
+			blockNumber:       "0x1b4",
+			expectedParam:     mock.GetLogsRequest("0x1b4", "0x1b5"),
 			expectError:       false,
 			parameterPosition: 0,
 		},
@@ -259,14 +184,7 @@ func TestReplaceBlockTagTT(t *testing.T) {
 			name: "invalid block tag for eth_getLogs (blocknumber too big)",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{
-					json.RawMessage(`{
-            "fromBlock": "0x1b5",
-            "toBlock": "0x1b5",
-            "address": "0x8888f1f195afa192cfee860698584c030f4c9db1",
-            "topics": [
-              "0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"
-            ]
-          }`),
+					mock.GetLogsRequest("0x1b5", "0x1b5"),
 				},
 			},
 			method:            api.RPCMethodEthGetLogs,
@@ -294,6 +212,76 @@ func TestReplaceBlockTagTT(t *testing.T) {
 				}
 				compareRawMessageObject(t, got.Params[tc.parameterPosition], tc.expectedParam)
 			}
+		})
+	}
+}
+
+func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
+	type test struct {
+		name               string
+		method             api.RPCMethod
+		blockNumber        string
+		response           json.RawMessage
+		expectedBlockError string
+	}
+
+	tests := []test{
+		{
+			name:               "eth_getBlockByHash with correct block number",
+			method:             api.RPCMethodEthGetBlockByHash,
+			blockNumber:        "0x29b8ef5",
+			response:           mock.MockResponseBlock,
+			expectedBlockError: "",
+		},
+		{
+			name:               "eth_getBlockByHash with correct block number",
+			method:             api.RPCMethodEthGetBlockByHash,
+			blockNumber:        "0x29b8ef4",
+			response:           mock.MockResponseBlock,
+			expectedBlockError: "invalid block number: 0x29b8ef5",
+		},
+		{
+			name:               "eth_getTransactionByHash with correct block number",
+			method:             api.RPCMethodEthGetTransactionByHash,
+			blockNumber:        "0x29b8ef5",
+			response:           mock.MockResponseTransaction,
+			expectedBlockError: "",
+		},
+		{
+			name:               "RPCMethodEthGetTransactionReceipt with correct block number",
+			method:             api.RPCMethodEthGetTransactionReceipt,
+			blockNumber:        "0x29b8ef5",
+			response:           mock.MockResponseTransaction,
+			expectedBlockError: "",
+		},
+		{
+			name:               "RPCMethodEthGetTransactionByBlockHashAndIndex with correct block number",
+			method:             api.RPCMethodEthGetTransactionByBlockHashAndIndex,
+			blockNumber:        "0x29b8ef5",
+			response:           mock.MockResponseTransaction,
+			expectedBlockError: "",
+		},
+		{
+			name:               "eth_getTransactionByHash with wrong block number",
+			method:             api.RPCMethodEthGetTransactionByHash,
+			blockNumber:        "0x29b8ef4",
+			response:           mock.MockResponseTransaction,
+			expectedBlockError: "invalid block number: 0x29b8ef5",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rpcResponse := api.RPCResponse{
+				Result: &tc.response,
+			}
+			err := api.CheckBlockNumberFromResponseFromHashCalls(&rpcResponse, tc.method, tc.blockNumber)
+
+			if err != nil {
+				if err.Error() != tc.expectedBlockError {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			}
+
 		})
 	}
 }

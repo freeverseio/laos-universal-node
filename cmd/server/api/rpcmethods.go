@@ -18,6 +18,51 @@ type FilterObject struct {
 	Blockhash *json.RawMessage  `json:"blockhash,omitempty"`
 }
 
+type Block struct {
+	Difficulty       string            `json:"difficulty,omitempty"`
+	ExtraData        string            `json:"extraData,omitempty"`
+	GasLimit         string            `json:"gasLimit,omitempty"`
+	GasUsed          string            `json:"gasUsed,omitempty"`
+	Hash             string            `json:"hash,omitempty"`
+	LogsBloom        string            `json:"logsBloom,omitempty"`
+	Miner            string            `json:"miner,omitempty"`
+	MixHash          string            `json:"mixHash,omitempty"`
+	Nonce            string            `json:"nonce,omitempty"`
+	Number           string            `json:"number,omitempty"`
+	ParentHash       string            `json:"parentHash,omitempty"`
+	ReceiptsRoot     string            `json:"receiptsRoot,omitempty"`
+	Sha3Uncles       string            `json:"sha3Uncles,omitempty"`
+	Size             string            `json:"size,omitempty"`
+	StateRoot        string            `json:"stateRoot,omitempty"`
+	Timestamp        string            `json:"timestamp,omitempty"`
+	TotalDifficulty  string            `json:"totalDifficulty,omitempty"`
+	Transactions     []json.RawMessage `json:"transactions,omitempty"`
+	TransactionsRoot string            `json:"transactionsRoot,omitempty"`
+	Uncles           []json.RawMessage `json:"uncles,omitempty"`
+}
+
+type Transaction struct {
+	BlockHash            string            `json:"blockHash,omitempty"`
+	BlockNumber          string            `json:"blockNumber,omitempty"`
+	From                 string            `json:"from,omitempty"`
+	Gas                  string            `json:"gas,omitempty"`
+	GasPrice             string            `json:"gasPrice,omitempty"`
+	MaxFeePerGas         string            `json:"maxFeePerGas,omitempty"`
+	MaxPriorityFeePerGas string            `json:"maxPriorityFeePerGas,omitempty"`
+	Hash                 string            `json:"hash,omitempty"`
+	Input                string            `json:"input,omitempty"`
+	Nonce                string            `json:"nonce,omitempty"`
+	To                   string            `json:"to,omitempty"`
+	TransactionIndex     string            `json:"transactionIndex,omitempty"`
+	Value                string            `json:"value,omitempty"`
+	Type                 string            `json:"type,omitempty"`
+	AccessList           []json.RawMessage `json:"accessList,omitempty"`
+	ChainId              string            `json:"chainId,omitempty"`
+	V                    string            `json:"v,omitempty"`
+	R                    string            `json:"r,omitempty"`
+	S                    string            `json:"s,omitempty"`
+}
+
 // Constants for each RPC method
 const (
 	RPCMethodEthCall RPCMethod = iota
@@ -62,12 +107,12 @@ var rpcMethodsWithBlockNumber = map[string]RPCMethod{
 	"eth_newFilter":                           RPCMethodEthNewFilter,
 }
 
-// var rpcMethodsWithHash = map[string]RPCMethod{
-// 	"eth_getBlockByHash":                    RPCMethodEthGetBlockByHash,
-// 	"eth_getTransactionReceipt":             RPCMethodEthGetTransactionReceipt,
-// 	"eth_getTransactionByHash":              RPCMethodEthGetTransactionByHash,
-// 	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
-// }
+var rpcMethodsWithHash = map[string]RPCMethod{
+	"eth_getBlockByHash":                    RPCMethodEthGetBlockByHash,
+	"eth_getTransactionReceipt":             RPCMethodEthGetTransactionReceipt,
+	"eth_getTransactionByHash":              RPCMethodEthGetTransactionByHash,
+	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
+}
 
 // var rpcMethodsWithCountByHash = map[string]RPCMethod{
 // 	"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
@@ -77,6 +122,55 @@ var rpcMethodsWithBlockNumber = map[string]RPCMethod{
 func HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithBlockNumber[methodName]
 	return method, exists
+}
+
+func HasRPCMethodWithHash(methodName string) (RPCMethod, bool) {
+	method, exists := rpcMethodsWithHash[methodName]
+	return method, exists
+}
+
+func CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error {
+	var blockNumber string
+	var err error
+
+	switch method {
+	case RPCMethodEthGetBlockByHash:
+		var block Block
+		blockNumber, err = unmarshalAndGetBlockNumber(resp, &block)
+	case RPCMethodEthGetTransactionByHash, RPCMethodEthGetTransactionReceipt, RPCMethodEthGetTransactionByBlockHashAndIndex:
+		var tx Transaction
+		blockNumber, err = unmarshalAndGetBlockNumber(resp, &tx)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c, err := CompareHex(blockNumber, blockNumberUnode)
+	if err != nil {
+		return err
+	}
+	if c > 0 { // blockNumber > blockNumberUnode
+		return fmt.Errorf("invalid block number: %s", blockNumber)
+	}
+
+	return nil
+}
+
+func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error) {
+	err := json.Unmarshal(*resp.Result, v)
+	if err != nil {
+		return "", err
+	}
+
+	switch value := v.(type) {
+	case *Block:
+		return value.Number, nil
+	case *Transaction:
+		return value.BlockNumber, nil
+	}
+
+	return "", fmt.Errorf("unknown type for unmarshalling")
 }
 
 func ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error) {
