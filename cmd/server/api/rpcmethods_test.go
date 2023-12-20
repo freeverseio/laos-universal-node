@@ -173,19 +173,6 @@ func TestReplaceBlockTag(t *testing.T) {
 			parameterPosition: 0,
 		},
 		{
-			name: "valid block tag for eth_getLogs with latest and pending",
-			req: &api.JSONRPCRequest{
-				Params: []json.RawMessage{
-					mock.GetLogsRequest("latest", "pending"),
-				},
-			},
-			method:            api.RPCMethodEthGetLogs,
-			blockNumber:       "0x1b4",
-			expectedParam:     mock.GetLogsRequest("0x1b4", "0x1b5"),
-			expectError:       false,
-			parameterPosition: 0,
-		},
-		{
 			name: "invalid block tag for eth_getLogs (blocknumber too big)",
 			req: &api.JSONRPCRequest{
 				Params: []json.RawMessage{

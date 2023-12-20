@@ -294,13 +294,6 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) 
 	case BlockTag(blockNumberRequest) == Latest:
 		return blockNumberHash, nil
 
-	case BlockTag(blockNumberRequest) == Pending:
-		pendingBlockNumber, err := addIntNumberToHex(blockNumberHash, 1)
-		if err != nil {
-			return "", err
-		}
-		return pendingBlockNumber, nil
-
 	default:
 		return blockNumberRequest, nil
 	}
@@ -337,19 +330,4 @@ func CompareHex(hex1, hex2 string) (int, error) {
 	}
 
 	return bigInt1.Cmp(bigInt2), nil
-}
-
-func addIntNumberToHex(hex string, value int) (string, error) {
-	// Convert the hex string to a big.Int
-	bigInt1, ok := new(big.Int).SetString(hex[2:], 16)
-	if !ok {
-		return "", fmt.Errorf("invalid hexadecimal number: %s", hex)
-	}
-
-	// Convert the int value to big.Int and add it to the first big.Int
-	bigInt2 := big.NewInt(int64(value))
-	bigInt1.Add(bigInt1, bigInt2)
-
-	// Convert the result back to a hex string
-	return fmt.Sprintf("0x%x", bigInt1), nil
 }
