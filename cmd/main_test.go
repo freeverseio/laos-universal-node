@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/internal/config"
+	"go.uber.org/mock/gomock"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
@@ -22,8 +23,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	"github.com/freeverseio/laos-universal-node/internal/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
-
-	"go.uber.org/mock/gomock"
 )
 
 func TestRunScanWithStoredContracts(t *testing.T) {
@@ -54,6 +53,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		ownershipContractInitialEvoIndex               uint64
 		timeStampLastEvoBlock                          uint64
 		expectedTxMintCalls                            int
+		endRangeBlockHash                              common.Hash
 	}{
 		{
 			c: config.Config{
@@ -83,6 +83,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampLastOwnershipBlock:                    3000,
 			timeStampLastEvoBlock:                          3000,
 			timeStampMintedEvents:                          0,
+			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 		},
 		{
 			c: config.Config{
@@ -113,6 +114,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampLastOwnershipBlock:                    3000,
 			timeStampLastEvoBlock:                          3000,
 			expectedTxMintCalls:                            1,
+			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 		},
 	}
 	for _, tt := range tests {
@@ -136,6 +138,22 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Time: tt.timeStampLastOwnershipBlock,
 			}, nil).Times(1)
 
+			tx2.EXPECT().GetOwnershipEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
+
+			if tt.endRangeBlockHash != (common.Hash{}) {
+				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedStartingBlock-1))).
+					Return(&types.Block{}, nil).
+					Times(1)
+			}
+
+			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).
+				Return(&types.Block{}, nil).
+				Times(1)
+
+			tx2.EXPECT().SetOwnershipEndRangeBlockHash(tt.endRangeBlockHash).
+				Return(nil).
+				Times(1)
+
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.blockNumberTransferEvents))).Return(&types.Header{
 				Time: tt.timeStampTransferEvents,
 			}, nil).Times(1)
@@ -145,7 +163,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
-				Return(tt.scannedEvents, big.NewInt(int64(tt.l1LatestBlock)), nil).
+				Return(tt.scannedEvents, nil).
 				Times(tt.scanEventsTimes)
 
 			tx2.EXPECT().GetAllERC721UniversalContracts().
@@ -233,6 +251,7 @@ func TestRunScanOk(t *testing.T) {
 		expectedStartingBlock       uint64
 		newLatestBlock              string
 		expectedContracts           []string
+		endRangeBlockHash           common.Hash
 		timeStampLastOwnershipBlock uint64
 		timeStampLastEvoBlock       uint64
 	}{
@@ -253,6 +272,7 @@ func TestRunScanOk(t *testing.T) {
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
 			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
+			endRangeBlockHash:           common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			timeStampLastOwnershipBlock: 3000,
 			timeStampLastEvoBlock:       3000,
 		},
@@ -339,6 +359,27 @@ func TestRunScanOk(t *testing.T) {
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 
+			newLatestBlock, err := strconv.ParseUint(tt.newLatestBlock, 10, 64)
+			if err != nil {
+				t.Fatalf(`got error "%v" when no error was expeceted`, err)
+			}
+
+			tx2.EXPECT().GetOwnershipEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
+
+			if tt.endRangeBlockHash != (common.Hash{}) {
+				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedStartingBlock-1))).
+					Return(&types.Block{}, nil).
+					Times(1)
+			}
+
+			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).
+				Return(&types.Block{}, nil).
+				Times(1)
+
+			tx2.EXPECT().SetOwnershipEndRangeBlockHash(tt.endRangeBlockHash).
+				Return(nil).
+				Times(1)
+
 			tx2.EXPECT().GetCurrentEvoBlockTimestamp().Return(tt.timeStampLastEvoBlock, nil).Times(1)
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).Return(&types.Header{
 				Time: tt.timeStampLastOwnershipBlock,
@@ -348,7 +389,7 @@ func TestRunScanOk(t *testing.T) {
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
-				Return(nil, big.NewInt(int64(tt.l1LatestBlock)), nil).
+				Return(nil, nil).
 				Times(tt.scanEventsTimes)
 
 			if tt.c.Contracts == nil || len(tt.c.Contracts) == 0 {
@@ -359,11 +400,6 @@ func TestRunScanOk(t *testing.T) {
 				tx2.EXPECT().GetExistingERC721UniversalContracts(tt.c.Contracts).
 					Return(tt.c.Contracts).
 					Times(1)
-			}
-
-			newLatestBlock, err := strconv.ParseUint(tt.newLatestBlock, 10, 64)
-			if err != nil {
-				t.Fatalf(`got error "%v" when no error was expeceted`, err)
 			}
 
 			for _, contract := range tt.expectedContracts {
@@ -582,6 +618,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		blockNumberDB          uint64
 		blockNumberTimes       int
 		txCreatedTimes         int
+		endRangeBlockHash      common.Hash
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
 		expectedNewLatestBlock uint64
@@ -601,9 +638,10 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          100,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -618,9 +656,10 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:       []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       2,
 			blockNumberDB:          0,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock:      250,
 			expectedToBlock:        250,
 			expectedNewLatestBlock: 251,
@@ -635,9 +674,10 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -654,6 +694,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedNewLatestBlock: 151,
 			errorGetL1LatestBlock:  errors.New("error getting block number from L1"),
 			expectedError:          errors.New("error retrieving the latest block from chain: error getting block number from L1"),
@@ -670,6 +711,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			txCreatedTimes:         1,
 			blockNumberTimes:       0,
 			blockNumberDB:          0,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedNewLatestBlock: 151,
 			errorGetBlockNumber:    errors.New("error getting block number from DB"),
 			expectedError:          errors.New("error retrieving the current block from storage: error getting block number from DB"),
@@ -684,9 +726,10 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Contracts:        []string{},
 			},
 			l1LatestBlock:          250,
-			txCreatedTimes:         2,
+			txCreatedTimes:         1,
 			blockNumberTimes:       1,
 			blockNumberDB:          0,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -706,6 +749,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			txCreatedTimes:    1,
 			blockNumberTimes:  1,
 			blockNumberDB:     100,
+			endRangeBlockHash: common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock: 100,
 			expectedToBlock:   150,
 			errorScanEvents:   errors.New("error scanning events"),
@@ -733,8 +777,26 @@ func TestScanEvoChainOnce(t *testing.T) {
 				Times(1)
 
 			if tt.errorGetL1LatestBlock == nil && tt.errorGetBlockNumber == nil {
+				state.EXPECT().NewTransaction().Return(tx2).Times(1)
+				tx2.EXPECT().Discard().Times(1)
+				tx2.EXPECT().GetEvoEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
+
+				if tt.endRangeBlockHash != (common.Hash{}) {
+					client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedFromBlock-1))).
+						Return(&types.Block{}, nil).
+						Times(1)
+				}
+
+				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).
+					Return(&types.Block{}, nil).
+					Times(1)
+
+				tx2.EXPECT().SetEvoEndRangeBlockHash(tt.endRangeBlockHash).
+					Return(nil).
+					Times(1)
+
 				scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
-					Return(nil, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).
+					Return(nil, tt.errorScanEvents).
 					Do(func(_ context.Context, _ *big.Int, _ *big.Int, _ []string) {
 						if tt.errorScanEvents != nil {
 							cancel() // we cancel the loop since we only want one iteration
@@ -791,6 +853,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 		blockNumberDB          uint64
 		blockNumberTimes       int
 		scanEventsTimes        int
+		endRangeBlockHash      common.Hash
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
 		expectedNewLatestBlock uint64
@@ -812,6 +875,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			l1LatestBlock:          250,
 			blockNumberTimes:       1,
 			blockNumberDB:          100,
+			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -831,8 +895,24 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).
 				Times(tt.blockNumberTimes)
 
+			tx.EXPECT().GetEvoEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
+
+			if tt.endRangeBlockHash != (common.Hash{}) {
+				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedFromBlock-1))).
+					Return(&types.Block{}, nil).
+					Times(1)
+			}
+
+			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).
+				Return(&types.Block{}, nil).
+				Times(1)
+
+			tx.EXPECT().SetEvoEndRangeBlockHash(tt.endRangeBlockHash).
+				Return(nil).
+				Times(1)
+
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedFromBlock)), big.NewInt(int64(tt.expectedToBlock)), nil).
-				Return([]scan.Event{event}, big.NewInt(int64(tt.expectedToBlock)), tt.errorScanEvents).Times(1)
+				Return([]scan.Event{event}, tt.errorScanEvents).Times(1)
 
 			tx.EXPECT().GetCurrentEvoBlock().
 				Return(tt.blockNumberDB, tt.errorGetBlockNumber).

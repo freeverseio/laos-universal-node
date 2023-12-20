@@ -271,6 +271,21 @@ func (mr *MockTxMockRecorder) GetCurrentOwnershipBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetCurrentOwnershipBlock))
 }
 
+// GetEvoEndRangeBlockHash mocks base method.
+func (m *MockTx) GetEvoEndRangeBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEvoEndRangeBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEvoEndRangeBlockHash indicates an expected call of GetEvoEndRangeBlockHash.
+func (mr *MockTxMockRecorder) GetEvoEndRangeBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvoEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).GetEvoEndRangeBlockHash))
+}
+
 // GetExistingERC721UniversalContracts mocks base method.
 func (m *MockTx) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -314,6 +329,21 @@ func (m *MockTx) GetMintedWithExternalURIEvents(contract string) ([]model.Minted
 func (mr *MockTxMockRecorder) GetMintedWithExternalURIEvents(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMintedWithExternalURIEvents", reflect.TypeOf((*MockTx)(nil).GetMintedWithExternalURIEvents), contract)
+}
+
+// GetOwnershipEndRangeBlockHash mocks base method.
+func (m *MockTx) GetOwnershipEndRangeBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipEndRangeBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipEndRangeBlockHash indicates an expected call of GetOwnershipEndRangeBlockHash.
+func (mr *MockTxMockRecorder) GetOwnershipEndRangeBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).GetOwnershipEndRangeBlockHash))
 }
 
 // HasERC721UniversalContract mocks base method.
@@ -428,6 +458,34 @@ func (m *MockTx) SetCurrentOwnershipBlock(number uint64) error {
 func (mr *MockTxMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetCurrentOwnershipBlock), number)
+}
+
+// SetEvoEndRangeBlockHash mocks base method.
+func (m *MockTx) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEvoEndRangeBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEvoEndRangeBlockHash indicates an expected call of SetEvoEndRangeBlockHash.
+func (mr *MockTxMockRecorder) SetEvoEndRangeBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvoEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).SetEvoEndRangeBlockHash), blockHash)
+}
+
+// SetOwnershipEndRangeBlockHash mocks base method.
+func (m *MockTx) SetOwnershipEndRangeBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipEndRangeBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipEndRangeBlockHash indicates an expected call of SetOwnershipEndRangeBlockHash.
+func (mr *MockTxMockRecorder) SetOwnershipEndRangeBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).SetOwnershipEndRangeBlockHash), blockHash)
 }
 
 // SetTreesForContract mocks base method.
@@ -1015,6 +1073,21 @@ func (mr *MockOwnershipSyncStateMockRecorder) GetCurrentOwnershipBlock() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetCurrentOwnershipBlock))
 }
 
+// GetOwnershipEndRangeBlockHash mocks base method.
+func (m *MockOwnershipSyncState) GetOwnershipEndRangeBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipEndRangeBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipEndRangeBlockHash indicates an expected call of GetOwnershipEndRangeBlockHash.
+func (mr *MockOwnershipSyncStateMockRecorder) GetOwnershipEndRangeBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipEndRangeBlockHash", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetOwnershipEndRangeBlockHash))
+}
+
 // SetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockOwnershipSyncState) SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error {
 	m.ctrl.T.Helper()
@@ -1041,6 +1114,20 @@ func (m *MockOwnershipSyncState) SetCurrentOwnershipBlock(number uint64) error {
 func (mr *MockOwnershipSyncStateMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetCurrentOwnershipBlock), number)
+}
+
+// SetOwnershipEndRangeBlockHash mocks base method.
+func (m *MockOwnershipSyncState) SetOwnershipEndRangeBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipEndRangeBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipEndRangeBlockHash indicates an expected call of SetOwnershipEndRangeBlockHash.
+func (mr *MockOwnershipSyncStateMockRecorder) SetOwnershipEndRangeBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipEndRangeBlockHash", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetOwnershipEndRangeBlockHash), blockHash)
 }
 
 // MockEvolutionSyncState is a mock of EvolutionSyncState interface.
@@ -1096,6 +1183,21 @@ func (mr *MockEvolutionSyncStateMockRecorder) GetCurrentEvoBlockTimestamp() *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetCurrentEvoBlockTimestamp))
 }
 
+// GetEvoEndRangeBlockHash mocks base method.
+func (m *MockEvolutionSyncState) GetEvoEndRangeBlockHash() (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEvoEndRangeBlockHash")
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEvoEndRangeBlockHash indicates an expected call of GetEvoEndRangeBlockHash.
+func (mr *MockEvolutionSyncStateMockRecorder) GetEvoEndRangeBlockHash() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvoEndRangeBlockHash", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetEvoEndRangeBlockHash))
+}
+
 // SetCurrentEvoBlock mocks base method.
 func (m *MockEvolutionSyncState) SetCurrentEvoBlock(number uint64) error {
 	m.ctrl.T.Helper()
@@ -1122,4 +1224,18 @@ func (m *MockEvolutionSyncState) SetCurrentEvoBlockTimestamp(number uint64) erro
 func (mr *MockEvolutionSyncStateMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetCurrentEvoBlockTimestamp), number)
+}
+
+// SetEvoEndRangeBlockHash mocks base method.
+func (m *MockEvolutionSyncState) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEvoEndRangeBlockHash", blockHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEvoEndRangeBlockHash indicates an expected call of SetEvoEndRangeBlockHash.
+func (mr *MockEvolutionSyncStateMockRecorder) SetEvoEndRangeBlockHash(blockHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvoEndRangeBlockHash", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetEvoEndRangeBlockHash), blockHash)
 }

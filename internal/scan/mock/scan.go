@@ -448,13 +448,12 @@ func (m *MockScanner) EXPECT() *MockScannerMockRecorder {
 }
 
 // ScanEvents mocks base method.
-func (m *MockScanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]scan.Event, *big.Int, error) {
+func (m *MockScanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, contracts []string) ([]scan.Event, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScanEvents", ctx, fromBlock, toBlock, contracts)
 	ret0, _ := ret[0].([]scan.Event)
-	ret1, _ := ret[1].(*big.Int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ScanEvents indicates an expected call of ScanEvents.
