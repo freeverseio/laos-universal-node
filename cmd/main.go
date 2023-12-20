@@ -60,7 +60,8 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
-	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
+	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)  
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR).WithMemTableSize(1<<30))
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
