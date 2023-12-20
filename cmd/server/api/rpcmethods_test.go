@@ -27,7 +27,7 @@ func TestGetRPCMethod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			methodManager := api.NewProxyRPCMethodManager()
-			gotRPCMethod, gotExists := methodManager.HasRPCMethodWithBlocknumber(tt.methodName)
+			gotRPCMethod, gotExists := methodManager.HasRPCMethodWithBlockNumber(tt.methodName)
 
 			if gotExists != tt.wantExists {
 				t.Errorf("getRPCMethod() gotExists = %v, want %v", gotExists, tt.wantExists)

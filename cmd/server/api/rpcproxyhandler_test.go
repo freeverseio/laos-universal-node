@@ -121,7 +121,7 @@ func TestPostRpcHandler(t *testing.T) {
 
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 			mockMethodManager := mock.NewMockRPCMethodManager(ctrl)
-			mockMethodManager.EXPECT().HasRPCMethodWithBlocknumber(gomock.Any()).Return(api.RPCMethodEthCall, false).Times(1)
+			mockMethodManager.EXPECT().HasRPCMethodWithBlockNumber(gomock.Any()).Return(api.RPCMethodEthCall, false).Times(1)
 
 			proxyHandler := api.NewProxyHandler(
 				api.WithHttpClientProxyHandler(mockHttpClient),

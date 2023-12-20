@@ -52,19 +52,19 @@ func (mr *MockRPCMethodManagerMockRecorder) CheckBlockNumberFromResponseFromHash
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBlockNumberFromResponseFromHashCalls", reflect.TypeOf((*MockRPCMethodManager)(nil).CheckBlockNumberFromResponseFromHashCalls), resp, method, blockNumberUnode)
 }
 
-// HasRPCMethodWithBlocknumber mocks base method.
-func (m *MockRPCMethodManager) HasRPCMethodWithBlocknumber(methodName string) (api.RPCMethod, bool) {
+// HasRPCMethodWithBlockNumber mocks base method.
+func (m *MockRPCMethodManager) HasRPCMethodWithBlockNumber(methodName string) (api.RPCMethod, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HasRPCMethodWithBlocknumber", methodName)
+	ret := m.ctrl.Call(m, "HasRPCMethodWithBlockNumber", methodName)
 	ret0, _ := ret[0].(api.RPCMethod)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
-// HasRPCMethodWithBlocknumber indicates an expected call of HasRPCMethodWithBlocknumber.
-func (mr *MockRPCMethodManagerMockRecorder) HasRPCMethodWithBlocknumber(methodName any) *gomock.Call {
+// HasRPCMethodWithBlockNumber indicates an expected call of HasRPCMethodWithBlockNumber.
+func (mr *MockRPCMethodManagerMockRecorder) HasRPCMethodWithBlockNumber(methodName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasRPCMethodWithBlocknumber", reflect.TypeOf((*MockRPCMethodManager)(nil).HasRPCMethodWithBlocknumber), methodName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasRPCMethodWithBlockNumber", reflect.TypeOf((*MockRPCMethodManager)(nil).HasRPCMethodWithBlockNumber), methodName)
 }
 
 // HasRPCMethodWithHash mocks base method.

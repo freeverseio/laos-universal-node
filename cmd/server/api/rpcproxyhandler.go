@@ -14,7 +14,7 @@ import (
 // RPCProxyHandler
 func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse {
 	// check if we have to replace the block tag
-	method, hasBlockNumber := h.proxyRPCMethodManager.HasRPCMethodWithBlocknumber(req.Method)
+	method, hasBlockNumber := h.proxyRPCMethodManager.HasRPCMethodWithBlockNumber(req.Method)
 	if hasBlockNumber {
 		blockNumber, errBlock := getBlockNumberFromDb(stateService)
 		if errBlock != nil {

@@ -121,7 +121,7 @@ var rpcMethodsWithHash = map[string]RPCMethod{
 //		"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
 //	}
 type RPCMethodManager interface {
-	HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool)
+	HasRPCMethodWithBlockNumber(methodName string) (RPCMethod, bool)
 	HasRPCMethodWithHash(methodName string) (RPCMethod, bool)
 	CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error
 	ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error)
@@ -133,7 +133,7 @@ func NewProxyRPCMethodManager() RPCMethodManager {
 	return &ProxyRPCMethodManager{}
 }
 
-func (b *ProxyRPCMethodManager) HasRPCMethodWithBlocknumber(methodName string) (RPCMethod, bool) {
+func (b *ProxyRPCMethodManager) HasRPCMethodWithBlockNumber(methodName string) (RPCMethod, bool) {
 	method, exists := rpcMethodsWithBlockNumber[methodName]
 	return method, exists
 }
