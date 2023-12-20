@@ -25,10 +25,10 @@ spec:
             name: rpc
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "3Gi"
+            cpu: "1"
           limits:
-            memory: "2Gi"
+            memory: "6Gi"
             cpu: "2"
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},

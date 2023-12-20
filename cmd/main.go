@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -35,6 +36,8 @@ const (
 	klaosChainID  = 2718
 )
 
+var mu sync.Mutex
+
 type ReorgError struct {
 	block       uint64
 	chainHash   common.Hash
@@ -57,7 +60,8 @@ func run() error {
 	setLogger(c.Debug)
 	c.LogFields()
 
-	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR))
+	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)  
+	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR).WithMemTableSize(1<<30))
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
@@ -274,6 +278,8 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 }
 
 func processUniversalBlockRange(ctx context.Context, c *config.Config, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock, lastOwnershipBlockTimestamp uint64) error {
+	mu.Lock()
+	defer mu.Unlock()
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	// retrieve the hash of the final block of the previous iteration.
@@ -475,6 +481,8 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 }
 
 func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock uint64) error {
+	mu.Lock()
+	defer mu.Unlock()
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 
