@@ -328,7 +328,7 @@ func verifyChainConsistency(ctx context.Context, client scan.EthClient, prevLast
 		prevIterLastBlockNumber := startingBlock - 1
 		prevIterLastBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(prevIterLastBlockNumber)))
 		if err != nil {
-			slog.Error("error occurred while retrieving new ownership start range block", "err", err.Error())
+			slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 			return err
 		}
 
