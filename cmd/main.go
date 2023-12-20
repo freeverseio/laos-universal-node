@@ -649,7 +649,6 @@ func setLogger(debug bool) {
 }
 
 func readEventsAndUpdateState(ctx context.Context, client scan.EthClient, contractsAddress []string, modelTransferEvents map[string][]model.ERC721Transfer, tx state.Tx, lastBlockTimestamp uint64) error {
-
 	for i := range contractsAddress {
 		var mintedEvents []model.MintedWithExternalURI
 		collectionAddress, err := tx.GetCollectionAddress(contractsAddress[i]) // get collection address from ownership address
@@ -675,7 +674,6 @@ func readEventsAndUpdateState(ctx context.Context, client scan.EthClient, contra
 		}
 	}
 	return nil
-
 }
 
 func tagRootsUntilBlock(tx state.Tx, contractsAddress []string, blockNumber uint64) error {
