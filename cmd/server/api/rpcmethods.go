@@ -114,6 +114,8 @@ var rpcMethodsWithHash = map[string]RPCMethod{
 	"eth_getTransactionByBlockHashAndIndex": RPCMethodEthGetTransactionByBlockHashAndIndex,
 }
 
+// we don't handle these methods for now but we have to handle this in the future
+//
 //	var rpcMethodsWithCountByHash = map[string]RPCMethod{
 //		"eth_getUncleCountByBlockHash":       RPCMethodEthGetUncleCountByBlockHash,
 //		"eth_getBlockTransactionCountByHash": RPCMethodEthGetBlockTransactionCountByHash,
