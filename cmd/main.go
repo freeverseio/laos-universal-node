@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -35,8 +34,6 @@ const (
 	historyLength = 256
 	klaosChainID  = 2718
 )
-
-var mu sync.Mutex
 
 type ReorgError struct {
 	block       uint64
@@ -278,8 +275,6 @@ func scanUniversalChain(ctx context.Context, c *config.Config, client scan.EthCl
 }
 
 func processUniversalBlockRange(ctx context.Context, c *config.Config, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock, lastOwnershipBlockTimestamp uint64) error {
-	mu.Lock()
-	defer mu.Unlock()
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 	// retrieve the hash of the final block of the previous iteration.
@@ -481,8 +476,6 @@ func scanEvoChain(ctx context.Context, c *config.Config, client scan.EthClient, 
 }
 
 func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateService state.Service, s scan.Scanner, startingBlock, lastBlock uint64) error {
-	mu.Lock()
-	defer mu.Unlock()
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
 
