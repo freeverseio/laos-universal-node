@@ -8,7 +8,7 @@ import (
 
 type RPCMethod int
 
-type BlockTag string
+type blockTag string
 
 type FilterObject struct {
 	FromBlock string            `json:"fromBlock,omitempty"`
@@ -85,11 +85,11 @@ const (
 )
 
 const (
-	Latest    BlockTag = "latest"
-	Pending   BlockTag = "pending"
-	Earliest  BlockTag = "earliest"
-	Finalized BlockTag = "finalized"
-	Safe      BlockTag = "safe"
+	Latest    blockTag = "latest"
+	Pending   blockTag = "pending"
+	Earliest  blockTag = "earliest"
+	Finalized blockTag = "finalized"
+	Safe      blockTag = "safe"
 )
 
 // Map of RPC method names to their corresponding constants
@@ -180,7 +180,7 @@ func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCM
 		RPCMethodEthGetTransactionByBlockNumberAndIndex,
 		RPCMethodEthGetUncleCountByBlockNumber:
 		// blocknumber is the first param for this method
-		err := replaceBlockTagWithHash(req, 0, blockNumberUnode)
+		err := replaceBlockTagWithBlockNumber(req, 0, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
@@ -189,13 +189,13 @@ func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCM
 		RPCMethodEthGetCode,
 		RPCMethodEthGetTransactionCount:
 		// blocknumber is the second param for this method
-		err := replaceBlockTagWithHash(req, 1, blockNumberUnode)
+		err := replaceBlockTagWithBlockNumber(req, 1, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
 	case RPCMethodEthGetStorageAt:
 		// blocknumber is the third param for this method
-		err := replaceBlockTagWithHash(req, 2, blockNumberUnode)
+		err := replaceBlockTagWithBlockNumber(req, 2, blockNumberUnode)
 		if err != nil {
 			return nil, err
 		}
@@ -225,12 +225,12 @@ func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error
 	return "", fmt.Errorf("unknown type for unmarshalling")
 }
 
-func replaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash string) error {
+func replaceBlockTagWithBlockNumber(req *JSONRPCRequest, position int, blockNumberUnode string) error {
 	blockNumberRequest, err := rawMessageToString(req.Params[position])
 	if err != nil {
 		return err
 	}
-	blockNumber, err := getBlockNumber(blockNumberRequest, blockNumberHash)
+	blockNumber, err := getBlockNumber(blockNumberRequest, blockNumberUnode)
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func replaceBlockTagWithHash(req *JSONRPCRequest, position int, blockNumberHash 
 	return nil
 }
 
-func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) error {
+func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberUnode string) error {
 	var filterObject FilterObject
 	err := json.Unmarshal(req.Params[0], &filterObject)
 	if err != nil {
@@ -247,7 +247,7 @@ func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) erro
 
 	changed := false
 	if filterObject.FromBlock != "" {
-		blockNumber, errBlock := getBlockNumber(filterObject.FromBlock, blockNumberHash)
+		blockNumber, errBlock := getBlockNumber(filterObject.FromBlock, blockNumberUnode)
 		if errBlock != nil {
 			return errBlock
 		}
@@ -258,7 +258,7 @@ func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberHash string) erro
 	}
 
 	if filterObject.ToBlock != "" {
-		blockNumber, errBlock := getBlockNumber(filterObject.ToBlock, blockNumberHash)
+		blockNumber, errBlock := getBlockNumber(filterObject.ToBlock, blockNumberUnode)
 		if errBlock != nil {
 			return errBlock
 		}
@@ -291,7 +291,7 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) 
 		}
 		return blockNumberRequest, nil
 
-	case BlockTag(blockNumberRequest) == Latest:
+	case blockTag(blockNumberRequest) == Latest:
 		return blockNumberHash, nil
 
 	default:
