@@ -17,8 +17,8 @@ func TestGetRPCMethod(t *testing.T) {
 		wantExists    bool
 		wantRPCMethod api.RPCMethod
 	}{
-		// {"SupportedMethodEthCall", "eth_call", true, api.RPCMethodEthCall},
-		// {"SupportedMethodEthGetBalance", "eth_getBalance", true, api.RPCMethodEthGetBalance},
+		{"SupportedMethodEthCall", "eth_call", true, api.RPCMethodEthCall},
+		{"SupportedMethodEthGetBalance", "eth_getBalance", true, api.RPCMethodEthGetBalance},
 		{"UnsupportedMethod", "eth_unsupportedMethod", false, 0},
 	}
 
