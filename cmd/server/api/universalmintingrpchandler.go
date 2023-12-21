@@ -180,8 +180,11 @@ func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting current block number: %w", err), id)
 	}
-	// minus 1 because we want to return the last tagged block
-	return getResponse(fmt.Sprintf("0x%x", blockNumber-1), id, nil)
+	// Subtract 1 only if blockNumber is greater than 0
+	if blockNumber > 0 {
+		blockNumber--
+	}
+	return getResponse(fmt.Sprintf("0x%x", blockNumber), id, nil)
 }
 
 func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error) {

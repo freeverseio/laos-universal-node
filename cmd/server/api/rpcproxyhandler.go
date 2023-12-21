@@ -100,6 +100,9 @@ func getBlockNumberFromDb(stateService state.Service) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error getting current block number: %w", err)
 	}
-	// minus 1 because we want to return the last tagged block
-	return fmt.Sprintf("0x%x", blockNumber-1), nil
+	// Subtract 1 only if blockNumber is greater than 0
+	if blockNumber > 0 {
+		blockNumber--
+	}
+	return fmt.Sprintf("0x%x", blockNumber), nil
 }
