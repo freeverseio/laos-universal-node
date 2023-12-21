@@ -90,7 +90,7 @@ func (h *GlobalRPCHandler) getRPCResponse(r *http.Request, req JSONRPCRequest) R
 }
 
 func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCRequest) RPCResponse {
-	var params EthCallParamsRPCRequest
+	var params ethCallParamsRPCRequest
 	if len(req.Params) == 0 || json.Unmarshal(req.Params[0], &params) != nil {
 		return getErrorResponse(fmt.Errorf("error parsing params or missing params"), req.ID)
 	}
