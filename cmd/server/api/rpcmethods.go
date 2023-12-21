@@ -149,8 +149,8 @@ func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *
 
 	switch method {
 	case RPCMethodEthGetBlockByHash:
-		var block block
-		blockNumber, err = unmarshalAndGetBlockNumber(resp, &block)
+		var b block
+		blockNumber, err = unmarshalAndGetBlockNumber(resp, &b)
 	case RPCMethodEthGetTransactionByHash, RPCMethodEthGetTransactionReceipt, RPCMethodEthGetTransactionByBlockHashAndIndex:
 		var tx transaction
 		blockNumber, err = unmarshalAndGetBlockNumber(resp, &tx)
@@ -239,37 +239,37 @@ func replaceBlockTagWithBlockNumber(req *JSONRPCRequest, position int, blockNumb
 }
 
 func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberUnode string) error {
-	var filterObject filterObject
-	err := json.Unmarshal(req.Params[0], &filterObject)
+	var filterObj filterObject
+	err := json.Unmarshal(req.Params[0], &filterObj)
 	if err != nil {
 		return err
 	}
 
 	changed := false
-	if filterObject.FromBlock != "" {
-		blockNumber, errBlock := getBlockNumber(filterObject.FromBlock, blockNumberUnode)
+	if filterObj.FromBlock != "" {
+		blockNumber, errBlock := getBlockNumber(filterObj.FromBlock, blockNumberUnode)
 		if errBlock != nil {
 			return errBlock
 		}
-		if blockNumber != filterObject.FromBlock {
-			filterObject.FromBlock = blockNumber
+		if blockNumber != filterObj.FromBlock {
+			filterObj.FromBlock = blockNumber
 			changed = true
 		}
 	}
 
-	if filterObject.ToBlock != "" {
-		blockNumber, errBlock := getBlockNumber(filterObject.ToBlock, blockNumberUnode)
+	if filterObj.ToBlock != "" {
+		blockNumber, errBlock := getBlockNumber(filterObj.ToBlock, blockNumberUnode)
 		if errBlock != nil {
 			return errBlock
 		}
-		if blockNumber != filterObject.ToBlock {
-			filterObject.ToBlock = blockNumber
+		if blockNumber != filterObj.ToBlock {
+			filterObj.ToBlock = blockNumber
 			changed = true
 		}
 	}
 
 	if changed {
-		req.Params[0], err = json.Marshal(filterObject)
+		req.Params[0], err = json.Marshal(filterObj)
 		if err != nil {
 			return err
 		}
