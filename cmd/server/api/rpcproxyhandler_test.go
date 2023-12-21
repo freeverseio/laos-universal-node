@@ -12,6 +12,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
+	stateMock "github.com/freeverseio/laos-universal-node/internal/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -119,10 +120,19 @@ func TestPostRpcHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
-			handler := api.NewGlobalRPCHandler(
-				"https://example.com/",
-				api.WithHttpClient(mockHttpClient),
+			mockMethodManager := mock.NewMockRPCMethodManager(ctrl)
+			mockMethodManager.EXPECT().HasRPCMethodWithBlockNumber(gomock.Any()).Return(api.RPCMethodEthCall, false).Times(1)
+
+			proxyHandler := api.NewProxyHandler(
+				api.WithHttpClientProxyHandler(mockHttpClient),
+				api.WithProxyRPCMethodManager(mockMethodManager),
 			)
+
+			state := stateMock.NewMockService(ctrl)
+			tx := stateMock.NewMockTx(ctrl)
+			state.EXPECT().NewTransaction().Return(tx).AnyTimes()
+			tx.EXPECT().Discard().AnyTimes()
+			tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(1001), nil).AnyTimes()
 
 			request := httptest.NewRequest(http.MethodPost, "/rpc", bytes.NewBufferString(tt.requestBody))
 			if tt.requestHeaders != nil {
@@ -143,6 +153,7 @@ func TestPostRpcHandler(t *testing.T) {
 			if tt.mockError != nil {
 				mockHttpClient.EXPECT().Do(gomock.Any()).Return(nil, tt.mockError)
 			} else {
+				mockMethodManager.EXPECT().HasRPCMethodWithHash(gomock.Any()).Return(api.RPCMethodEthCall, false).Times(1)
 				mockResponse := &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(tt.mockResponse)),
@@ -173,7 +184,7 @@ func TestPostRpcHandler(t *testing.T) {
 				}).Return(mockResponse, nil)
 			}
 
-			apiResponse := handler.HandleProxyRPC(request, jsonRPCRequest)
+			apiResponse := proxyHandler.HandleProxyRPC(request, jsonRPCRequest, state)
 			// compare apiResponse.ID with tt.expectedBody.ID
 			compareRawMessage(t, apiResponse.ID, tt.expectedBody.ID)
 
