@@ -64,7 +64,7 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err), req.ID)
 	}
-	// check if we have to replace the block tag
+	// check if have to check the response for valid block number
 	method, hasBlockHash := h.proxyRPCMethodManager.HasRPCMethodWithHash(req.Method)
 	if hasBlockHash {
 		blockNumber, errBlock := getBlockNumberFromDb(stateService)

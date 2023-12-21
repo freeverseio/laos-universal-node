@@ -10,7 +10,7 @@ type RPCMethod int
 
 type blockTag string
 
-type FilterObject struct {
+type filterObject struct {
 	FromBlock string            `json:"fromBlock,omitempty"`
 	ToBlock   string            `json:"toBlock,omitempty"`
 	Address   string            `json:"address,omitempty"`
@@ -18,7 +18,7 @@ type FilterObject struct {
 	Blockhash *json.RawMessage  `json:"blockhash,omitempty"`
 }
 
-type Block struct {
+type block struct {
 	Difficulty       string            `json:"difficulty,omitempty"`
 	ExtraData        string            `json:"extraData,omitempty"`
 	GasLimit         string            `json:"gasLimit,omitempty"`
@@ -41,7 +41,7 @@ type Block struct {
 	Uncles           []json.RawMessage `json:"uncles,omitempty"`
 }
 
-type Transaction struct {
+type transaction struct {
 	BlockHash            string            `json:"blockHash,omitempty"`
 	BlockNumber          string            `json:"blockNumber,omitempty"`
 	From                 string            `json:"from,omitempty"`
@@ -85,11 +85,11 @@ const (
 )
 
 const (
-	Latest    blockTag = "latest"
-	Pending   blockTag = "pending"
-	Earliest  blockTag = "earliest"
-	Finalized blockTag = "finalized"
-	Safe      blockTag = "safe"
+	latest    blockTag = "latest"
+	pending   blockTag = "pending"
+	earliest  blockTag = "earliest"
+	finalized blockTag = "finalized"
+	safe      blockTag = "safe"
 )
 
 // Map of RPC method names to their corresponding constants
@@ -149,10 +149,10 @@ func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *
 
 	switch method {
 	case RPCMethodEthGetBlockByHash:
-		var block Block
+		var block block
 		blockNumber, err = unmarshalAndGetBlockNumber(resp, &block)
 	case RPCMethodEthGetTransactionByHash, RPCMethodEthGetTransactionReceipt, RPCMethodEthGetTransactionByBlockHashAndIndex:
-		var tx Transaction
+		var tx transaction
 		blockNumber, err = unmarshalAndGetBlockNumber(resp, &tx)
 	}
 
@@ -160,7 +160,7 @@ func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *
 		return err
 	}
 
-	c, err := CompareHex(blockNumber, blockNumberUnode)
+	c, err := compareHex(blockNumber, blockNumberUnode)
 	if err != nil {
 		return err
 	}
@@ -216,9 +216,9 @@ func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error
 	}
 
 	switch value := v.(type) {
-	case *Block:
+	case *block:
 		return value.Number, nil
-	case *Transaction:
+	case *transaction:
 		return value.BlockNumber, nil
 	}
 
@@ -239,7 +239,7 @@ func replaceBlockTagWithBlockNumber(req *JSONRPCRequest, position int, blockNumb
 }
 
 func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberUnode string) error {
-	var filterObject FilterObject
+	var filterObject filterObject
 	err := json.Unmarshal(req.Params[0], &filterObject)
 	if err != nil {
 		return err
@@ -282,7 +282,7 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) 
 	// Using switch to handle different cases
 	switch {
 	case len(blockNumberRequest) > 2 && blockNumberRequest[:2] == "0x":
-		c, err := CompareHex(blockNumberRequest, blockNumberHash)
+		c, err := compareHex(blockNumberRequest, blockNumberHash)
 		if err != nil {
 			return "", err
 		}
@@ -291,7 +291,7 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) 
 		}
 		return blockNumberRequest, nil
 
-	case blockTag(blockNumberRequest) == Latest:
+	case blockTag(blockNumberRequest) == latest:
 		return blockNumberHash, nil
 
 	default:
@@ -313,12 +313,12 @@ func stringToRawMessage(str string) json.RawMessage {
 	return json.RawMessage(quotedResult)
 }
 
-// CompareHex compares two hexadecimal strings and returns:
+// compareHex compares two hexadecimal strings and returns:
 // -1 if hex1 < hex2
 //
 //	0 if hex1 == hex2
 //	1 if hex1 > hex2
-func CompareHex(hex1, hex2 string) (int, error) {
+func compareHex(hex1, hex2 string) (int, error) {
 	bigInt1, ok := new(big.Int).SetString(hex1[2:], 16)
 	if !ok {
 		return 0, fmt.Errorf("invalid hexadecimal number: %s", hex1)
