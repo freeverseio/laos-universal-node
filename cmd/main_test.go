@@ -54,6 +54,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		timeStampLastEvoBlock                          uint64
 		expectedTxMintCalls                            int
 		endRangeBlockHash                              common.Hash
+		endRangeBlockHeader                            types.Header
 	}{
 		{
 			c: config.Config{
@@ -83,7 +84,16 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampLastOwnershipBlock:                    3000,
 			timeStampLastEvoBlock:                          3000,
 			timeStampMintedEvents:                          0,
-			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			endRangeBlockHash:                              common.HexToHash("0xd7edd5f44a9864a419452ff790d0194cab0fbc5b664f2de41f57b1a6ef3a474d"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(0),
+			},
 		},
 		{
 			c: config.Config{
@@ -114,7 +124,16 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			timeStampLastOwnershipBlock:                    3000,
 			timeStampLastEvoBlock:                          3000,
 			expectedTxMintCalls:                            1,
-			endRangeBlockHash:                              common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			endRangeBlockHash:                              common.HexToHash("0xd7edd5f44a9864a419452ff790d0194cab0fbc5b664f2de41f57b1a6ef3a474d"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(0),
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -140,14 +159,15 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 
 			tx2.EXPECT().GetOwnershipEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
 
+			block := types.NewBlockWithHeader(&tt.endRangeBlockHeader)
 			if tt.endRangeBlockHash != (common.Hash{}) {
 				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedStartingBlock-1))).
-					Return(&types.Block{}, nil).
+					Return(block, nil).
 					Times(1)
 			}
 
 			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).
-				Return(&types.Block{}, nil).
+				Return(block, nil).
 				Times(1)
 
 			tx2.EXPECT().SetOwnershipEndRangeBlockHash(tt.endRangeBlockHash).
@@ -252,6 +272,7 @@ func TestRunScanOk(t *testing.T) {
 		newLatestBlock              string
 		expectedContracts           []string
 		endRangeBlockHash           common.Hash
+		endRangeBlockHeader         types.Header
 		timeStampLastOwnershipBlock uint64
 		timeStampLastEvoBlock       uint64
 	}{
@@ -272,7 +293,16 @@ func TestRunScanOk(t *testing.T) {
 			txDiscardTimes:              1,
 			newLatestBlock:              "102",
 			expectedContracts:           []string{"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"},
-			endRangeBlockHash:           common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			endRangeBlockHash:           common.HexToHash("0xd7edd5f44a9864a419452ff790d0194cab0fbc5b664f2de41f57b1a6ef3a474d"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(0),
+			},
 			timeStampLastOwnershipBlock: 3000,
 			timeStampLastEvoBlock:       3000,
 		},
@@ -366,14 +396,15 @@ func TestRunScanOk(t *testing.T) {
 
 			tx2.EXPECT().GetOwnershipEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
 
+			block := types.NewBlockWithHeader(&tt.endRangeBlockHeader)
 			if tt.endRangeBlockHash != (common.Hash{}) {
 				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedStartingBlock-1))).
-					Return(&types.Block{}, nil).
+					Return(block, nil).
 					Times(1)
 			}
 
 			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).
-				Return(&types.Block{}, nil).
+				Return(block, nil).
 				Times(1)
 
 			tx2.EXPECT().SetOwnershipEndRangeBlockHash(tt.endRangeBlockHash).
@@ -619,6 +650,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 		blockNumberTimes       int
 		txCreatedTimes         int
 		endRangeBlockHash      common.Hash
+		endRangeBlockHeader    types.Header
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
 		expectedNewLatestBlock uint64
@@ -637,11 +669,20 @@ func TestScanEvoChainOnce(t *testing.T) {
 				WaitingTime:     1 * time.Second,
 				Contracts:       []string{},
 			},
-			l1LatestBlock:          250,
-			txCreatedTimes:         1,
-			blockNumberTimes:       1,
-			blockNumberDB:          100,
-			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:     250,
+			txCreatedTimes:    1,
+			blockNumberTimes:  1,
+			blockNumberDB:     100,
+			endRangeBlockHash: common.HexToHash("0x2825a9d4c85d8342c6ef38070763db379f58e3948e3b6978d10c5d415b1dd385"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(99),
+			},
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -655,11 +696,20 @@ func TestScanEvoChainOnce(t *testing.T) {
 				WaitingTime:     1 * time.Second,
 				Contracts:       []string{},
 			},
-			l1LatestBlock:          250,
-			txCreatedTimes:         1,
-			blockNumberTimes:       2,
-			blockNumberDB:          0,
-			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:     250,
+			txCreatedTimes:    1,
+			blockNumberTimes:  2,
+			blockNumberDB:     0,
+			endRangeBlockHash: common.HexToHash("0x9caeabf605936ee6653159c2cd7bcef6d0e7e3dbb7384c23be71f4dcd54f7716"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(249),
+			},
 			expectedFromBlock:      250,
 			expectedToBlock:        250,
 			expectedNewLatestBlock: 251,
@@ -673,11 +723,20 @@ func TestScanEvoChainOnce(t *testing.T) {
 				WaitingTime:      1 * time.Second,
 				Contracts:        []string{},
 			},
-			l1LatestBlock:          250,
-			txCreatedTimes:         1,
-			blockNumberTimes:       1,
-			blockNumberDB:          0,
-			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:     250,
+			txCreatedTimes:    1,
+			blockNumberTimes:  1,
+			blockNumberDB:     0,
+			endRangeBlockHash: common.HexToHash("0x2825a9d4c85d8342c6ef38070763db379f58e3948e3b6978d10c5d415b1dd385"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(99),
+			},
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -725,11 +784,20 @@ func TestScanEvoChainOnce(t *testing.T) {
 				WaitingTime:      1 * time.Second,
 				Contracts:        []string{},
 			},
-			l1LatestBlock:          250,
-			txCreatedTimes:         1,
-			blockNumberTimes:       1,
-			blockNumberDB:          0,
-			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:     250,
+			txCreatedTimes:    1,
+			blockNumberTimes:  1,
+			blockNumberDB:     0,
+			endRangeBlockHash: common.HexToHash("0x2825a9d4c85d8342c6ef38070763db379f58e3948e3b6978d10c5d415b1dd385"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(99),
+			},
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -749,7 +817,16 @@ func TestScanEvoChainOnce(t *testing.T) {
 			txCreatedTimes:    1,
 			blockNumberTimes:  1,
 			blockNumberDB:     100,
-			endRangeBlockHash: common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			endRangeBlockHash: common.HexToHash("0x2825a9d4c85d8342c6ef38070763db379f58e3948e3b6978d10c5d415b1dd385"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(99),
+			},
 			expectedFromBlock: 100,
 			expectedToBlock:   150,
 			errorScanEvents:   errors.New("error scanning events"),
@@ -781,14 +858,15 @@ func TestScanEvoChainOnce(t *testing.T) {
 				tx2.EXPECT().Discard().Times(1)
 				tx2.EXPECT().GetEvoEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
 
+				block := types.NewBlockWithHeader(&tt.endRangeBlockHeader)
 				if tt.endRangeBlockHash != (common.Hash{}) {
 					client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedFromBlock-1))).
-						Return(&types.Block{}, nil).
+						Return(block, nil).
 						Times(1)
 				}
 
 				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).
-					Return(&types.Block{}, nil).
+					Return(block, nil).
 					Times(1)
 
 				tx2.EXPECT().SetEvoEndRangeBlockHash(tt.endRangeBlockHash).
@@ -854,6 +932,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 		blockNumberTimes       int
 		scanEventsTimes        int
 		endRangeBlockHash      common.Hash
+		endRangeBlockHeader    types.Header
 		expectedFromBlock      uint64
 		expectedToBlock        uint64
 		expectedNewLatestBlock uint64
@@ -872,10 +951,19 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 				WaitingTime:     1 * time.Second,
 				Contracts:       []string{},
 			},
-			l1LatestBlock:          250,
-			blockNumberTimes:       1,
-			blockNumberDB:          100,
-			endRangeBlockHash:      common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+			l1LatestBlock:     250,
+			blockNumberTimes:  1,
+			blockNumberDB:     100,
+			endRangeBlockHash: common.HexToHash("0x2825a9d4c85d8342c6ef38070763db379f58e3948e3b6978d10c5d415b1dd385"),
+			endRangeBlockHeader: types.Header{
+				ParentHash:  common.HexToHash("0x8ef4db2b2081c0516426eba21c941bfc989a6e93e39c1c34ae24a7e372d02f57"),
+				UncleHash:   common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"),
+				Coinbase:    common.HexToAddress("0x045c57b46dede60001623105d351c7941c90149e"),
+				Root:        common.HexToHash("0xbf24678b95e5152e321267902070da3f8a63200b7f41a922b8d325b8864e68c7"),
+				TxHash:      common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				ReceiptHash: common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+				Number:      big.NewInt(99),
+			},
 			expectedFromBlock:      100,
 			expectedToBlock:        150,
 			expectedNewLatestBlock: 151,
@@ -897,14 +985,15 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 
 			tx.EXPECT().GetEvoEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
 
+			block := types.NewBlockWithHeader(&tt.endRangeBlockHeader)
 			if tt.endRangeBlockHash != (common.Hash{}) {
 				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedFromBlock-1))).
-					Return(&types.Block{}, nil).
+					Return(block, nil).
 					Times(1)
 			}
 
 			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.expectedToBlock))).
-				Return(&types.Block{}, nil).
+				Return(block, nil).
 				Times(1)
 
 			tx.EXPECT().SetEvoEndRangeBlockHash(tt.endRangeBlockHash).
