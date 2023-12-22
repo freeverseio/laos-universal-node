@@ -16,7 +16,6 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
-	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	scan "github.com/freeverseio/laos-universal-node/internal/scan"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -463,10 +462,10 @@ func (mr *MockScannerMockRecorder) ScanEvents(ctx, fromBlock, toBlock, contracts
 }
 
 // ScanNewUniversalEvents mocks base method.
-func (m *MockScanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
+func (m *MockScanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]scan.EventNewERC721Universal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScanNewUniversalEvents", ctx, fromBlock, toBlock)
-	ret0, _ := ret[0].([]model.ERC721UniversalContract)
+	ret0, _ := ret[0].([]scan.EventNewERC721Universal)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

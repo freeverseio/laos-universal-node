@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -9,14 +10,23 @@ import (
 	"time"
 )
 
+const (
+	klaosParachain         uint64 = 3336
+	caladanParachain       uint64 = 2900
+	klaosGlobalConsensus   string = "3"
+	caladanGlobalConsensus string = "0:0x22c48a576c33970622a2b4686a8aa5e4b58350247d69fb5d8015f12a8c8e1e4c"
+)
+
 type Config struct {
 	WaitingTime      time.Duration
 	StartingBlock    uint64
 	EvoStartingBlock uint64
+	Parachain        uint64
 	Contracts        []string
 	Rpc              string
 	EvoRpc           string
 	Path             string
+	GlobalConsensus  string
 	BlocksMargin     uint
 	BlocksRange      uint
 	EvoBlocksMargin  uint
@@ -25,7 +35,7 @@ type Config struct {
 	Debug            bool
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	defaultStoragePath := getDefaultStoragePath()
 
 	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
@@ -63,7 +73,11 @@ func Load() *Config {
 		c.Contracts = strings.Split(*contracts, ",")
 	}
 
-	return c
+	if err := setGlobalConsensusAndParachain(c); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func (c *Config) LogFields() {
@@ -79,4 +93,19 @@ func getDefaultStoragePath() string {
 		homeDir = "./"
 	}
 	return path.Join(homeDir, ".universalnode")
+}
+
+func setGlobalConsensusAndParachain(c *Config) error {
+	switch {
+	case strings.Contains(strings.ToLower(c.EvoRpc), "caladan"):
+		c.GlobalConsensus = caladanGlobalConsensus
+		c.Parachain = caladanParachain
+	case strings.Contains(strings.ToLower(c.EvoRpc), "klaos"):
+		c.GlobalConsensus = klaosGlobalConsensus
+		c.Parachain = klaosParachain
+	default:
+		return fmt.Errorf("unknown Evolution chain rpc provided: %s", c.EvoRpc)
+	}
+
+	return nil
 }

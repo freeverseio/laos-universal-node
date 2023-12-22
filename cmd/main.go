@@ -52,7 +52,10 @@ func main() {
 }
 
 func run() error {
-	c := config.Load()
+	c, err := config.Load()
+	if err != nil {
+		return err
+	}
 
 	setLogger(c.Debug)
 	c.LogFields()
@@ -369,7 +372,7 @@ func scanAndDigest(ctx context.Context, c *config.Config, s scan.Scanner, tx sta
 		return err
 	}
 	if shouldDiscover {
-		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx); errDiscover != nil {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx, c.GlobalConsensus, c.Parachain); errDiscover != nil {
 			return errDiscover
 		}
 	}
@@ -714,14 +717,56 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
-	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+func validateUniversalContracts(globalConsensus string, parachain uint64, contracts []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
+	uContracts := make([]model.ERC721UniversalContract, 0)
+	for _, c := range contracts {
+		contractGlobalConsensus, err := c.GlobalConsensus()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
+				"base_uri", c.BaseURI)
+			continue
+		}
+		contractParachain, err := c.Parachain()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
+				"base_uri", c.BaseURI)
+			continue
+		}
+		collectionAddress, err := c.CollectionAddress()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
+				"base_uri", c.BaseURI)
+			continue
+		}
+
+		if contractGlobalConsensus != globalConsensus || contractParachain != parachain {
+			slog.Debug("discarting universal contract", "global_consensus", contractGlobalConsensus,
+				"parachain", contractParachain)
+			continue
+		}
+
+		uContract := model.ERC721UniversalContract{
+			Address:           c.NewContractAddress,
+			CollectionAddress: collectionAddress,
+			BlockNumber:       c.BlockNumber,
+		}
+
+		uContracts = append(uContracts, uContract)
+	}
+
+	return uContracts
+}
+
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx, globalConsensus string, parachain uint64) error {
+	scannedContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
 		return err
 	}
 
-	if len(contracts) > 0 {
+	contracts := make([]model.ERC721UniversalContract, 0)
+	if len(scannedContracts) > 0 {
+		contracts = validateUniversalContracts(globalConsensus, parachain, scannedContracts)
 		if err = tx.StoreERC721UniversalContracts(contracts); err != nil {
 			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 			return err

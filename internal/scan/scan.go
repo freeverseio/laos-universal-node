@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
-	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 )
 
 var (
@@ -88,6 +88,45 @@ type EventNewERC721Universal struct {
 	BlockNumber        uint64
 }
 
+func (e EventNewERC721Universal) GlobalConsensus() (string, error) {
+	// Define a regular expression pattern to match the desired content between parentheses
+	pattern := `GlobalConsensus\(([^)]+)\)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(pattern)
+
+	// Find the match in the input string
+	match := re.FindStringSubmatch(e.BaseURI)
+
+	if len(match) != 2 {
+		return "", fmt.Errorf("no global consensus ID found in base URI: %s", e.BaseURI)
+	}
+
+	return match[1], nil
+}
+
+func (e EventNewERC721Universal) Parachain() (uint64, error) {
+	// Define a regular expression pattern to match the desired content between parentheses
+	pattern := `Parachain\(([^)]+)\)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(pattern)
+
+	// Find the match in the input string
+	match := re.FindStringSubmatch(e.BaseURI)
+
+	if len(match) != 2 {
+		return 0, fmt.Errorf("no parachain ID found in base URI: %s", e.BaseURI)
+	}
+	parachain, err := strconv.ParseUint(match[1], 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return 0, fmt.Errorf("error parsing parachain value to uint: %w", err)
+	}
+
+	return parachain, nil
+}
+
 func (e EventNewERC721Universal) CollectionAddress() (common.Address, error) {
 	// Define a regular expression pattern to match the desired content between parentheses
 	pattern := `AccountKey20\(([^)]+)\)`
@@ -136,7 +175,7 @@ func generateEventSignatureHash(event string, params ...string) string {
 
 // Scanner is responsible for scanning and retrieving the ERC721 events
 type Scanner interface {
-	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error)
+	ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]EventNewERC721Universal, error)
 	ScanEvents(ctx context.Context, fromBlock *big.Int, toBlock *big.Int, contracts []string) ([]Event, error)
 }
 
@@ -159,7 +198,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 // TODO decide whether contracts should be a variadic parameter of ScanNewUniversalEvents or not (if so, conversion from []string to []common.Address should be done in config.go)
 
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
-func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]model.ERC721UniversalContract, error) {
+func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]EventNewERC721Universal, error) {
 	slog.Info("scanning universal events", "from_block", fromBlock, "to_block", toBlock)
 	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
 	if err != nil {
@@ -176,7 +215,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
 
-	contracts := make([]model.ERC721UniversalContract, 0)
+	contracts := make([]EventNewERC721Universal, 0)
 	for i := range eventLogs {
 		if len(eventLogs[i].Topics) == 0 {
 			continue
@@ -189,18 +228,7 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 			}
 			slog.Info("received event", eventNewERC721Universal, newERC721Universal)
 
-			collectionAddress, err := newERC721Universal.CollectionAddress()
-			if err != nil {
-				slog.Warn("error parsing collection address for contract", "contract", newERC721Universal.NewContractAddress,
-					"base_uri", newERC721Universal.BaseURI)
-				continue
-			}
-			c := model.ERC721UniversalContract{
-				Address:           newERC721Universal.NewContractAddress,
-				CollectionAddress: collectionAddress,
-				BlockNumber:       newERC721Universal.BlockNumber,
-			}
-			contracts = append(contracts, c)
+			contracts = append(contracts, newERC721Universal)
 		}
 	}
 
