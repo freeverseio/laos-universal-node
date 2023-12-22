@@ -16,6 +16,11 @@ environments:
     - ./environments/dev/values.yaml
 
 releases:
+  - name: core-secrets
+    namespace: laos-bigbang
+    installed: true
+    createNamespace: false
+    chart: ./charts/core-secrets
 {{ range .Values.networks }}
   - name: universalnode-{{ .name }}
     namespace: laos-bigbang
