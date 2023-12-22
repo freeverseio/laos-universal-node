@@ -292,6 +292,7 @@ func processUniversalBlockRange(ctx context.Context, c *config.Config, client sc
 	// Retrieve information about the final block in the current block range
 	block, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
+		slog.Error("error occurred retrieving ownership end range block", "lastBlock", lastBlock, "err", err.Error())
 		return err
 	}
 	// Store the final block hash to verify in next iteration if a reorganization has taken place.
@@ -497,7 +498,7 @@ func processEvoBlockRange(ctx context.Context, client scan.EthClient, stateServi
 	// Retrieve information about the final block in the current block range
 	endRangeBlock, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
-		slog.Error("error occurred while fetching LaosEvolution end range block", "err", err.Error())
+		slog.Error("error occurred while fetching LaosEvolution end range block", "lastBlock", lastBlock, "err", err.Error())
 		return err
 	}
 	slog.Debug("setting evo end range block hash for block number",
