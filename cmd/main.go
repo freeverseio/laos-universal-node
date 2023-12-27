@@ -717,7 +717,7 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func validateUniversalContracts(globalConsensus string, parachain uint64, contracts []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
+func getValidUniversalContracts(globalConsensus string, parachain uint64, contracts []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
 	uContracts := make([]model.ERC721UniversalContract, 0)
 	for _, c := range contracts {
 		contractGlobalConsensus, err := c.GlobalConsensus()
@@ -740,8 +740,8 @@ func validateUniversalContracts(globalConsensus string, parachain uint64, contra
 		}
 
 		if contractGlobalConsensus != globalConsensus || contractParachain != parachain {
-			slog.Debug("discarting universal contract", "global_consensus", contractGlobalConsensus,
-				"parachain", contractParachain)
+			slog.Debug("universal contract's base URI points to a collection in a different evochain, contract discarded",
+				"contract_global_consensus", contractGlobalConsensus, "contract_parachain", contractParachain)
 			continue
 		}
 
@@ -766,7 +766,7 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 
 	contracts := make([]model.ERC721UniversalContract, 0)
 	if len(scannedContracts) > 0 {
-		contracts = validateUniversalContracts(globalConsensus, parachain, scannedContracts)
+		contracts = getValidUniversalContracts(globalConsensus, parachain, scannedContracts)
 		if err = tx.StoreERC721UniversalContracts(contracts); err != nil {
 			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 			return err
