@@ -717,44 +717,44 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func getValidUniversalContracts(globalConsensus string, parachain uint64, contracts []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
-	uContracts := make([]model.ERC721UniversalContract, 0)
-	for _, c := range contracts {
-		contractGlobalConsensus, err := c.GlobalConsensus()
+func getValidUniversalContracts(globalConsensus string, parachain uint64, events []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
+	contracts := make([]model.ERC721UniversalContract, 0)
+	for _, e := range events {
+		contractGlobalConsensus, err := e.GlobalConsensus()
 		if err != nil {
-			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
-				"base_uri", c.BaseURI)
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
 			continue
 		}
-		contractParachain, err := c.Parachain()
+		contractParachain, err := e.Parachain()
 		if err != nil {
-			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
-				"base_uri", c.BaseURI)
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
 			continue
 		}
-		collectionAddress, err := c.CollectionAddress()
+		collectionAddress, err := e.CollectionAddress()
 		if err != nil {
-			slog.Warn("error parsing collection address for contract", "contract", c.NewContractAddress,
-				"base_uri", c.BaseURI)
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
 			continue
 		}
 
 		if contractGlobalConsensus != globalConsensus || contractParachain != parachain {
 			slog.Debug("universal contract's base URI points to a collection in a different evochain, contract discarded",
-				"contract_global_consensus", contractGlobalConsensus, "contract_parachain", contractParachain)
+				"base_uri", e.BaseURI, "chain_global_consensus", globalConsensus, "chain_parachain", parachain)
 			continue
 		}
 
-		uContract := model.ERC721UniversalContract{
-			Address:           c.NewContractAddress,
+		contract := model.ERC721UniversalContract{
+			Address:           e.NewContractAddress,
 			CollectionAddress: collectionAddress,
-			BlockNumber:       c.BlockNumber,
+			BlockNumber:       e.BlockNumber,
 		}
 
-		uContracts = append(uContracts, uContract)
+		contracts = append(contracts, contract)
 	}
 
-	return uContracts
+	return contracts
 }
 
 func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx, c *config.Config) error {
