@@ -47,7 +47,7 @@ func Load() (*Config, error) {
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	evoRpc := flag.String("evo_rpc", "", "URL of the RPC evolution chain")
 	port := flag.Uint("port", 5001, "HTTP port to use for the universal node server")
-	startingBlock := flag.Uint64("starting_block", 18288287, "Initial block where the scanning process should start from")
+	startingBlock := flag.Uint64("starting_block", 0, "Initial block where the scanning process should start from")
 	evoStartingBlock := flag.Uint64("evo_starting_block", 0, "Initial block where the scanning process should start from on the evolution chain")
 	waitingTime := flag.Duration("wait", 5*time.Second, "Waiting time between scans when scanning reaches the last block")
 	storagePath := flag.String("storage_path", defaultStoragePath, "Path to the storage folder")
