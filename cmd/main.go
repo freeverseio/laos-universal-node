@@ -372,7 +372,7 @@ func scanAndDigest(ctx context.Context, c *config.Config, s scan.Scanner, tx sta
 		return err
 	}
 	if shouldDiscover {
-		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx, c.GlobalConsensus, c.Parachain); errDiscover != nil {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx, c); errDiscover != nil {
 			return errDiscover
 		}
 	}
@@ -757,7 +757,7 @@ func getValidUniversalContracts(globalConsensus string, parachain uint64, contra
 	return uContracts
 }
 
-func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx, globalConsensus string, parachain uint64) error {
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx, c *config.Config) error {
 	scannedContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
@@ -766,7 +766,7 @@ func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanne
 
 	contracts := make([]model.ERC721UniversalContract, 0)
 	if len(scannedContracts) > 0 {
-		contracts = getValidUniversalContracts(globalConsensus, parachain, scannedContracts)
+		contracts = getValidUniversalContracts(c.GlobalConsensus, c.Parachain, scannedContracts)
 		if err = tx.StoreERC721UniversalContracts(contracts); err != nil {
 			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 			return err
