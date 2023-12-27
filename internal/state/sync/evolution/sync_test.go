@@ -1,14 +1,18 @@
 package evolution_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 
-func TestGetCurrentEvoBlock(t *testing.T) {
+func TestSetGetLastEvoBlock(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -20,34 +24,38 @@ func TestGetCurrentEvoBlock(t *testing.T) {
 	stateService := v1.NewStateService(mockStorage)
 	tx := stateService.NewTransaction()
 
-	mockStorageTransaction.EXPECT().Get([]byte("evo_current_block")).Return([]byte("1"), nil)
+	block := model.Block{
+		Number:    1,
+		Timestamp: 1,
+		Hash:      common.HexToHash("0x123"),
+	}
 
-	currentBlock, err := tx.GetCurrentEvoBlock()
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	_ = encoder.Encode(block) // omit error since block is constant
+
+	mockStorageTransaction.EXPECT().Set([]byte("evo_last_block"), buf.Bytes()).Return(nil)
+
+	err := tx.SetLastEvoBlock(block)
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+	mockStorageTransaction.EXPECT().Get([]byte("evo_last_block")).Return(buf.Bytes(), nil)
+
+	newBlock, err := tx.GetLastEvoBlock()
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
 
-	if currentBlock != 1 {
-		t.Fatalf("got currentBlock %d, expecting 1", currentBlock)
+	if newBlock.Number != block.Number {
+		t.Fatalf("got block number %d, expecting %d", newBlock.Number, block.Number)
 	}
-}
 
-func TestSetCurrentEvoBlock(t *testing.T) {
-	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
+	if newBlock.Timestamp != block.Timestamp {
+		t.Fatalf("got block timestamp %d, expecting %d", newBlock.Timestamp, block.Timestamp)
+	}
 
-	mockStorage := mock.NewMockService(mockCtrl)
-	mockStorageTransaction := mock.NewMockTx(mockCtrl)
-	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
-
-	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
-
-	mockStorageTransaction.EXPECT().Set([]byte("evo_current_block"), []byte("1")).Return(nil)
-
-	err := tx.SetCurrentEvoBlock(uint64(1))
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
+	if newBlock.Hash != block.Hash {
+		t.Fatalf("got block hash %s, expecting %s", newBlock.Hash.String(), block.Hash.String())
 	}
 }

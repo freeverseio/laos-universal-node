@@ -211,36 +211,6 @@ func (mr *MockTxMockRecorder) GetCollectionAddress(contract any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCollectionAddress", reflect.TypeOf((*MockTx)(nil).GetCollectionAddress), contract)
 }
 
-// GetCurrentEvoBlock mocks base method.
-func (m *MockTx) GetCurrentEvoBlock() (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlock")
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentEvoBlock indicates an expected call of GetCurrentEvoBlock.
-func (mr *MockTxMockRecorder) GetCurrentEvoBlock() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlock", reflect.TypeOf((*MockTx)(nil).GetCurrentEvoBlock))
-}
-
-// GetCurrentEvoBlockTimestamp mocks base method.
-func (m *MockTx) GetCurrentEvoBlockTimestamp() (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlockTimestamp")
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentEvoBlockTimestamp indicates an expected call of GetCurrentEvoBlockTimestamp.
-func (mr *MockTxMockRecorder) GetCurrentEvoBlockTimestamp() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockTx)(nil).GetCurrentEvoBlockTimestamp))
-}
-
 // GetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockTx) GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -271,21 +241,6 @@ func (mr *MockTxMockRecorder) GetCurrentOwnershipBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetCurrentOwnershipBlock))
 }
 
-// GetEvoEndRangeBlockHash mocks base method.
-func (m *MockTx) GetEvoEndRangeBlockHash() (common.Hash, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEvoEndRangeBlockHash")
-	ret0, _ := ret[0].(common.Hash)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetEvoEndRangeBlockHash indicates an expected call of GetEvoEndRangeBlockHash.
-func (mr *MockTxMockRecorder) GetEvoEndRangeBlockHash() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvoEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).GetEvoEndRangeBlockHash))
-}
-
 // GetExistingERC721UniversalContracts mocks base method.
 func (m *MockTx) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -299,6 +254,21 @@ func (m *MockTx) GetExistingERC721UniversalContracts(contracts []string) ([]stri
 func (mr *MockTxMockRecorder) GetExistingERC721UniversalContracts(contracts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExistingERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).GetExistingERC721UniversalContracts), contracts)
+}
+
+// GetLastEvoBlock mocks base method.
+func (m *MockTx) GetLastEvoBlock() (model.Block, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastEvoBlock")
+	ret0, _ := ret[0].(model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastEvoBlock indicates an expected call of GetLastEvoBlock.
+func (mr *MockTxMockRecorder) GetLastEvoBlock() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastEvoBlock", reflect.TypeOf((*MockTx)(nil).GetLastEvoBlock))
 }
 
 // GetLastTaggedBlock mocks base method.
@@ -404,34 +374,6 @@ func (mr *MockTxMockRecorder) OwnerOf(contract, tokenId any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerOf", reflect.TypeOf((*MockTx)(nil).OwnerOf), contract, tokenId)
 }
 
-// SetCurrentEvoBlock mocks base method.
-func (m *MockTx) SetCurrentEvoBlock(number uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlock", number)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentEvoBlock indicates an expected call of SetCurrentEvoBlock.
-func (mr *MockTxMockRecorder) SetCurrentEvoBlock(number any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlock", reflect.TypeOf((*MockTx)(nil).SetCurrentEvoBlock), number)
-}
-
-// SetCurrentEvoBlockTimestamp mocks base method.
-func (m *MockTx) SetCurrentEvoBlockTimestamp(number uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlockTimestamp", number)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentEvoBlockTimestamp indicates an expected call of SetCurrentEvoBlockTimestamp.
-func (mr *MockTxMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockTx)(nil).SetCurrentEvoBlockTimestamp), number)
-}
-
 // SetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockTx) SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error {
 	m.ctrl.T.Helper()
@@ -460,18 +402,18 @@ func (mr *MockTxMockRecorder) SetCurrentOwnershipBlock(number any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetCurrentOwnershipBlock), number)
 }
 
-// SetEvoEndRangeBlockHash mocks base method.
-func (m *MockTx) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
+// SetLastEvoBlock mocks base method.
+func (m *MockTx) SetLastEvoBlock(block model.Block) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetEvoEndRangeBlockHash", blockHash)
+	ret := m.ctrl.Call(m, "SetLastEvoBlock", block)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetEvoEndRangeBlockHash indicates an expected call of SetEvoEndRangeBlockHash.
-func (mr *MockTxMockRecorder) SetEvoEndRangeBlockHash(blockHash any) *gomock.Call {
+// SetLastEvoBlock indicates an expected call of SetLastEvoBlock.
+func (mr *MockTxMockRecorder) SetLastEvoBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvoEndRangeBlockHash", reflect.TypeOf((*MockTx)(nil).SetEvoEndRangeBlockHash), blockHash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastEvoBlock", reflect.TypeOf((*MockTx)(nil).SetLastEvoBlock), block)
 }
 
 // SetOwnershipEndRangeBlockHash mocks base method.
@@ -1153,89 +1095,31 @@ func (m *MockEvolutionSyncState) EXPECT() *MockEvolutionSyncStateMockRecorder {
 	return m.recorder
 }
 
-// GetCurrentEvoBlock mocks base method.
-func (m *MockEvolutionSyncState) GetCurrentEvoBlock() (uint64, error) {
+// GetLastEvoBlock mocks base method.
+func (m *MockEvolutionSyncState) GetLastEvoBlock() (model.Block, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlock")
-	ret0, _ := ret[0].(uint64)
+	ret := m.ctrl.Call(m, "GetLastEvoBlock")
+	ret0, _ := ret[0].(model.Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetCurrentEvoBlock indicates an expected call of GetCurrentEvoBlock.
-func (mr *MockEvolutionSyncStateMockRecorder) GetCurrentEvoBlock() *gomock.Call {
+// GetLastEvoBlock indicates an expected call of GetLastEvoBlock.
+func (mr *MockEvolutionSyncStateMockRecorder) GetLastEvoBlock() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlock", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetCurrentEvoBlock))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastEvoBlock", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetLastEvoBlock))
 }
 
-// GetCurrentEvoBlockTimestamp mocks base method.
-func (m *MockEvolutionSyncState) GetCurrentEvoBlockTimestamp() (uint64, error) {
+// SetLastEvoBlock mocks base method.
+func (m *MockEvolutionSyncState) SetLastEvoBlock(block model.Block) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlockTimestamp")
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentEvoBlockTimestamp indicates an expected call of GetCurrentEvoBlockTimestamp.
-func (mr *MockEvolutionSyncStateMockRecorder) GetCurrentEvoBlockTimestamp() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetCurrentEvoBlockTimestamp))
-}
-
-// GetEvoEndRangeBlockHash mocks base method.
-func (m *MockEvolutionSyncState) GetEvoEndRangeBlockHash() (common.Hash, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEvoEndRangeBlockHash")
-	ret0, _ := ret[0].(common.Hash)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetEvoEndRangeBlockHash indicates an expected call of GetEvoEndRangeBlockHash.
-func (mr *MockEvolutionSyncStateMockRecorder) GetEvoEndRangeBlockHash() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvoEndRangeBlockHash", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetEvoEndRangeBlockHash))
-}
-
-// SetCurrentEvoBlock mocks base method.
-func (m *MockEvolutionSyncState) SetCurrentEvoBlock(number uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlock", number)
+	ret := m.ctrl.Call(m, "SetLastEvoBlock", block)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetCurrentEvoBlock indicates an expected call of SetCurrentEvoBlock.
-func (mr *MockEvolutionSyncStateMockRecorder) SetCurrentEvoBlock(number any) *gomock.Call {
+// SetLastEvoBlock indicates an expected call of SetLastEvoBlock.
+func (mr *MockEvolutionSyncStateMockRecorder) SetLastEvoBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlock", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetCurrentEvoBlock), number)
-}
-
-// SetCurrentEvoBlockTimestamp mocks base method.
-func (m *MockEvolutionSyncState) SetCurrentEvoBlockTimestamp(number uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlockTimestamp", number)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentEvoBlockTimestamp indicates an expected call of SetCurrentEvoBlockTimestamp.
-func (mr *MockEvolutionSyncStateMockRecorder) SetCurrentEvoBlockTimestamp(number any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockTimestamp", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetCurrentEvoBlockTimestamp), number)
-}
-
-// SetEvoEndRangeBlockHash mocks base method.
-func (m *MockEvolutionSyncState) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetEvoEndRangeBlockHash", blockHash)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetEvoEndRangeBlockHash indicates an expected call of SetEvoEndRangeBlockHash.
-func (mr *MockEvolutionSyncStateMockRecorder) SetEvoEndRangeBlockHash(blockHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvoEndRangeBlockHash", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetEvoEndRangeBlockHash), blockHash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastEvoBlock", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetLastEvoBlock), block)
 }
