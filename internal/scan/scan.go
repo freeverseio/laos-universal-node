@@ -120,7 +120,6 @@ func (e EventNewERC721Universal) Parachain() (uint64, error) {
 	}
 	parachain, err := strconv.ParseUint(match[1], 10, 64)
 	if err != nil {
-		fmt.Println("Error:", err)
 		return 0, fmt.Errorf("error parsing parachain value to uint: %w", err)
 	}
 

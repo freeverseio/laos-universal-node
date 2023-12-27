@@ -561,7 +561,7 @@ func TestScanNewUniversalEvents(t *testing.T) {
 	}
 }
 
-func TestBaseURI(t *testing.T) {
+func TestValidBaseURI(t *testing.T) {
 	t.Parallel()
 	t.Run(`extract collection address from baseURI`, func(t *testing.T) {
 		t.Parallel()
@@ -575,17 +575,59 @@ func TestBaseURI(t *testing.T) {
 
 		address, err := e.CollectionAddress()
 		if err != nil {
-			t.Fatalf("got %s error, nil expected", err.Error())
+			t.Errorf("got %s error, nil expected", err.Error())
 		}
 
 		if address != expectedCollectionAddress {
 			t.Fatalf("got %d collection address, %d expected", address, expectedCollectionAddress)
 		}
 	})
-	t.Run(`raise error when baseURI is malformed`, func(t *testing.T) {
+	t.Run(`extract global consensus from baseURI`, func(t *testing.T) {
 		t.Parallel()
 
-		baseURI := "uloc://GlobalConsensus(gen)/Parachain(2900)/GeneralKey(666)"
+		baseURI := "uloc://GlobalConsensus(3)/Parachain(0)/AccountKey20(0x0)/GeneralKey(1)"
+		expectedGlobalConsensus := "3"
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		globalConsensus, err := e.GlobalConsensus()
+		if err != nil {
+			t.Errorf("got %s error, nil expected", err.Error())
+		}
+
+		if globalConsensus != expectedGlobalConsensus {
+			t.Fatalf("got %s global consensus, %s expected", globalConsensus, expectedGlobalConsensus)
+		}
+	})
+	t.Run(`extract parachain from baseURI`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(gen)/Parachain(3336)/AccountKey20(0x0)/GeneralKey(1)"
+		expectedParachain := uint64(3336)
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		parachain, err := e.Parachain()
+		if err != nil {
+			t.Errorf("got %s error, nil expected", err.Error())
+		}
+
+		if parachain != expectedParachain {
+			t.Fatalf("got %d parachain, %d expected", parachain, expectedParachain)
+		}
+	})
+}
+
+func TestInvalidBaseURI(t *testing.T) {
+	t.Parallel()
+	t.Run(`fails when AccountKey does not exist in base uri`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(gen)/Parachain(0)/GeneralKey(666)"
 		expectedError := fmt.Errorf("no collection address found in base URI: %s", baseURI)
 
 		e := scan.EventNewERC721Universal{
@@ -593,6 +635,60 @@ func TestBaseURI(t *testing.T) {
 		}
 
 		_, err := e.CollectionAddress()
+		if err == nil {
+			t.Fatalf("got nil error, %s expected", expectedError.Error())
+		}
+		if err.Error() != expectedError.Error() {
+			t.Fatalf("got %s error, %s expected", err.Error(), expectedError.Error())
+		}
+	})
+	t.Run(`fails when GlobalConsensus does not exist in base uri`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://Parachain(0)/AccountKey20(0x0)/GeneralKey(666)"
+		expectedError := fmt.Errorf("no global consensus ID found in base URI: %s", baseURI)
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		_, err := e.GlobalConsensus()
+		if err == nil {
+			t.Fatalf("got nil error, %s expected", expectedError.Error())
+		}
+		if err.Error() != expectedError.Error() {
+			t.Fatalf("got %s error, %s expected", err.Error(), expectedError.Error())
+		}
+	})
+	t.Run(`fails when Parachain does not exist in base uri`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(3)/AccountKey20(0x0)/GeneralKey(666)"
+		expectedError := fmt.Errorf("no parachain ID found in base URI: %s", baseURI)
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		_, err := e.Parachain()
+		if err == nil {
+			t.Fatalf("got nil error, %s expected", expectedError.Error())
+		}
+		if err.Error() != expectedError.Error() {
+			t.Fatalf("got %s error, %s expected", err.Error(), expectedError.Error())
+		}
+	})
+	t.Run(`fails when Parachain is malformed in base uri`, func(t *testing.T) {
+		t.Parallel()
+
+		baseURI := "uloc://GlobalConsensus(3)/Parachain(kkk)/AccountKey20(0x0)/GeneralKey(666)"
+		expectedError := fmt.Errorf(`error parsing parachain value to uint: strconv.ParseUint: parsing "kkk": invalid syntax`)
+
+		e := scan.EventNewERC721Universal{
+			BaseURI: baseURI,
+		}
+
+		_, err := e.Parachain()
 		if err == nil {
 			t.Fatalf("got nil error, %s expected", expectedError.Error())
 		}
