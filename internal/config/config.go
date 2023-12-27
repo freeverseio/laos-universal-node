@@ -83,7 +83,8 @@ func Load() (*Config, error) {
 func (c *Config) LogFields() {
 	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "evo_rpc", c.EvoRpc, "contracts", c.Contracts, "starting_block", c.StartingBlock,
 		"evo_starting_block", c.EvoStartingBlock, "blocks_margin", c.BlocksMargin, "evo_blocks_margin", c.EvoBlocksMargin, "blocks_range", c.BlocksRange,
-		"evo_blocks_range", c.EvoBlocksRange, "debug", c.Debug, "wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
+		"evo_blocks_range", c.EvoBlocksRange, "evo_global_consensus", c.GlobalConsensus, "evo_parachain", c.Parachain, "debug", c.Debug,
+		"wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
 }
 
 func getDefaultStoragePath() string {
@@ -104,7 +105,7 @@ func setGlobalConsensusAndParachain(c *Config) error {
 		c.GlobalConsensus = klaosGlobalConsensus
 		c.Parachain = klaosParachain
 	default:
-		return fmt.Errorf("unknown Evolution chain rpc provided: %s", c.EvoRpc)
+		return fmt.Errorf("unknown evolution chain rpc provided: %s", c.EvoRpc)
 	}
 
 	return nil
