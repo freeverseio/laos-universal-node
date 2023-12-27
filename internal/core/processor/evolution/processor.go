@@ -169,7 +169,14 @@ func updateLastBlockData(ctx context.Context, tx state.Tx, client scan.EthClient
 		Hash:      lastBlockData.Hash(),
 	}
 
-	return tx.SetLastEvoBlock(block)
+	err = tx.SetLastEvoBlock(block)
+	if err != nil {
+		slog.Error("error occurred while setting lastEvoBlock to database",
+			"lastBlock", lastBlock, "err", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
