@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/freeverseio/laos-universal-node/internal/platform/core/processor/evolution"
-	evoProcessMock "github.com/freeverseio/laos-universal-node/internal/platform/core/processor/evolution/mock"
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
+	evoProcessMock "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution/mock"
 
 	"go.uber.org/mock/gomock"
 )
@@ -90,7 +90,6 @@ func TestExecuteBlockRange(t *testing.T) {
 		_, err := executeEvoBlockRange(ctx, worker, startingBlock)
 		assertError(t, errors.New("reorg error"), err)
 	})
-
 	t.Run("process evo block range returns error", func(t *testing.T) {
 		t.Parallel()
 

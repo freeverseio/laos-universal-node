@@ -176,15 +176,12 @@ func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNum
 func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	blockNumber, err := tx.GetCurrentOwnershipBlock()
+	block, err := tx.GetLastOwnershipBlock()
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting current block number: %w", err), id)
 	}
-	// Subtract 1 only if blockNumber is greater than 0
-	if blockNumber > 0 {
-		blockNumber--
-	}
-	return getResponse(fmt.Sprintf("0x%x", blockNumber), id, nil)
+
+	return getResponse(fmt.Sprintf("0x%x", block.Number), id, nil)
 }
 
 func getParamBigInt(callData erc721.CallData, paramName string) (*big.Int, error) {

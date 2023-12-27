@@ -17,8 +17,11 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
+	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	evoworker "github.com/freeverseio/laos-universal-node/internal/core/worker/evolution"
-	worker "github.com/freeverseio/laos-universal-node/internal/core/worker/ownership"
+	universalWorker "github.com/freeverseio/laos-universal-node/internal/core/worker/universal"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
@@ -119,7 +122,11 @@ func run() error {
 	// Ownership chain scanner
 	group.Go(func() error {
 		s := scan.NewScanner(ownershipChainClient, c.Contracts...)
-		uWorker := worker.NewWorker(c, ownershipChainClient, s, stateService)
+
+		discoveryValidator := validator.New(c.GlobalConsensus, c.Parachain)
+		discoverer := contractDiscoverer.New(ownershipChainClient, c.Contracts, s, discoveryValidator)
+		updater := contractUpdater.New(ownershipChainClient, s)
+		uWorker := universalWorker.New(c, ownershipChainClient, s, stateService, discoverer, updater)
 		return uWorker.Run(ctx)
 	})
 
@@ -134,7 +141,7 @@ func run() error {
 		}
 
 		s := scan.NewScanner(evoChainClient)
-		evoWorker := evoworker.NewWorker(c, evoChainClient, s, stateService)
+		evoWorker := evoworker.New(c, evoChainClient, s, stateService)
 		return evoWorker.Run(ctx)
 	})
 

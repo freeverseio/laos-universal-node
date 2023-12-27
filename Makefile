@@ -8,4 +8,10 @@ mocks:
 	mockgen -source=internal/platform/state/tree/enumerated/tree.go -destination=internal/platform/state/tree/enumerated/mock/tree.go -package=mock
 	mockgen -source=internal/platform/state/tree/enumeratedtotal/tree.go -destination=internal/platform/state/tree/enumeratedtotal/mock/tree.go -package=mock
 	mockgen -source=internal/platform/state/tree/ownership/tree.go -destination=internal/platform/state/tree/ownership/mock/tree.go -package=mock
-	mockgen -source=internal/platform/core/processor/evolution/processor.go -destination=internal/platform/core/processor/evolution/mock/processor.go -package=mock
+	mockgen -source=internal/core/processor/evolution/processor.go -destination=internal/core/processor/evolution/mock/processor.go -package=mock
+	mockgen -source=internal/core/processor/universal/discoverer/validator/validator.go -destination=internal/core/processor/universal/discoverer/validator/mock/validator.go -package=mock
+	mockgen -source=internal/core/processor/universal/discoverer/discoverer.go -destination=internal/core/processor/universal/discoverer/mock/discoverer.go -package=mock
+	mockgen -source=internal/core/processor/universal/updater/updater.go -destination=internal/core/processor/universal/updater/mock/updater.go -package=mock
+	mockgen -source=internal/core/processor/universal/processor.go -destination=internal/core/processor/universal/mock/processor.go -package=mock
+
+	

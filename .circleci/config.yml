@@ -32,11 +32,11 @@ commands:
     description: checks code coverage
     steps:
       - run:
-          name: calculate code coverage 
+          name: calculate code coverage
           command: |
             COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{ print $3 }' | sed 's/%//g')
             echo "Total coverage: $COVERAGE%"
-            THRESHOLD=67
+            THRESHOLD=71
             if [[ ${COVERAGE%.*} -lt ${THRESHOLD%.*} ]]; then
               echo "Code coverage is less than $THRESHOLD%"
               exit 1
@@ -98,7 +98,7 @@ jobs:
     steps:
       - checkout
       - kube-orb/install-kubectl:
-          kubectl-version: "v1.25.14"
+          kubectl-version: 'v1.25.14'
       - kube-orb/install-kubeconfig:
           kubeconfig: KUBECONFIG_DEV_DATA
       - helm/install_helm_client:
@@ -134,9 +134,9 @@ workflows:
               only: /.*/
       - deploy_to_development:
           filters:
-              branches:
-                only:
-                  - main
+            branches:
+              only:
+                - main
           requires:
             - lint
             - go_test
