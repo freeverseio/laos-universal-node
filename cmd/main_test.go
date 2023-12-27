@@ -42,6 +42,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		newLatestBlock                                 uint64
 		collectionAddressForContract                   []string
 		expectedContracts                              []string
+		erc721UniversalEvents                          []scan.EventNewERC721Universal
 		discoveredContracts                            []model.ERC721UniversalContract
 		scannedEvents                                  []scan.Event
 		blockNumberTransferEvents                      uint64
@@ -58,10 +59,12 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 	}{
 		{
 			c: config.Config{
-				StartingBlock: 1,
-				BlocksMargin:  0,
-				BlocksRange:   100,
-				WaitingTime:   1 * time.Second,
+				StartingBlock:   1,
+				BlocksMargin:    0,
+				BlocksRange:     100,
+				WaitingTime:     1 * time.Second,
+				GlobalConsensus: "3",
+				Parachain:       9999,
 			},
 			l1LatestBlock:                101,
 			expectedStartingBlock:        1,
@@ -74,7 +77,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			newLatestBlock:               102,
 			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
 			expectedContracts:            []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
-			discoveredContracts:          getERC721UniversalContracts(),
+			erc721UniversalEvents:        getNewERC721UniversalEvents(),
+			discoveredContracts:          getERC721UniversalContract(),
 			scannedEvents:                createERC721TransferEvents(),
 			blockNumberTransferEvents:    1,
 			timeStampTransferEvents:      1000,
@@ -97,10 +101,12 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 		},
 		{
 			c: config.Config{
-				StartingBlock: 1,
-				BlocksMargin:  0,
-				BlocksRange:   100,
-				WaitingTime:   1 * time.Second,
+				StartingBlock:   1,
+				BlocksMargin:    0,
+				BlocksRange:     100,
+				WaitingTime:     1 * time.Second,
+				GlobalConsensus: "3",
+				Parachain:       9999,
 			},
 			l1LatestBlock:                101,
 			expectedStartingBlock:        1,
@@ -113,7 +119,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			newLatestBlock:               102,
 			collectionAddressForContract: []string{"0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"},
 			expectedContracts:            []string{"0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df", "0x26cb70039fe1bd36b4659858d4c4d0cbcafd743a"},
-			discoveredContracts:          getERC721UniversalContracts(),
+			erc721UniversalEvents:        getNewERC721UniversalEvents(),
+			discoveredContracts:          getERC721UniversalContract(),
 			scannedEvents:                createERC721TransferEvents(),
 			blockNumberTransferEvents:    1,
 			timeStampTransferEvents:      1000,
@@ -179,7 +186,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 			}, nil).Times(1)
 
 			scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock))).
-				Return(tt.discoveredContracts, nil).
+				Return(tt.erc721UniversalEvents, nil).
 				Times(tt.scanNewUniversalEventsTimes)
 
 			scanner.EXPECT().ScanEvents(ctx, big.NewInt(int64(tt.expectedStartingBlock)), big.NewInt(int64(tt.l1LatestBlock)), tt.expectedContracts).
@@ -190,15 +197,16 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.expectedContracts).
 				Times(1)
 
-			for _, contract := range tt.discoveredContracts {
-				tx2.EXPECT().GetMintedWithExternalURIEvents(contract.CollectionAddress.Hex()).
+			for _, contract := range tt.erc721UniversalEvents {
+				collectionAddress, _ := contract.CollectionAddress()
+				tx2.EXPECT().GetMintedWithExternalURIEvents(collectionAddress.String()).
 					Return(getMockMintedEvents(tt.blocknumberMintedEvents, tt.timeStampMintedEvents), nil).
 					Times(1)
 				client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(contract.BlockNumber))).Return(&types.Header{
 					Time: tt.timeStampTransferEvents,
 				}, nil).Times(1)
 				tx2.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-				tx2.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(contract.Address.String(), tt.ownershipContractInitialEvoIndexBeforeDiscover).Return(nil).Times(1)
+				tx2.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(contract.NewContractAddress.String(), tt.ownershipContractInitialEvoIndexBeforeDiscover).Return(nil).Times(1)
 			}
 
 			for i, contract := range tt.expectedContracts {
@@ -222,11 +230,8 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				tx2.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil).Times(1)
 			}
 
-			for i := range tt.discoveredContracts {
-				tx2.EXPECT().IsTreeSetForContract(tt.discoveredContracts[i].Address).Return(true).Times(1)
-			}
-
-			if len(tt.discoveredContracts) > 0 {
+			for i := range tt.erc721UniversalEvents {
+				tx2.EXPECT().IsTreeSetForContract(tt.erc721UniversalEvents[i].NewContractAddress).Return(true).Times(1)
 				tx2.EXPECT().StoreERC721UniversalContracts(tt.discoveredContracts).Return(nil).Times(1)
 			}
 
@@ -1196,11 +1201,22 @@ func getMockMintedEvents(blockNumber, timestamp uint64) []model.MintedWithExtern
 	}
 }
 
-func getERC721UniversalContracts() []model.ERC721UniversalContract {
+func getNewERC721UniversalEvents() []scan.EventNewERC721Universal {
+	return []scan.EventNewERC721Universal{
+		{
+			BaseURI:            "https://uloc.io/GlobalConsensus(3)/Parachain(9999)/AccountKey20(0x0000000000000000000000000000000000000000)/",
+			BlockNumber:        100,
+			NewContractAddress: common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
+		},
+	}
+}
+
+func getERC721UniversalContract() []model.ERC721UniversalContract {
 	return []model.ERC721UniversalContract{
 		{
 			Address:           common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
 			CollectionAddress: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+			BlockNumber:       100,
 		},
 	}
 }
