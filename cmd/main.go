@@ -53,8 +53,25 @@ func main() {
 
 func run() error {
 	c := config.Load()
-
 	setLogger(c.Debug)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
+	defer stop()
+
+	evoChainClient, err := ethclient.Dial(c.EvoRpc)
+	if err != nil {
+		return fmt.Errorf("error instantiating eth client: %w", err)
+	}
+	evoChainID, err := evoChainClient.ChainID(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = c.SetGlobalConsensusAndParachain(evoChainID)
+	if err != nil {
+		return err
+	}
+
 	c.LogFields()
 
 	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)
@@ -79,9 +96,6 @@ func run() error {
 	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
 	stateService := v1.NewStateService(storageService)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
-	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
 
@@ -125,16 +139,7 @@ func run() error {
 
 	// Evolution chain scanner
 	group.Go(func() error {
-		client, err := ethclient.Dial(c.EvoRpc)
-		if err != nil {
-			return fmt.Errorf("error instantiating eth client: %w", err)
-		}
-
-		chainID, err := client.ChainID(ctx)
-		if err != nil {
-			return err
-		}
-		if chainID.Cmp(big.NewInt(klaosChainID)) == 0 {
+		if evoChainID.Cmp(big.NewInt(klaosChainID)) == 0 {
 			slog.Info("***********************************************************************************************")
 			slog.Info("The KLAOS Parachain on Kusama is a test chain for the LAOS Parachain on Polkadot.")
 			slog.Info("KLAOS is not endorsed by the LAOS Foundation nor Freeverse")
@@ -143,8 +148,8 @@ func run() error {
 		}
 
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
-		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s, stateService)
+		s := scan.NewScanner(evoChainClient)
+		return scanEvoChain(ctx, c, evoChainClient, s, stateService)
 	})
 
 	// Universal node RPC server
@@ -369,7 +374,7 @@ func scanAndDigest(ctx context.Context, c *config.Config, s scan.Scanner, tx sta
 		return err
 	}
 	if shouldDiscover {
-		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx); errDiscover != nil {
+		if errDiscover := discoverContracts(ctx, client, s, startingBlock, lastBlock, tx, c); errDiscover != nil {
 			return errDiscover
 		}
 	}
@@ -714,14 +719,56 @@ func loadMerkleTrees(tx state.Tx, contractsAddress []string) error {
 	return nil
 }
 
-func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx) error {
-	contracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
+func getValidUniversalContracts(globalConsensus string, parachain uint64, events []scan.EventNewERC721Universal) []model.ERC721UniversalContract {
+	contracts := make([]model.ERC721UniversalContract, 0)
+	for _, e := range events {
+		contractGlobalConsensus, err := e.GlobalConsensus()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
+			continue
+		}
+		contractParachain, err := e.Parachain()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
+			continue
+		}
+		collectionAddress, err := e.CollectionAddress()
+		if err != nil {
+			slog.Warn("error parsing collection address for contract", "contract", e.NewContractAddress,
+				"base_uri", e.BaseURI)
+			continue
+		}
+
+		if contractGlobalConsensus != globalConsensus || contractParachain != parachain {
+			slog.Debug("universal contract's base URI points to a collection in a different evochain, contract discarded",
+				"base_uri", e.BaseURI, "chain_global_consensus", globalConsensus, "chain_parachain", parachain)
+			continue
+		}
+
+		contract := model.ERC721UniversalContract{
+			Address:           e.NewContractAddress,
+			CollectionAddress: collectionAddress,
+			BlockNumber:       e.BlockNumber,
+		}
+
+		contracts = append(contracts, contract)
+	}
+
+	return contracts
+}
+
+func discoverContracts(ctx context.Context, client scan.EthClient, s scan.Scanner, startingBlock, lastBlock uint64, tx state.Tx, c *config.Config) error {
+	scannedContracts, err := s.ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while discovering new universal events", "err", err.Error())
 		return err
 	}
 
-	if len(contracts) > 0 {
+	contracts := make([]model.ERC721UniversalContract, 0)
+	if len(scannedContracts) > 0 {
+		contracts = getValidUniversalContracts(c.GlobalConsensus, c.Parachain, scannedContracts)
 		if err = tx.StoreERC721UniversalContracts(contracts); err != nil {
 			slog.Error("error occurred while storing universal contract(s)", "err", err.Error())
 			return err

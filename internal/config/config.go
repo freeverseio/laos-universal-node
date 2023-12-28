@@ -2,21 +2,34 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"path"
 	"strings"
 	"time"
 )
 
+const (
+	klaosChainID                  = 2718
+	caladanChainID                = 667
+	klaosParachain         uint64 = 3336
+	caladanParachain       uint64 = 2900
+	klaosGlobalConsensus   string = "3"
+	caladanGlobalConsensus string = "0:0x22c48a576c33970622a2b4686a8aa5e4b58350247d69fb5d8015f12a8c8e1e4c"
+)
+
 type Config struct {
 	WaitingTime      time.Duration
 	StartingBlock    uint64
 	EvoStartingBlock uint64
+	Parachain        uint64
 	Contracts        []string
 	Rpc              string
 	EvoRpc           string
 	Path             string
+	GlobalConsensus  string
 	BlocksMargin     uint
 	BlocksRange      uint
 	EvoBlocksMargin  uint
@@ -37,7 +50,7 @@ func Load() *Config {
 	rpc := flag.String("rpc", "https://eth.llamarpc.com", "URL of the RPC node of an evm-compatible blockchain")
 	evoRpc := flag.String("evo_rpc", "", "URL of the RPC evolution chain")
 	port := flag.Uint("port", 5001, "HTTP port to use for the universal node server")
-	startingBlock := flag.Uint64("starting_block", 18288287, "Initial block where the scanning process should start from")
+	startingBlock := flag.Uint64("starting_block", 0, "Initial block where the scanning process should start from")
 	evoStartingBlock := flag.Uint64("evo_starting_block", 0, "Initial block where the scanning process should start from on the evolution chain")
 	waitingTime := flag.Duration("wait", 5*time.Second, "Waiting time between scans when scanning reaches the last block")
 	storagePath := flag.String("storage_path", defaultStoragePath, "Path to the storage folder")
@@ -69,7 +82,8 @@ func Load() *Config {
 func (c *Config) LogFields() {
 	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "evo_rpc", c.EvoRpc, "contracts", c.Contracts, "starting_block", c.StartingBlock,
 		"evo_starting_block", c.EvoStartingBlock, "blocks_margin", c.BlocksMargin, "evo_blocks_margin", c.EvoBlocksMargin, "blocks_range", c.BlocksRange,
-		"evo_blocks_range", c.EvoBlocksRange, "debug", c.Debug, "wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
+		"evo_blocks_range", c.EvoBlocksRange, "evo_global_consensus", c.GlobalConsensus, "evo_parachain", c.Parachain, "debug", c.Debug,
+		"wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
 }
 
 func getDefaultStoragePath() string {
@@ -79,4 +93,19 @@ func getDefaultStoragePath() string {
 		homeDir = "./"
 	}
 	return path.Join(homeDir, ".universalnode")
+}
+
+func (c *Config) SetGlobalConsensusAndParachain(evoChainID *big.Int) error {
+	switch {
+	case evoChainID.Cmp(big.NewInt(caladanChainID)) == 0:
+		c.GlobalConsensus = caladanGlobalConsensus
+		c.Parachain = caladanParachain
+	case evoChainID.Cmp(big.NewInt(klaosChainID)) == 0:
+		c.GlobalConsensus = klaosGlobalConsensus
+		c.Parachain = klaosParachain
+	default:
+		return fmt.Errorf("unknown evolution chain id: %d", evoChainID)
+	}
+
+	return nil
 }
