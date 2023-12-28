@@ -20,7 +20,7 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 		if errBlock != nil {
 			return getErrorResponse(fmt.Errorf("error getting block number from db: %w", errBlock), req.ID)
 		}
-		req, errBlockTag := h.proxyRPCMethodManager.ReplaceBlockTag(&req, method, blockNumber)
+		errBlockTag := h.proxyRPCMethodManager.ReplaceBlockTag(&req, method, blockNumber)
 		if errBlockTag != nil {
 			return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
 		}

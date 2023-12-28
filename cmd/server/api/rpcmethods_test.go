@@ -192,7 +192,7 @@ func TestReplaceBlockTag(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			methodsManager := api.NewProxyRPCMethodManager()
-			got, err := methodsManager.ReplaceBlockTag(tc.req, tc.method, tc.blockNumber)
+			err := methodsManager.ReplaceBlockTag(tc.req, tc.method, tc.blockNumber)
 
 			if tc.expectError {
 				if err == nil {
@@ -205,7 +205,7 @@ func TestReplaceBlockTag(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				compareRawMessageObject(t, got.Params[tc.parameterPosition], tc.expectedParam)
+				compareRawMessageObject(t, tc.req.Params[tc.parameterPosition], tc.expectedParam)
 			}
 		})
 	}
