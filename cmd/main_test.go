@@ -641,7 +641,6 @@ func TestCompareChainIDs(t *testing.T) {
 	}
 }
 
-
 func getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), 100*time.Millisecond)
 }

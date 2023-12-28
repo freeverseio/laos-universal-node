@@ -225,7 +225,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 			client, scanner := getMocks(t)
 			state, tx2 := getMocksFromState(t)
 
-            evoWorker := NewWorker(&tt.c, client, scanner, state)
+			evoWorker := NewWorker(&tt.c, client, scanner, state)
 
 			state.EXPECT().NewTransaction().Return(tx2).Times(tt.txCreatedTimes)
 			tx2.EXPECT().Discard().Times(tt.txCreatedTimes)
@@ -281,7 +281,7 @@ func TestScanEvoChainOnce(t *testing.T) {
 				}
 			}
 
-            err := evoWorker.Run(ctx)
+			err := evoWorker.Run(ctx)
 			if (err != nil && tt.expectedError == nil) || (err == nil && tt.expectedError != nil) || (err != nil && tt.expectedError != nil && err.Error() != tt.expectedError.Error()) {
 				t.Fatalf(`got error "%v", expected error: "%v"`, err, tt.expectedError)
 			}
@@ -363,7 +363,7 @@ func TestScanEvoChainWithEvents(t *testing.T) {
 			client, scanner := getMocks(t)
 			storage2, tx := getMocksFromState(t)
 
-            evoWorker := NewWorker(&tt.c, client, scanner, storage2)
+			evoWorker := NewWorker(&tt.c, client, scanner, storage2)
 
 			client.EXPECT().BlockNumber(ctx).
 				Return(tt.l1LatestBlock, tt.errorGetL1LatestBlock).

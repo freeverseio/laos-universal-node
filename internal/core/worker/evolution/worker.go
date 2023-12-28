@@ -68,7 +68,7 @@ func (w *worker) Run(ctx context.Context) error {
 				slog.Error(err.Error())
 				break
 			}
-            if lastBlock < startingBlock {
+			if lastBlock < startingBlock {
 				slog.Debug("evolution worker, last calculated block is behind starting block, waiting...",
 					"lastBlock", lastBlock, "startingBlock", startingBlock)
 				waitBeforeNextScan(ctx, w.waitingTime)
@@ -91,7 +91,6 @@ func (w *worker) Run(ctx context.Context) error {
 			startingBlock = lastBlock + 1
 		}
 	}
-
 }
 
 func getLastBlock(ctx context.Context, client scan.EthClient, startingBlock, blocksRange, blocksMargin uint64) (uint64, error) {
