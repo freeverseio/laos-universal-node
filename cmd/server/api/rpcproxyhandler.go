@@ -66,7 +66,7 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 	}
 	// check if have to check the response for valid block number
 	method, hasBlockHash := h.proxyRPCMethodManager.HasRPCMethodWithHash(req.Method)
-	if hasBlockHash {
+	if response.Result != nil && hasBlockHash {
 		blockNumber, errBlock := getBlockNumberFromDb(stateService)
 		if errBlock != nil {
 			return getErrorResponse(fmt.Errorf("error getting block number from db: %w", errBlock), req.ID)
@@ -83,14 +83,14 @@ func (h *RPCProxyHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest, st
 func getJsonRPCResponse(r *http.Response) (*RPCResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading request body: %w", err)
+		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body for further handling
-	var req RPCResponse
-	if err := json.Unmarshal(body, &req); err != nil {
-		return nil, fmt.Errorf("error parsing JSON request: %w", err)
+	var resp RPCResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("error parsing JSON response: %w", err)
 	}
-	return &req, nil
+	return &resp, nil
 }
 
 func getBlockNumberFromDb(stateService state.Service) (string, error) {

@@ -15,13 +15,29 @@ import (
 type RPCResponse struct {
 	Jsonrpc string           `json:"jsonrpc"`
 	ID      *json.RawMessage `json:"id"`
-	Result  *json.RawMessage `json:"result,omitempty"`
+	Result  *json.RawMessage `json:"result"`
 	Error   *RPCError        `json:"error,omitempty"`
 }
 
 type RPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+func (r RPCResponse) MarshalJSON() ([]byte, error) {
+	// alias used to avoid infinite recursion when marshalling
+	type alias RPCResponse
+	// omit "Result" if there is an error
+	if r.Error != nil {
+		return json.Marshal(struct {
+			*alias
+			Result *json.RawMessage `json:"result,omitempty"`
+		}{
+			alias:  (*alias)(&r),
+			Result: nil,
+		})
+	}
+	return json.Marshal((*alias)(&r))
 }
 
 func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.Request) {
