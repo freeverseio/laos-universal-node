@@ -52,12 +52,26 @@ func main() {
 }
 
 func run() error {
-	c, err := config.Load()
+	c := config.Load()
+	setLogger(c.Debug)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
+	defer stop()
+
+	evoChainClient, err := ethclient.Dial(c.EvoRpc)
+	if err != nil {
+		return fmt.Errorf("error instantiating eth client: %w", err)
+	}
+	evoChainID, err := evoChainClient.ChainID(ctx)
 	if err != nil {
 		return err
 	}
 
-	setLogger(c.Debug)
+	err = c.SetGlobalConsensusAndParachain(evoChainID)
+	if err != nil {
+		return err
+	}
+
 	c.LogFields()
 
 	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)
@@ -82,9 +96,6 @@ func run() error {
 	// TODO merge repositoryService and stateService into a single service
 	repositoryService := repository.New(storageService)
 	stateService := v1.NewStateService(storageService)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
-	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
 
@@ -128,16 +139,7 @@ func run() error {
 
 	// Evolution chain scanner
 	group.Go(func() error {
-		client, err := ethclient.Dial(c.EvoRpc)
-		if err != nil {
-			return fmt.Errorf("error instantiating eth client: %w", err)
-		}
-
-		chainID, err := client.ChainID(ctx)
-		if err != nil {
-			return err
-		}
-		if chainID.Cmp(big.NewInt(klaosChainID)) == 0 {
+		if evoChainID.Cmp(big.NewInt(klaosChainID)) == 0 {
 			slog.Info("***********************************************************************************************")
 			slog.Info("The KLAOS Parachain on Kusama is a test chain for the LAOS Parachain on Polkadot.")
 			slog.Info("KLAOS is not endorsed by the LAOS Foundation nor Freeverse")
@@ -146,8 +148,8 @@ func run() error {
 		}
 
 		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
-		s := scan.NewScanner(client)
-		return scanEvoChain(ctx, c, client, s, stateService)
+		s := scan.NewScanner(evoChainClient)
+		return scanEvoChain(ctx, c, evoChainClient, s, stateService)
 	})
 
 	// Universal node RPC server

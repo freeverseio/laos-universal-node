@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"path"
 	"strings"
@@ -11,6 +12,8 @@ import (
 )
 
 const (
+	klaosChainID                  = 2718
+	caladanChainID                = 667
 	klaosParachain         uint64 = 3336
 	caladanParachain       uint64 = 2900
 	klaosGlobalConsensus   string = "3"
@@ -35,7 +38,7 @@ type Config struct {
 	Debug            bool
 }
 
-func Load() (*Config, error) {
+func Load() *Config {
 	defaultStoragePath := getDefaultStoragePath()
 
 	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
@@ -73,11 +76,7 @@ func Load() (*Config, error) {
 		c.Contracts = strings.Split(*contracts, ",")
 	}
 
-	if err := setGlobalConsensusAndParachain(c); err != nil {
-		return nil, err
-	}
-
-	return c, nil
+	return c
 }
 
 func (c *Config) LogFields() {
@@ -96,16 +95,16 @@ func getDefaultStoragePath() string {
 	return path.Join(homeDir, ".universalnode")
 }
 
-func setGlobalConsensusAndParachain(c *Config) error {
+func (c *Config) SetGlobalConsensusAndParachain(evoChainID *big.Int) error {
 	switch {
-	case strings.Contains(strings.ToLower(c.EvoRpc), "caladan"):
+	case evoChainID.Cmp(big.NewInt(caladanChainID)) == 0:
 		c.GlobalConsensus = caladanGlobalConsensus
 		c.Parachain = caladanParachain
-	case strings.Contains(strings.ToLower(c.EvoRpc), "klaos"):
+	case evoChainID.Cmp(big.NewInt(klaosChainID)) == 0:
 		c.GlobalConsensus = klaosGlobalConsensus
 		c.Parachain = klaosParachain
 	default:
-		return fmt.Errorf("unknown evolution chain rpc provided: %s", c.EvoRpc)
+		return fmt.Errorf("unknown evolution chain id: %d", evoChainID)
 	}
 
 	return nil
