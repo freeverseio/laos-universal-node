@@ -25,6 +25,11 @@ type RPCError struct {
 }
 
 func (r RPCResponse) MarshalJSON() ([]byte, error) {
+	/*
+	 * This method seems to be unused but it is not:
+	 * it is called internally, when writing on http.ResponseWriter
+	 */
+
 	// alias used to avoid infinite recursion when marshalling
 	type alias RPCResponse
 	// omit "Result" if there is an error
