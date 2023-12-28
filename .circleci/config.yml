@@ -28,7 +28,19 @@ commands:
       - run:
           name: Install helmfile
           command: ./scripts/install-helmfile.sh
-
+  check_code_coverage:
+    description: checks code coverage
+    steps:
+      - run:
+          name: calculate code coverage 
+          command: |
+            COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{ print $3 }' | sed 's/%//g')
+            echo "Total coverage: $COVERAGE%"
+            THRESHOLD=66
+            if [[ ${COVERAGE%.*} -lt ${THRESHOLD%.*} ]]; then
+              echo "Code coverage is less than $THRESHOLD%"
+              exit 1
+            fi
 jobs:
   go_test:
     description: Run go tests
@@ -39,7 +51,8 @@ jobs:
       - run:
           name: Run go tests
           command: |
-            go test -race ./...
+            go test -race -coverprofile=coverage.out ./...
+      - check_code_coverage
   dockerize:
     description: Dockerize and push image
     executor: cimg-base
