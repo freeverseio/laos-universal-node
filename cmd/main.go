@@ -438,7 +438,6 @@ func scanAndDigest(ctx context.Context, c *config.Config, s scan.Scanner, tx sta
 	return nil
 }
 
-
 func getStartingBlock(ctx context.Context, startingBlockDB, configStartingBlock uint64, client scan.EthClient) (uint64, error) {
 	var startingBlock uint64
 	var err error

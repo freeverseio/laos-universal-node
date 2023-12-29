@@ -41,6 +41,17 @@ func TestPostRpcHandler(t *testing.T) {
 			},
 		},
 		{
+			name:           "successful request with result null",
+			requestBody:    `{"jsonrpc":"2.0","method":"eth_getBlockByHash","params":["0x1",false],"id":67}`,
+			mockResponse:   `{"jsonrpc":"2.0","result":null,"id":67}`,
+			expectedStatus: http.StatusOK,
+			expectedBody: api.RPCResponse{
+				Jsonrpc: "2.0",
+				ID:      getJsonRawMessagePointer("67"),
+				Result:  nil,
+			},
+		},
+		{
 			name: "successful eth_call request with params and headers",
 			requestBody: `{
 		    "jsonrpc": "2.0",

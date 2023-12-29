@@ -124,7 +124,7 @@ type RPCMethodManager interface {
 	HasRPCMethodWithBlockNumber(methodName string) (RPCMethod, bool)
 	HasRPCMethodWithHash(methodName string) (RPCMethod, bool)
 	CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error
-	ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error)
+	ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) error
 }
 
 type ProxyRPCMethodManager struct{}
@@ -144,6 +144,9 @@ func (b *ProxyRPCMethodManager) HasRPCMethodWithHash(methodName string) (RPCMeth
 }
 
 func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error {
+	if resp.Result == nil {
+		return nil
+	}
 	var blockNumber string
 	var err error
 
@@ -170,9 +173,9 @@ func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *
 	return nil
 }
 
-func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) (*JSONRPCRequest, error) {
+func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCMethod, blockNumberUnode string) error {
 	if len(req.Params) == 0 {
-		return req, nil
+		return nil
 	}
 	switch method {
 	case RPCMethodEthGetBlockByNumber,
@@ -182,7 +185,7 @@ func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCM
 		// blocknumber is the first param for this method
 		err := replaceBlockTagWithBlockNumber(req, 0, blockNumberUnode)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case RPCMethodEthGetBalance,
 		RPCMethodEthCall,
@@ -191,22 +194,22 @@ func (b *ProxyRPCMethodManager) ReplaceBlockTag(req *JSONRPCRequest, method RPCM
 		// blocknumber is the second param for this method
 		err := replaceBlockTagWithBlockNumber(req, 1, blockNumberUnode)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case RPCMethodEthGetStorageAt:
 		// blocknumber is the third param for this method
 		err := replaceBlockTagWithBlockNumber(req, 2, blockNumberUnode)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case RPCMethodEthGetLogs, RPCMethodEthNewFilter:
 		err := replaceBlockTagFromObject(req, blockNumberUnode)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return req, nil
+	return nil
 }
 
 func unmarshalAndGetBlockNumber(resp *RPCResponse, v interface{}) (string, error) {

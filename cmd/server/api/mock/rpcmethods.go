@@ -83,12 +83,11 @@ func (mr *MockRPCMethodManagerMockRecorder) HasRPCMethodWithHash(methodName any)
 }
 
 // ReplaceBlockTag mocks base method.
-func (m *MockRPCMethodManager) ReplaceBlockTag(req *api.JSONRPCRequest, method api.RPCMethod, blockNumberUnode string) (*api.JSONRPCRequest, error) {
+func (m *MockRPCMethodManager) ReplaceBlockTag(req *api.JSONRPCRequest, method api.RPCMethod, blockNumberUnode string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReplaceBlockTag", req, method, blockNumberUnode)
-	ret0, _ := ret[0].(*api.JSONRPCRequest)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // ReplaceBlockTag indicates an expected call of ReplaceBlockTag.

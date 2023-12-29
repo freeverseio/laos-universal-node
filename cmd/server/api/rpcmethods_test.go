@@ -192,7 +192,7 @@ func TestReplaceBlockTag(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			methodsManager := api.NewProxyRPCMethodManager()
-			got, err := methodsManager.ReplaceBlockTag(tc.req, tc.method, tc.blockNumber)
+			err := methodsManager.ReplaceBlockTag(tc.req, tc.method, tc.blockNumber)
 
 			if tc.expectError {
 				if err == nil {
@@ -205,7 +205,7 @@ func TestReplaceBlockTag(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				compareRawMessageObject(t, got.Params[tc.parameterPosition], tc.expectedParam)
+				compareRawMessageObject(t, tc.req.Params[tc.parameterPosition], tc.expectedParam)
 			}
 		})
 	}
@@ -217,7 +217,7 @@ func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
 		name               string
 		method             api.RPCMethod
 		blockNumber        string
-		response           json.RawMessage
+		response           *json.RawMessage
 		expectedBlockError string
 	}
 
@@ -226,42 +226,49 @@ func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
 			name:               "eth_getBlockByHash with correct block number",
 			method:             api.RPCMethodEthGetBlockByHash,
 			blockNumber:        "0x29b8ef5",
-			response:           mock.MockResponseBlock,
+			response:           &mock.MockResponseBlock,
 			expectedBlockError: "",
 		},
 		{
 			name:               "eth_getBlockByHash with correct block number",
 			method:             api.RPCMethodEthGetBlockByHash,
 			blockNumber:        "0x29b8ef4",
-			response:           mock.MockResponseBlock,
+			response:           &mock.MockResponseBlock,
 			expectedBlockError: "invalid block number: 0x29b8ef5",
+		},
+		{
+			name:               "eth_getBlockByHash with inexistent block number",
+			method:             api.RPCMethodEthGetBlockByHash,
+			blockNumber:        "0x29b8ef4",
+			response:           nil,
+			expectedBlockError: "",
 		},
 		{
 			name:               "eth_getTransactionByHash with correct block number",
 			method:             api.RPCMethodEthGetTransactionByHash,
 			blockNumber:        "0x29b8ef5",
-			response:           mock.MockResponseTransaction,
+			response:           &mock.MockResponseTransaction,
 			expectedBlockError: "",
 		},
 		{
 			name:               "RPCMethodEthGetTransactionReceipt with correct block number",
 			method:             api.RPCMethodEthGetTransactionReceipt,
 			blockNumber:        "0x29b8ef5",
-			response:           mock.MockResponseTransaction,
+			response:           &mock.MockResponseTransaction,
 			expectedBlockError: "",
 		},
 		{
 			name:               "RPCMethodEthGetTransactionByBlockHashAndIndex with correct block number",
 			method:             api.RPCMethodEthGetTransactionByBlockHashAndIndex,
 			blockNumber:        "0x29b8ef5",
-			response:           mock.MockResponseTransaction,
+			response:           &mock.MockResponseTransaction,
 			expectedBlockError: "",
 		},
 		{
 			name:               "eth_getTransactionByHash with wrong block number",
 			method:             api.RPCMethodEthGetTransactionByHash,
 			blockNumber:        "0x29b8ef4",
-			response:           mock.MockResponseTransaction,
+			response:           &mock.MockResponseTransaction,
 			expectedBlockError: "invalid block number: 0x29b8ef5",
 		},
 	}
@@ -270,7 +277,7 @@ func TestCheckBlockNumberFromResponseFromHashCalls(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rpcResponse := api.RPCResponse{
-				Result: &tt.response,
+				Result: tt.response,
 			}
 			methodsManager := api.NewProxyRPCMethodManager()
 			err := methodsManager.CheckBlockNumberFromResponseFromHashCalls(&rpcResponse, tt.method, tt.blockNumber)
