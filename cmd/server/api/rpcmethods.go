@@ -144,6 +144,9 @@ func (b *ProxyRPCMethodManager) HasRPCMethodWithHash(methodName string) (RPCMeth
 }
 
 func (b *ProxyRPCMethodManager) CheckBlockNumberFromResponseFromHashCalls(resp *RPCResponse, method RPCMethod, blockNumberUnode string) error {
+	if resp.Result == nil {
+		return nil
+	}
 	var blockNumber string
 	var err error
 
