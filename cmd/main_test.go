@@ -155,7 +155,7 @@ func TestRunScanWithStoredContracts(t *testing.T) {
 				Return(tt.l1LatestBlock, nil).
 				Times(tt.blockNumberTimes)
 
-			tx2.EXPECT().GetCurrentEvoBlockTimestamp().Return(tt.timeStampLastEvoBlock, nil).Times(1)
+			tx2.EXPECT().GetLastEvoBlock().Return(model.Block{Timestamp: tt.timeStampLastEvoBlock}, nil).Times(1)
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).Return(&types.Header{
 				Time: tt.timeStampLastOwnershipBlock,
 			}, nil).Times(1)
@@ -392,7 +392,7 @@ func TestRunScanOk(t *testing.T) {
 
 			newLatestBlock, err := strconv.ParseUint(tt.newLatestBlock, 10, 64)
 			if err != nil {
-				t.Fatalf(`got error "%v" when no error was expeceted`, err)
+				t.Fatalf(`got error "%v" when no error was expected`, err)
 			}
 
 			tx2.EXPECT().GetOwnershipEndRangeBlockHash().Return(tt.endRangeBlockHash, nil).Times(1)
@@ -412,7 +412,7 @@ func TestRunScanOk(t *testing.T) {
 				Return(nil).
 				Times(1)
 
-			tx2.EXPECT().GetCurrentEvoBlockTimestamp().Return(tt.timeStampLastEvoBlock, nil).Times(1)
+			tx2.EXPECT().GetLastEvoBlock().Return(model.Block{Timestamp: tt.timeStampLastEvoBlock}, nil).Times(1)
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.l1LatestBlock))).Return(&types.Header{
 				Time: tt.timeStampLastOwnershipBlock,
 			}, nil).Times(1)

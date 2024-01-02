@@ -1,17 +1,16 @@
 package evolution
 
 import (
-	"strconv"
+	"bytes"
+	"encoding/gob"
 
 	"github.com/ethereum/go-ethereum/common"
-
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
 const (
-	currentBlock          = "evo_current_block"
-	currentBlockTimestamp = "evo_current_block_timestamp"
-	endRangeBlockHash     = "evo_end_range_block_hash" //nolint:gosec // this is not a hardcoded credential
+	lastBlock = "evo_last_block"
 )
 
 type service struct {
@@ -24,48 +23,37 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) GetCurrentEvoBlock() (uint64, error) {
-	value, err := s.tx.Get([]byte(currentBlock))
+func (s *service) SetLastEvoBlock(block model.Block) error {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	if err := encoder.Encode(block); err != nil {
+		return err
+	}
+
+	return s.tx.Set([]byte(lastBlock), buf.Bytes())
+}
+
+func (s *service) GetLastEvoBlock() (model.Block, error) {
+	defaultBlock := model.Block{
+		Number:    0,
+		Timestamp: 0,
+		Hash:      common.Hash{},
+	}
+
+	value, err := s.tx.Get([]byte(lastBlock))
 	if err != nil {
-		return 0, err
+		return defaultBlock, err
 	}
 	if value == nil {
-		value = []byte("0")
-	}
-	return strconv.ParseUint(string(value), 10, 64)
-}
-
-func (s *service) SetCurrentEvoBlock(number uint64) error {
-	return s.tx.Set([]byte(currentBlock), []byte(strconv.FormatUint(number, 10)))
-}
-
-func (s *service) GetCurrentEvoBlockTimestamp() (uint64, error) {
-	value, err := s.tx.Get([]byte(currentBlockTimestamp))
-	if err != nil {
-		return 0, err
-	}
-	if value == nil {
-		value = []byte("0")
-	}
-	return strconv.ParseUint(string(value), 10, 64)
-}
-
-func (s *service) SetCurrentEvoBlockTimestamp(number uint64) error {
-	return s.tx.Set([]byte(currentBlockTimestamp), []byte(strconv.FormatUint(number, 10)))
-}
-
-func (s *service) SetEvoEndRangeBlockHash(blockHash common.Hash) error {
-	return s.tx.Set([]byte(endRangeBlockHash), blockHash.Bytes())
-}
-
-func (s *service) GetEvoEndRangeBlockHash() (common.Hash, error) {
-	value, err := s.tx.Get([]byte(endRangeBlockHash))
-	if err != nil {
-		return common.Hash{}, err
-	}
-	if value == nil {
-		return common.Hash{}, nil
+		return defaultBlock, nil
 	}
 
-	return common.BytesToHash(value), nil
+	var block model.Block
+
+	decoder := gob.NewDecoder(bytes.NewBuffer(value))
+	if err := decoder.Decode(&block); err != nil {
+		return defaultBlock, err
+	}
+	return block, nil
 }

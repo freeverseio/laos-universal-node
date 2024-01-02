@@ -8,3 +8,4 @@ mocks:
 	mockgen -source=internal/state/enumerated/tree.go -destination=internal/state/enumerated/mock/tree.go -package=mock
 	mockgen -source=internal/state/enumeratedtotal/tree.go -destination=internal/state/enumeratedtotal/mock/tree.go -package=mock
 	mockgen -source=internal/state/ownership/tree.go -destination=internal/state/ownership/mock/tree.go -package=mock
+	mockgen -source=internal/platform/core/processor/evolution/processor.go -destination=internal/platform/core/processor/evolution/mock/processor.go -package=mock

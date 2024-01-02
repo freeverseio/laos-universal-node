@@ -356,14 +356,17 @@ func verifyChainConsistency(ctx context.Context, client scan.EthClient, prevLast
 func isEvoSyncedWithOwnership(stateService state.Service, lastOwnershipBlockTimestamp uint64) (bool, error) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	evoCurrentTimestamp, err := tx.GetCurrentEvoBlockTimestamp()
+	lastEvoBlockData, err := tx.GetLastEvoBlock()
 	if err != nil {
 		return false, err
 	}
 
+	slog.Debug("IsEvoSyncedWithOwnership", "lastEvoBlockNumber", lastEvoBlockData.Number, "lastEvoBlockTimestamp", lastEvoBlockData.Timestamp,
+		"lastEvoBlockHash", lastEvoBlockData.Hash)
+
 	slog.Debug("check if evo chain is synced with ownership chain",
-		"evoCurrentTimestamp", evoCurrentTimestamp, "lastOwnershipBlockTimestamp", lastOwnershipBlockTimestamp)
-	if evoCurrentTimestamp < lastOwnershipBlockTimestamp {
+		"evoCurrentTimestamp", lastEvoBlockData.Timestamp, "lastOwnershipBlockTimestamp", lastOwnershipBlockTimestamp)
+	if lastEvoBlockData.Timestamp < lastOwnershipBlockTimestamp {
 		return false, nil
 	}
 

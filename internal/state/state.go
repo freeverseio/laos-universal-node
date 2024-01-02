@@ -75,10 +75,6 @@ type OwnershipSyncState interface {
 }
 
 type EvolutionSyncState interface {
-	SetCurrentEvoBlock(number uint64) error
-	GetCurrentEvoBlock() (uint64, error)
-	SetCurrentEvoBlockTimestamp(number uint64) error
-	GetCurrentEvoBlockTimestamp() (uint64, error)
-	SetEvoEndRangeBlockHash(blockHash common.Hash) error
-	GetEvoEndRangeBlockHash() (common.Hash, error)
+	SetLastEvoBlock(block model.Block) error
+	GetLastEvoBlock() (model.Block, error)
 }
