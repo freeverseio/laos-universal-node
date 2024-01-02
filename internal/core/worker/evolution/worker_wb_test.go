@@ -23,7 +23,6 @@ func TestExecuteBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 
 		ctx := context.TODO()
-
 		processor := evoProcessMock.NewMockProcessor(gomock.NewController(t))
 		worker := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
 
