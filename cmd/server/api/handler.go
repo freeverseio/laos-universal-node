@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 // Define an interface for HTTP client operations

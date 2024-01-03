@@ -8,8 +8,8 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/cmd/server/mock"
+	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	mockStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 
 	gomock "go.uber.org/mock/gomock"
 )

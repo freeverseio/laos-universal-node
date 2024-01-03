@@ -9,15 +9,15 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
+	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/evolution"
+	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/ownership"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/enumerated"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/enumeratedtotal"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/ownership"
+	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/evolution"
+	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
-	"github.com/freeverseio/laos-universal-node/internal/state"
-	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/evolution"
-	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/state/contract/ownership"
-	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
-	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/state/sync/evolution"
-	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/state/sync/ownership"
 )
 
 type service struct {

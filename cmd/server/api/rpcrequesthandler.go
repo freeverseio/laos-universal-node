@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/rpc/erc721"
-	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 type RPCResponse struct {
