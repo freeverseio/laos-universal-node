@@ -179,8 +179,6 @@ func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryServi
 	return nil
 }
 
-
-
 func setLogger(debug bool) {
 	// Default slog.Level is Info (0)
 	var level slog.Level

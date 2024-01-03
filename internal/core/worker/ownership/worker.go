@@ -605,7 +605,6 @@ func updateState(ctx context.Context, client scan.EthClient, mintedEvents []mode
 }
 
 func updateStateWithTransfer(contract string, tx state.Tx, modelTransferEvent *model.ERC721Transfer) error {
-
 	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
 	if err != nil {
 		return err
