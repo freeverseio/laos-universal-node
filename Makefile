@@ -5,7 +5,7 @@ mocks:
 	mockgen -source=cmd/server/api/handler.go -destination=cmd/server/api/mock/handler.go -package=mock
 	mockgen -source=cmd/server/api/rpcmethods.go -destination=cmd/server/api/mock/rpcmethods.go -package=mock
 	mockgen -source=internal/platform/state/state.go -destination=internal/platform/state/mock/state.go -package=mock
-	mockgen -source=internal/platform/state/enumerated/tree.go -destination=internal/platform/state/enumerated/mock/tree.go -package=mock
-	mockgen -source=internal/platform/state/enumeratedtotal/tree.go -destination=internal/platform/state/enumeratedtotal/mock/tree.go -package=mock
-	mockgen -source=internal/platform/state/ownership/tree.go -destination=internal/platform/state/ownership/mock/tree.go -package=mock
+	mockgen -source=internal/platform/state/tree/enumerated/tree.go -destination=internal/platform/state/tree/enumerated/mock/tree.go -package=mock
+	mockgen -source=internal/platform/state/tree/enumeratedtotal/tree.go -destination=internal/platform/state/tree/enumeratedtotal/mock/tree.go -package=mock
+	mockgen -source=internal/platform/state/tree/ownership/tree.go -destination=internal/platform/state/tree/ownership/mock/tree.go -package=mock
 	mockgen -source=internal/platform/core/processor/evolution/processor.go -destination=internal/platform/core/processor/evolution/mock/processor.go -package=mock

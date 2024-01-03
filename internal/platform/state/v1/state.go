@@ -12,11 +12,11 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/evolution"
 	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/ownership"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/ownership"
 	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/evolution"
 	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 

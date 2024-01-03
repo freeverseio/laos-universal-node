@@ -15,9 +15,9 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	state "github.com/freeverseio/laos-universal-node/internal/platform/state"
-	enumerated "github.com/freeverseio/laos-universal-node/internal/platform/state/enumerated"
-	enumeratedtotal "github.com/freeverseio/laos-universal-node/internal/platform/state/enumeratedtotal"
-	ownership "github.com/freeverseio/laos-universal-node/internal/platform/state/ownership"
+	enumerated "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
+	enumeratedtotal "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
+	ownership "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 	gomock "go.uber.org/mock/gomock"
 )
 
