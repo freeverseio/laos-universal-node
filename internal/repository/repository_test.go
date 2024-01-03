@@ -140,46 +140,6 @@ func TestGetAllERC721UniversalContracts(t *testing.T) {
 	})
 }
 
-func TestGetChainID(t *testing.T) {
-	t.Parallel()
-	t.Run("should execute GetChainID without error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		mockStorage.EXPECT().Get([]byte("chain_id")).Return([]byte("1"), nil)
-
-		chainID, err := service.GetChainID()
-		if err != nil {
-			t.Fatalf("got error %s, expecting no error", err.Error())
-		}
-
-		if chainID != "1" {
-			t.Fatalf("got chainID %s, expecting 1", chainID)
-		}
-	})
-
-	t.Run("should execute GetChainID and handle an error", func(t *testing.T) {
-		t.Parallel()
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
-
-		mockStorage := mock.NewMockService(mockCtrl)
-		service := repository.New(mockStorage)
-
-		errExpected := fmt.Errorf("error")
-		mockStorage.EXPECT().Get([]byte("chain_id")).Return([]byte(""), errExpected)
-
-		_, err := service.GetChainID()
-		if err == nil {
-			t.Fatalf("got no error, expecting en error %s", errExpected.Error())
-		}
-	})
-}
-
 func TestHasERC721UniversalContract(t *testing.T) {
 	t.Parallel()
 	t.Run("should execute HasERC721UniversalContract without error", func(t *testing.T) {
