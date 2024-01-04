@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	evoworker "github.com/freeverseio/laos-universal-node/internal/core/worker/evolution"
 	worker "github.com/freeverseio/laos-universal-node/internal/core/worker/ownership"
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
-	"github.com/freeverseio/laos-universal-node/internal/repository"
 	"github.com/freeverseio/laos-universal-node/internal/scan"
 	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 )
@@ -51,16 +51,25 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
 	err = c.SetGlobalConsensusAndParachain(evoChainID)
 	if err != nil {
 		return err
 	}
 
+	ownershipChainClient, err := ethclient.Dial(c.Rpc)
+	if err != nil {
+		return fmt.Errorf("error instantiating eth client: %w", err)
+	}
+	ownershipChainID, err := ownershipChainClient.ChainID(ctx)
+	if err != nil {
+		return err
+	}
+	dbPath := path.Join(c.Path, fmt.Sprintf("%s-%s", ownershipChainID.String(), evoChainID.String()))
+
 	c.LogFields()
 
 	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)
-	db, err := badger.Open(badger.DefaultOptions(c.Path).WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
+	db, err := badger.Open(badger.DefaultOptions(dbPath).WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
@@ -78,8 +87,6 @@ func run() error {
 	slog.Info("******************************************************************************")
 
 	storageService := badgerStorage.NewService(db)
-	// TODO merge repositoryService and stateService into a single service
-	repositoryService := repository.New(storageService)
 	stateService := v1.NewStateService(storageService)
 
 	group, ctx := errgroup.WithContext(ctx)
@@ -111,16 +118,8 @@ func run() error {
 
 	// Ownership chain scanner
 	group.Go(func() error {
-		client, err := ethclient.Dial(c.Rpc)
-		if err != nil {
-			return fmt.Errorf("error instantiating eth client: %w", err)
-		}
-		if err := compareChainIDs(ctx, client, repositoryService); err != nil {
-			return err
-		}
-		s := scan.NewScanner(client, c.Contracts...)
-
-		uWorker := worker.NewWorker(c, client, s, stateService)
+		s := scan.NewScanner(ownershipChainClient, c.Contracts...)
+		uWorker := worker.NewWorker(c, ownershipChainClient, s, stateService)
 		return uWorker.Run(ctx)
 	})
 
@@ -134,9 +133,7 @@ func run() error {
 			slog.Info("***********************************************************************************************")
 		}
 
-		// TODO check if chain ID match with the one in DB (call "compareChainIDs")
 		s := scan.NewScanner(evoChainClient)
-
 		evoWorker := evoworker.NewWorker(c, evoChainClient, s, stateService)
 		return evoWorker.Run(ctx)
 	})
@@ -157,29 +154,6 @@ func run() error {
 	}
 	return nil
 }
-
-func compareChainIDs(ctx context.Context, client scan.EthClient, repositoryService repository.Service) error {
-	chainId, err := client.ChainID(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting chain ID from Ethereum client: %w", err)
-	}
-
-	chainIdDB, err := repositoryService.GetChainID()
-	if err != nil {
-		return fmt.Errorf("error getting chain ID from database: %w", err)
-	}
-
-	if chainIdDB == "" {
-		if err = repositoryService.SetChainID(chainId.String()); err != nil {
-			return fmt.Errorf("error setting chain ID in database: %w", err)
-		}
-	} else if chainId.String() != chainIdDB {
-		return fmt.Errorf("mismatched chain IDs: database has %s, eth client reports %s", chainIdDB, chainId.String())
-	}
-	return nil
-}
-
-
 
 func setLogger(debug bool) {
 	// Default slog.Level is Info (0)

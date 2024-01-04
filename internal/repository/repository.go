@@ -68,19 +68,6 @@ func (s *Service) get(key string) ([]byte, error) {
 	return value, nil
 }
 
-func (s *Service) GetChainID() (string, error) {
-	// TODO move chain-related methods to state
-	value, err := s.get(chainID)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
-}
-
-func (s *Service) SetChainID(chainIDValue string) error {
-	return s.storageService.Set([]byte(chainID), []byte(chainIDValue))
-}
-
 func (s *Service) HasERC721UniversalContract(contract string) (bool, error) {
 	// TODO remove me and move my tests to state
 	value, err := s.get(contractPrefix + contract)
