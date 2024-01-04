@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
-	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 	"github.com/gorilla/mux"
 	"golang.org/x/exp/slog"
 )

@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	api "github.com/freeverseio/laos-universal-node/cmd/server/api"
-	state "github.com/freeverseio/laos-universal-node/internal/state"
+	state "github.com/freeverseio/laos-universal-node/internal/platform/state"
 	gomock "go.uber.org/mock/gomock"
 )
 

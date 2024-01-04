@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
-	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
+	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 

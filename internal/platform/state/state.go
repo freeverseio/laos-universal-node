@@ -6,9 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/state/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/state/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/state/ownership"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 )
 
 // Service interface is used for initializing and terminating state transaction.

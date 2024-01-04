@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 	"go.uber.org/mock/gomock"
 )
 

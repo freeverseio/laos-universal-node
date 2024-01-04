@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/platform/core/processor/evolution"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	mockScan "github.com/freeverseio/laos-universal-node/internal/scan/mock"
+	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 
-	"github.com/freeverseio/laos-universal-node/internal/scan"
-	mockTx "github.com/freeverseio/laos-universal-node/internal/state/mock"
+	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
+	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 

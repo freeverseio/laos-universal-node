@@ -19,9 +19,9 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	evoworker "github.com/freeverseio/laos-universal-node/internal/core/worker/evolution"
 	worker "github.com/freeverseio/laos-universal-node/internal/core/worker/ownership"
+	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
+	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
-	v1 "github.com/freeverseio/laos-universal-node/internal/state/v1"
 )
 
 var version = "undefined"

@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/scan"
-	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 const historyLength = 256

@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	mockState "github.com/freeverseio/laos-universal-node/internal/state/mock"
+	mockState "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 

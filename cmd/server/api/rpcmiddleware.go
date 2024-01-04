@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/freeverseio/laos-universal-node/internal/state"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 // JSONRPCRequest represents the expected structure of a JSON-RPC request.

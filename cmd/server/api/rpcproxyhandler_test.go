@@ -12,7 +12,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api/mock"
-	stateMock "github.com/freeverseio/laos-universal-node/internal/state/mock"
+	stateMock "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
