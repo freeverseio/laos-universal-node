@@ -12,21 +12,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// Mocking RPCHandler and state.Service
-type MockRPCHandler struct {
-	// Add necessary mock methods here
-}
-
-func (m *MockRPCHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Implement mock behavior here
-}
-
-type MockStateService struct {
-	// Add necessary mock methods here
-}
-
-// Implement mock state service methods here
-
 func TestCORS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
