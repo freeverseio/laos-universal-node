@@ -3,21 +3,21 @@ networks:
     rpc: https://rpc-mumbai.maticvigil.com/
     host: polygon-mumbai.unode.gorengine.com
     debug: true
-    startingBlock: "43828028"
+    startingBlock: '0'
     blocksMargin: 15
     blocksRange: 10
     evoRpc: https://caladan.gorengine.com/own
-    evoStartingBlock: "279151"
+    evoStartingBlock: '0'
     evoBlocksMargin: 1
     evoBlocksRange: 1
   - name: polygon-mainnet
     rpc: https://rpc-mainnet.maticvigil.com/
     host: polygon-mainnet.unode.gorengine.com
     debug: true
-    startingBlock: 0
+    startingBlock: '0'
     blocksMargin: 15
     blocksRange: 10
     evoRpc: https://caladan.gorengine.com/own
-    evoStartingBlock: "279151"
+    evoStartingBlock: '0'
     evoBlocksMargin: 1
     evoBlocksRange: 1
