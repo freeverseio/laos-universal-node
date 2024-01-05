@@ -57,13 +57,17 @@ func TestCORS(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		req, err := http.NewRequest(tc.method, ts.URL+tc.url, nil)
+		req, err := http.NewRequest(tc.method, ts.URL+tc.url, http.NoBody)
 		if err != nil {
 			t.Errorf("could not create request: %v", err)
 		}
 		res, err := client.Do(req)
 		if err != nil {
 			t.Errorf("could not send request: %v", err)
+		}
+
+		if err := res.Body.Close(); err != nil {
+			t.Errorf("could not close response body: %v", err)
 		}
 
 		if res.StatusCode != tc.status {
