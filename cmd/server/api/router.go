@@ -12,8 +12,33 @@ type Router interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
+// CORS middleware to set necessary headers
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")              // Allow any origin
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Allowed methods
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		// If it's a preflight OPTIONS request, send an OK status and return
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Call the next handler, which can be another middleware or the final handler
+		next.ServeHTTP(w, r)
+	})
+}
+
 func Routes(h RPCHandler, r Router, stateService state.Service) Router {
 	router := r.(*mux.Router)
+	// Apply the CORS middleware to your router
+	router.Use(CORS)
+	router.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).Methods("OPTIONS")
 	router.Handle("/", PostRpcRequestMiddleware(h, stateService)).Methods("POST")
+
 	return router
 }
