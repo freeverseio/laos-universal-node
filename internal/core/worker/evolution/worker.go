@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/platform/core/processor/evolution"
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
+	utils "github.com/freeverseio/laos-universal-node/internal/core/worker"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
@@ -20,7 +21,7 @@ type worker struct {
 	processor   evolution.Processor
 }
 
-func NewWorker(c *config.Config, client scan.EthClient, scanner scan.Scanner, stateService state.Service) Worker {
+func New(c *config.Config, client scan.EthClient, scanner scan.Scanner, stateService state.Service) Worker {
 	return &worker{
 		waitingTime: c.WaitingTime,
 		processor: evolution.NewProcessor(
@@ -48,6 +49,7 @@ func (w *worker) Run(ctx context.Context) error {
 		default:
 			lastBlock, err := executeEvoBlockRange(ctx, w, startingBlock)
 			if err != nil {
+				slog.Error("error occurred while processing evolution block range", "err", err.Error())
 				var reorgErr evolution.ReorgError
 				if errors.As(err, &reorgErr) {
 					slog.Error("evolution chain reorganization detected", "block number", reorgErr.Block, "chain hash", reorgErr.ChainHash.String(), "storage hash", reorgErr.StorageHash.String())
@@ -72,7 +74,7 @@ func executeEvoBlockRange(ctx context.Context, w *worker, startingBlock uint64) 
 	if lastBlock < startingBlock {
 		slog.Debug("evolution worker, last calculated block is behind starting block, waiting...",
 			"lastBlock", lastBlock, "startingBlock", startingBlock)
-		waitBeforeNextScan(ctx, w.waitingTime)
+		utils.WaitBeforeNextScan(ctx, w.waitingTime)
 		return startingBlock - 1, nil // return lastBlock from previous range to avoid skipping a block
 	}
 
@@ -86,13 +88,4 @@ func executeEvoBlockRange(ctx context.Context, w *worker, startingBlock uint64) 
 		return 0, err
 	}
 	return lastBlock, nil
-}
-
-func waitBeforeNextScan(ctx context.Context, waitingTime time.Duration) {
-	timer := time.NewTimer(waitingTime)
-	select {
-	case <-ctx.Done():
-		timer.Stop()
-	case <-timer.C:
-	}
 }

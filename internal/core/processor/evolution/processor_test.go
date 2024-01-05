@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/internal/platform/core/processor/evolution"
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 

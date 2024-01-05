@@ -96,13 +96,10 @@ func getJsonRPCResponse(r *http.Response) (*RPCResponse, error) {
 func getBlockNumberFromDb(stateService state.Service) (string, error) {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	blockNumber, err := tx.GetCurrentOwnershipBlock()
+	block, err := tx.GetLastOwnershipBlock()
 	if err != nil {
 		return "", fmt.Errorf("error getting current block number: %w", err)
 	}
-	// Subtract 1 only if blockNumber is greater than 0
-	if blockNumber > 0 {
-		blockNumber--
-	}
-	return fmt.Sprintf("0x%x", blockNumber), nil
+
+	return fmt.Sprintf("0x%x", block.Number), nil
 }

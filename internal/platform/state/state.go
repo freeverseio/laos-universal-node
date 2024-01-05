@@ -68,10 +68,9 @@ type EvolutionContractState interface {
 type OwnershipSyncState interface {
 	SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error
 	GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error)
-	SetCurrentOwnershipBlock(number uint64) error
-	GetCurrentOwnershipBlock() (uint64, error)
-	SetOwnershipEndRangeBlockHash(blockHash common.Hash) error
-	GetOwnershipEndRangeBlockHash() (common.Hash, error)
+
+	SetLastOwnershipBlock(block model.Block) error
+	GetLastOwnershipBlock() (model.Block, error)
 }
 
 type EvolutionSyncState interface {
