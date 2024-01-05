@@ -199,7 +199,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]EventNewERC721Universal, error) {
 	slog.Info("scanning universal events", "from_block", fromBlock, "to_block", toBlock)
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, [][]common.Hash{{common.HexToHash(eventNewERC721UniversalSigHash)}}, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -245,7 +245,17 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 		addresses = append(addresses, common.HexToAddress(c))
 	}
 
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
+	topics := [][]common.Hash{
+		{
+			common.HexToHash(eventTransferSigHash),
+			common.HexToHash(eventApprovalSigHash),
+			common.HexToHash(eventApprovalForAllSigHash),
+			common.HexToHash(eventNewCollectionSigHash),
+			common.HexToHash(eventMintedWithExternalURISigHash),
+			common.HexToHash(eventEvolvedWithExternalURISigHash),
+		},
+	}
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, topics, addresses...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -360,12 +370,13 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	return parsedEvents, nil
 }
 
-func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {
+func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, topics [][]common.Hash, contracts ...common.Address) ([]types.Log, error) {
 	// TODO optionally filter by topics?
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
 		Addresses: contracts,
+		Topics:    topics,
 	})
 }
 
