@@ -10,10 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.uber.org/mock/gomock"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
-	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -25,6 +26,17 @@ const (
 	mintedWithExternalURIEventHash  = "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348"
 	evolvedWithExternalURIEventHash = "0xdde18ad2fe10c12a694de65b920c02b851c382cf63115967ea6f7098902fa1c8"
 )
+
+var topics = [][]common.Hash{
+	{
+		common.HexToHash(transferEventHash),
+		common.HexToHash(approveEventHash),
+		common.HexToHash(approveForAllEventHash),
+		common.HexToHash(newCollectionEventHash),
+		common.HexToHash(mintedWithExternalURIEventHash),
+		common.HexToHash(evolvedWithExternalURIEventHash),
+	},
+}
 
 func TestParseEvents(t *testing.T) {
 	t.Parallel()
@@ -172,6 +184,7 @@ func TestParseEvents(t *testing.T) {
 				FromBlock: tt.fromBlock,
 				ToBlock:   tt.toBlock,
 				Addresses: []common.Address{tt.address},
+				Topics:    topics,
 			}).Return(tt.eventLogs, nil)
 
 			cli.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(tt.eventLogs[0].BlockNumber))).Return(&types.Header{Time: uint64(time.Now().Unix())}, nil).Times(tt.headerByNumberTimes)
@@ -323,6 +336,7 @@ func TestScanOnlyValidEvents(t *testing.T) {
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
 				Addresses: []common.Address{address},
+				Topics:    topics,
 			}).Return(tt.eventLogs, nil)
 
 			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
@@ -360,6 +374,7 @@ func TestScanEvents(t *testing.T) {
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: []common.Address{address},
+			Topics:    topics,
 		}).Return(eventLogs, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
@@ -384,6 +399,7 @@ func TestScanEvents(t *testing.T) {
 			FromBlock: fromBlock,
 			ToBlock:   toBlock,
 			Addresses: nil,
+			Topics:    topics,
 		}).Return(nil, nil)
 
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, []string{})
@@ -430,6 +446,7 @@ func TestScanEvents(t *testing.T) {
 					FromBlock: fromBlock,
 					ToBlock:   toBlock,
 					Addresses: []common.Address{address},
+					Topics:    topics,
 				}).Return(nil, tt.error)
 
 				_, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
@@ -464,6 +481,7 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 			filterLogsExpectedTimes: 1,
 		},
 	}
+
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -475,6 +493,7 @@ func TestScanNewUniversalEventsErr(t *testing.T) {
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
 				Addresses: []common.Address{address},
+				Topics:    [][]common.Hash{{common.HexToHash(newERC721UniversalEventHash)}},
 			}).Return(tt.events, tt.filterLogsError).Times(tt.filterLogsExpectedTimes)
 
 			_, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
@@ -548,6 +567,7 @@ func TestScanNewUniversalEvents(t *testing.T) {
 			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
 				FromBlock: fromBlock,
 				ToBlock:   toBlock,
+				Topics:    [][]common.Hash{{common.HexToHash(newERC721UniversalEventHash)}},
 			}).Return(tt.events, nil).Times(1)
 
 			contracts, err := s.ScanNewUniversalEvents(context.Background(), fromBlock, toBlock)
