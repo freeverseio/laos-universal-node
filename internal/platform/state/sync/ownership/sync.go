@@ -12,6 +12,7 @@ import (
 const (
 	contractEvoCurrentIndexPrefix = "ownership_contract_evo_current_index_"
 	lastBlock                     = "ownership_last_block"
+	ownershipBlockTag             = "ownership_block_"
 )
 
 type service struct {
@@ -25,11 +26,21 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
+	// Saving the block with blocknumber as key
+	err := sync.SetBlock(s.tx, ownershipBlockTag+strconv.FormatUint(block.Number, 10), block)
+	if err != nil {
+		return err
+	}
+	// Saving the block with lastBlock as key
 	return sync.SetBlock(s.tx, lastBlock, block)
 }
 
 func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 	return sync.GetBlock(s.tx, lastBlock)
+}
+
+func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
+	return sync.GetBlock(s.tx, ownershipBlockTag+strconv.FormatUint(blockNumber, 10))
 }
 
 func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {
