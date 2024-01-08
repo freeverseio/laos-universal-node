@@ -10,7 +10,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
 )
 
-func TestLoadMerkleTree(t *testing.T) {
+func TestLoadMerkleTrees(t *testing.T) {
 	t.Parallel()
 	t.Run("fails when contract is 0x0", func(t *testing.T) {
 		t.Parallel()
