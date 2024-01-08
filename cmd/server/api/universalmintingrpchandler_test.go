@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/cmd/server/api"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -186,11 +187,11 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			name: "Should execute blocknumber",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 				setUpTransactionMocks(t, storage, tx)
-				tx.EXPECT().GetCurrentOwnershipBlock().Return(uint64(42971043), nil).Times(1)
+				tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: uint64(42971043)}, nil).Times(1)
 			},
 			request: `{"method":"eth_blockNumber","params":[],"id":11,"jsonrpc":"2.0"}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x28fafa2"), getJsonRawMessagePointer("11"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x28fafa3"), getJsonRawMessagePointer("11"))
 			},
 		},
 	}
