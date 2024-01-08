@@ -9,7 +9,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
-func SetLastBlock(tx storage.Tx, key string, block model.Block) error {
+func SetBlock(tx storage.Tx, key string, block model.Block) error {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 
@@ -20,7 +20,7 @@ func SetLastBlock(tx storage.Tx, key string, block model.Block) error {
 	return tx.Set([]byte(key), buf.Bytes())
 }
 
-func GetLastBlock(tx storage.Tx, key string) (model.Block, error) {
+func GetBlock(tx storage.Tx, key string) (model.Block, error) {
 	defaultBlock := model.Block{
 		Number:    0,
 		Timestamp: 0,

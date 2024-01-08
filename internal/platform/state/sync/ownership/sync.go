@@ -25,11 +25,11 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
-	return sync.SetLastBlock(s.tx, lastBlock, block)
+	return sync.SetBlock(s.tx, lastBlock, block)
 }
 
 func (s *service) GetLastOwnershipBlock() (model.Block, error) {
-	return sync.GetLastBlock(s.tx, lastBlock)
+	return sync.GetBlock(s.tx, lastBlock)
 }
 
 func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {

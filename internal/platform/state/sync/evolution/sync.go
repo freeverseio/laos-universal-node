@@ -21,9 +21,9 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetLastEvoBlock(block model.Block) error {
-	return sync.SetLastBlock(s.tx, lastBlock, block)
+	return sync.SetBlock(s.tx, lastBlock, block)
 }
 
 func (s *service) GetLastEvoBlock() (model.Block, error) {
-	return sync.GetLastBlock(s.tx, lastBlock)
+	return sync.GetBlock(s.tx, lastBlock)
 }
