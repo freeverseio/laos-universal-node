@@ -7,6 +7,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -30,7 +32,7 @@ type Processor interface {
 }
 
 type processor struct {
-	client              scan.EthClient
+	client              blockchain.EthClient
 	stateService        state.Service
 	scanner             scan.Scanner
 	configStartingBlock uint64
@@ -38,7 +40,7 @@ type processor struct {
 	configBlocksMargin  uint64
 }
 
-func NewProcessor(client scan.EthClient,
+func NewProcessor(client blockchain.EthClient,
 	stateService state.Service,
 	scanner scan.Scanner,
 	configStartingBlock,
@@ -153,7 +155,7 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 	return nil
 }
 
-func updateLastBlockData(ctx context.Context, tx state.Tx, client scan.EthClient, lastBlock uint64) error {
+func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.EthClient, lastBlock uint64) error {
 	lastBlockData, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while fetching LaosEvolution end range block", "lastBlock", lastBlock, "err", err.Error())

@@ -11,6 +11,7 @@ import (
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	utils "github.com/freeverseio/laos-universal-node/internal/core/worker"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
@@ -25,7 +26,7 @@ type worker struct {
 }
 
 func New(c *config.Config,
-	client scan.EthClient,
+	client blockchain.EthClient,
 	scanner scan.Scanner,
 	stateService state.Service,
 	discoverer contractDiscoverer.Discoverer,

@@ -11,11 +11,11 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 )
 
@@ -36,24 +36,6 @@ var (
 	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
-
-// EthClient is an interface for interacting with Ethereum.
-// https://github.com/ethereum/go-ethereum/pull/23884
-type EthClient interface {
-	ethereum.ChainReader
-	ethereum.TransactionReader
-	ethereum.ChainSyncReader
-	ethereum.ContractCaller
-	ethereum.LogFilterer
-	ethereum.TransactionSender
-	ethereum.GasPricer
-	ethereum.PendingContractCaller
-	ethereum.GasEstimator
-	bind.ContractBackend
-	ChainID(ctx context.Context) (*big.Int, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-	Close()
-}
 
 // Event is an alias of interface{} and it represents the ERC721 events
 type Event interface{}
@@ -179,12 +161,12 @@ type Scanner interface {
 }
 
 type scanner struct {
-	client    EthClient
+	client    blockchain.EthClient
 	contracts []common.Address
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, contracts ...string) Scanner {
+func NewScanner(client blockchain.EthClient, contracts ...string) Scanner {
 	scan := scanner{
 		client: client,
 	}
