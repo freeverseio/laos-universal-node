@@ -21,15 +21,11 @@ import (
 
 var (
 	eventTransferName                  = "Transfer"
-	eventApprovalName                  = "Approval"
-	eventApprovalForAllName            = "ApprovalForAll"
 	eventNewERC721Universal            = "NewERC721Universal"
 	eventNewCollection                 = "NewCollection"
 	eventMintedWithExternalURI         = "MintedWithExternalURI"
 	eventEvolvedWithExternalURI        = "EvolvedWithExternalURI"
 	eventTransferSigHash               = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
-	eventApprovalSigHash               = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
-	eventApprovalForAllSigHash         = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
 	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
@@ -248,8 +244,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	topics := [][]common.Hash{
 		{
 			common.HexToHash(eventTransferSigHash),
-			common.HexToHash(eventApprovalSigHash),
-			common.HexToHash(eventApprovalForAllSigHash),
 			common.HexToHash(eventNewCollectionSigHash),
 			common.HexToHash(eventMintedWithExternalURISigHash),
 			common.HexToHash(eventEvolvedWithExternalURISigHash),
@@ -296,32 +290,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				} else {
 					parsedEvents = append(parsedEvents, transfer)
 					slog.Info("received event", eventTransferName, transfer)
-				}
-			case eventApprovalSigHash:
-				approval, err := parseApproval(&eventLogs[i], &erc721UniversalAbi)
-				if err != nil {
-					if err != eventTopicsError {
-						return nil, err
-					}
-					slog.Warn("incorrect number of topics found in Approval event",
-						"topics_found", len(eventLogs[i].Topics),
-						"topics_expected", 4)
-				} else {
-					parsedEvents = append(parsedEvents, approval)
-					slog.Info("received event", eventApprovalName, approval)
-				}
-			case eventApprovalForAllSigHash:
-				approvalForAll, err := parseApprovalForAll(&eventLogs[i], &erc721UniversalAbi)
-				if err != nil {
-					if err != eventTopicsError {
-						return nil, err
-					}
-					slog.Warn("incorrect number of topics found in ApprovalForAll event",
-						"topics_found", len(eventLogs[i].Topics),
-						"topics_expected", 3)
-				} else {
-					parsedEvents = append(parsedEvents, approvalForAll)
-					slog.Info("received event", eventApprovalForAllName, approvalForAll)
 				}
 			// Collection event
 			case eventNewCollectionSigHash:
@@ -396,37 +364,6 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	transfer.Contract = eL.Address
 
 	return transfer, nil
-}
-
-func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
-	var approval EventApproval
-	if len(eL.Topics) != 4 {
-		return approval, eventTopicsError
-	}
-	err := unpackIntoInterface(&approval, eventApprovalName, contractAbi, eL)
-	if err != nil {
-		return approval, err
-	}
-	approval.Owner = common.HexToAddress(eL.Topics[1].Hex())
-	approval.Approved = common.HexToAddress(eL.Topics[2].Hex())
-	approval.TokenId = eL.Topics[3].Big()
-
-	return approval, nil
-}
-
-func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForAll, error) {
-	var approvalForAll EventApprovalForAll
-	if len(eL.Topics) != 3 {
-		return approvalForAll, eventTopicsError
-	}
-	err := unpackIntoInterface(&approvalForAll, eventApprovalForAllName, contractAbi, eL)
-	if err != nil {
-		return approvalForAll, err
-	}
-	approvalForAll.Owner = common.HexToAddress(eL.Topics[1].Hex())
-	approvalForAll.Operator = common.HexToAddress(eL.Topics[2].Hex())
-
-	return approvalForAll, nil
 }
 
 func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC721Universal, error) {
