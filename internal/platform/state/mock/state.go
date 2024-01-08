@@ -330,6 +330,20 @@ func (mr *MockTxMockRecorder) IsTreeSetForContract(contract any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTreeSetForContract", reflect.TypeOf((*MockTx)(nil).IsTreeSetForContract), contract)
 }
 
+// LoadMerkleTrees mocks base method.
+func (m *MockTx) LoadMerkleTrees(contractAddress common.Address) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadMerkleTrees", contractAddress)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LoadMerkleTrees indicates an expected call of LoadMerkleTrees.
+func (mr *MockTxMockRecorder) LoadMerkleTrees(contractAddress any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMerkleTrees", reflect.TypeOf((*MockTx)(nil).LoadMerkleTrees), contractAddress)
+}
+
 // Mint mocks base method.
 func (m *MockTx) Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error {
 	m.ctrl.T.Helper()
@@ -654,6 +668,20 @@ func (m *MockState) IsTreeSetForContract(contract common.Address) bool {
 func (mr *MockStateMockRecorder) IsTreeSetForContract(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTreeSetForContract", reflect.TypeOf((*MockState)(nil).IsTreeSetForContract), contract)
+}
+
+// LoadMerkleTrees mocks base method.
+func (m *MockState) LoadMerkleTrees(contractAddress common.Address) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadMerkleTrees", contractAddress)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LoadMerkleTrees indicates an expected call of LoadMerkleTrees.
+func (mr *MockStateMockRecorder) LoadMerkleTrees(contractAddress any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMerkleTrees", reflect.TypeOf((*MockState)(nil).LoadMerkleTrees), contractAddress)
 }
 
 // Mint mocks base method.

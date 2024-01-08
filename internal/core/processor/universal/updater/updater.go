@@ -84,7 +84,7 @@ func (u *updater) UpdateState(
 	lastBlockData model.Block,
 ) error {
 	for _, contract := range contracts {
-		err := loadMerkleTree(tx, common.HexToAddress(contract))
+		err := tx.LoadMerkleTrees(common.HexToAddress(contract))
 		if err != nil {
 			slog.Error("error creating merkle trees", "err", err)
 			return err
@@ -115,17 +115,6 @@ func (u *updater) UpdateState(
 			slog.Error("error occurred while tagging roots", "err", err.Error())
 			return err
 		}
-	}
-	return nil
-}
-
-func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
-	if !tx.IsTreeSetForContract(contractAddress) {
-		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(contractAddress)
-		if err != nil {
-			return err
-		}
-		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
 	}
 	return nil
 }

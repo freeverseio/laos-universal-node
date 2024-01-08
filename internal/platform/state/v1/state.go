@@ -106,6 +106,18 @@ func (t *tx) SetTreesForContract(
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
 }
 
+// LoadMerkleTrees loads the merkle trees in memory for contractAddress
+func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
+	if !t.IsTreeSetForContract(contractAddress) {
+		ownTree, enumTree, enumTotTree, err := t.CreateTreesForContract(contractAddress)
+		if err != nil {
+			return err
+		}
+		t.SetTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
+	}
+	return nil
+}
+
 // OwnerOf returns the owner of the token
 func (t *tx) OwnerOf(contract common.Address, tokenId *big.Int) (common.Address, error) {
 	slog.Debug("OwnerOf", "contract", contract.String(), "tokenId", tokenId.String())

@@ -13,9 +13,6 @@ import (
 	uUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 	"go.uber.org/mock/gomock"
 )
 
@@ -53,11 +50,7 @@ func TestUpdateState(t *testing.T) {
 
 			updater := uUpdater.New(client, scanner)
 
-			tx.EXPECT().IsTreeSetForContract(common.HexToAddress(tt.contract)).Return(false)
-			ot, et, ett := createTestMerkleTrees(common.HexToAddress(tt.contract))
-
-			tx.EXPECT().CreateTreesForContract(common.HexToAddress(tt.contract)).Return(ot, et, ett, nil)
-			tx.EXPECT().SetTreesForContract(common.HexToAddress(tt.contract), ot, et, ett)
+			tx.EXPECT().LoadMerkleTrees(common.HexToAddress(tt.contract)).Return(nil).Times(1)
 			tx.EXPECT().GetCollectionAddress(tt.contract).Return(tt.collection, nil)
 			tx.EXPECT().GetMintedWithExternalURIEvents(tt.collection.String()).Return(tt.mintEvents, nil)
 			tx.EXPECT().GetCurrentEvoEventsIndexForOwnershipContract(tt.contract).Return(uint64(0), nil)
@@ -192,12 +185,4 @@ func createScanEventTransfer(contract string, blockNumber uint64) scan.EventTran
 		BlockNumber: blockNumber,
 		Contract:    common.HexToAddress(contract),
 	}
-}
-
-func createTestMerkleTrees(address common.Address) (ot ownership.Tree, et enumerated.Tree, ett enumeratedtotal.Tree) {
-	ownershipTree, _ := ownership.NewTree(address, nil)
-	enumeratedTree, _ := enumerated.NewTree(address, nil)
-	enumeratedtotalTree, _ := enumeratedtotal.NewTree(address, nil)
-
-	return ownershipTree, enumeratedTree, enumeratedtotalTree
 }
