@@ -321,7 +321,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 }
 
 func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, topics [][]common.Hash, contracts ...common.Address) ([]types.Log, error) {
-	// TODO optionally filter by topics?
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
