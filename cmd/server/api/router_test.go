@@ -13,6 +13,7 @@ import (
 )
 
 func TestCORS(t *testing.T) {
+	t.Parallel()
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -30,40 +31,47 @@ func TestCORS(t *testing.T) {
 	client := ts.Client()
 
 	tests := []struct {
+		name         string
 		method       string
 		url          string
 		status       int
 		allowOrigin  string
 		allowMethods string
 	}{
-		{"POST", "/", http.StatusOK, "*", "POST, OPTIONS"},
-		{"OPTIONS", "/", http.StatusOK, "*", "POST, OPTIONS"},
-		{"GET", "/", http.StatusMethodNotAllowed, "", ""},
+		{"SupportPost", "POST", "/", http.StatusOK, "*", "POST, OPTIONS"},
+		{"SupportOPTIONS", "OPTIONS", "/", http.StatusOK, "*", "POST, OPTIONS"},
+		{"SupportGet", "GET", "/", http.StatusMethodNotAllowed, "", ""},
 	}
 
 	for _, tc := range tests {
-		req, err := http.NewRequest(tc.method, ts.URL+tc.url, http.NoBody)
-		if err != nil {
-			t.Errorf("could not create request: %v", err)
-		}
-		res, err := client.Do(req)
-		if err != nil {
-			t.Errorf("could not send request: %v", err)
-		}
+		tc := tc // Shadow loop variable otherwise it could be overwrittens
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			req, err := http.NewRequest(tc.method, ts.URL+tc.url, http.NoBody)
+			if err != nil {
+				t.Errorf("could not create request: %v", err)
+			}
+			res, err := client.Do(req)
+			if err != nil {
+				t.Errorf("could not send request: %v", err)
+			}
+			if res == nil {
+				t.Fatalf("response is nil, expected not nil")
+			}
+			if err := res.Body.Close(); err != nil {
+				t.Errorf("could not close response body: %v", err)
+			}
 
-		if err := res.Body.Close(); err != nil {
-			t.Errorf("could not close response body: %v", err)
-		}
-
-		if res.StatusCode != tc.status {
-			t.Errorf("unexpected status: got %v, expected %v", res.StatusCode, tc.status)
-		}
-		// Check CORS headers
-		if origin := res.Header.Get("Access-Control-Allow-Origin"); origin != tc.allowOrigin {
-			t.Errorf("unexpected Access-Control-Allow-Origin: got %v, expected %v", origin, tc.allowOrigin)
-		}
-		if methods := res.Header.Get("Access-Control-Allow-Methods"); methods != tc.allowMethods {
-			t.Errorf("unexpected Access-Control-Allow-Methods: got %v, expected %v", methods, tc.allowMethods)
-		}
+			if res.StatusCode != tc.status {
+				t.Errorf("unexpected status: got %v, expected %v", res.StatusCode, tc.status)
+			}
+			// Check CORS headers
+			if origin := res.Header.Get("Access-Control-Allow-Origin"); origin != tc.allowOrigin {
+				t.Errorf("unexpected Access-Control-Allow-Origin: got %v, expected %v", origin, tc.allowOrigin)
+			}
+			if methods := res.Header.Get("Access-Control-Allow-Methods"); methods != tc.allowMethods {
+				t.Errorf("unexpected Access-Control-Allow-Methods: got %v, expected %v", methods, tc.allowMethods)
+			}
+		})
 	}
 }
