@@ -14,39 +14,38 @@ import (
 
 func TestCORS(t *testing.T) {
 	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockRPCHandler := mock.NewMockRPCHandler(mockCtrl)
-	state := stateMock.NewMockService(mockCtrl)
-
-	mockRPCHandler.EXPECT().PostRPCRequestHandler(gomock.Any(), gomock.Any()).Times(1)
-	mockRPCHandler.EXPECT().SetStateService(gomock.Any()).Times(1)
-	router := mux.NewRouter()
-	api.Routes(mockRPCHandler, router, state)
-
-	ts := httptest.NewServer(router)
-	defer ts.Close()
-
-	client := ts.Client()
 
 	tests := []struct {
-		name         string
-		method       string
-		url          string
-		status       int
-		allowOrigin  string
-		allowMethods string
+		name                       string
+		method                     string
+		url                        string
+		status                     int
+		allowOrigin                string
+		allowMethods               string
+		postRPCRequestHandlerCalls int
 	}{
-		{"SupportPost", "POST", "/", http.StatusOK, "*", "POST, OPTIONS"},
-		{"SupportOPTIONS", "OPTIONS", "/", http.StatusOK, "*", "POST, OPTIONS"},
-		{"SupportGet", "GET", "/", http.StatusMethodNotAllowed, "", ""},
+		{"SupportPost", "POST", "/", http.StatusOK, "*", "POST, OPTIONS", 1},
+		{"SupportOPTIONS", "OPTIONS", "/", http.StatusOK, "*", "POST, OPTIONS", 0},
+		{"SupportGet", "GET", "/", http.StatusMethodNotAllowed, "", "", 0},
 	}
 
 	for _, tc := range tests {
 		tc := tc // Shadow loop variable otherwise it could be overwrittens
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			mockRPCHandler := mock.NewMockRPCHandler(mockCtrl)
+			state := stateMock.NewMockService(mockCtrl)
+
+			mockRPCHandler.EXPECT().PostRPCRequestHandler(gomock.Any(), gomock.Any()).Times(tc.postRPCRequestHandlerCalls)
+			mockRPCHandler.EXPECT().SetStateService(gomock.Any()).Times(tc.postRPCRequestHandlerCalls)
+			router := mux.NewRouter()
+			api.Routes(mockRPCHandler, router, state)
+			ts := httptest.NewServer(router)
+
+			client := ts.Client()
 			req, err := http.NewRequest(tc.method, ts.URL+tc.url, http.NoBody)
 			if err != nil {
 				t.Errorf("could not create request: %v", err)
@@ -55,6 +54,7 @@ func TestCORS(t *testing.T) {
 			if err != nil {
 				t.Errorf("could not send request: %v", err)
 			}
+			ts.Close()
 			if res == nil {
 				t.Fatalf("response is nil, expected not nil")
 			}
