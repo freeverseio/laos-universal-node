@@ -124,23 +124,6 @@ func (mr *MockTxMockRecorder) Commit() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockTx)(nil).Commit))
 }
 
-// CreateTreesForContract mocks base method.
-func (m *MockTx) CreateTreesForContract(contract common.Address) (ownership.Tree, enumerated.Tree, enumeratedtotal.Tree, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTreesForContract", contract)
-	ret0, _ := ret[0].(ownership.Tree)
-	ret1, _ := ret[1].(enumerated.Tree)
-	ret2, _ := ret[2].(enumeratedtotal.Tree)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
-}
-
-// CreateTreesForContract indicates an expected call of CreateTreesForContract.
-func (mr *MockTxMockRecorder) CreateTreesForContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTreesForContract", reflect.TypeOf((*MockTx)(nil).CreateTreesForContract), contract)
-}
-
 // DeleteRootTag mocks base method.
 func (m *MockTx) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -314,20 +297,6 @@ func (m *MockTx) HasERC721UniversalContract(contract string) (bool, error) {
 func (mr *MockTxMockRecorder) HasERC721UniversalContract(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasERC721UniversalContract", reflect.TypeOf((*MockTx)(nil).HasERC721UniversalContract), contract)
-}
-
-// IsTreeSetForContract mocks base method.
-func (m *MockTx) IsTreeSetForContract(contract common.Address) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsTreeSetForContract", contract)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsTreeSetForContract indicates an expected call of IsTreeSetForContract.
-func (mr *MockTxMockRecorder) IsTreeSetForContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTreeSetForContract", reflect.TypeOf((*MockTx)(nil).IsTreeSetForContract), contract)
 }
 
 // LoadMerkleTrees mocks base method.
@@ -595,23 +564,6 @@ func (mr *MockStateMockRecorder) Checkout(contract, blockNumber any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockState)(nil).Checkout), contract, blockNumber)
 }
 
-// CreateTreesForContract mocks base method.
-func (m *MockState) CreateTreesForContract(contract common.Address) (ownership.Tree, enumerated.Tree, enumeratedtotal.Tree, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTreesForContract", contract)
-	ret0, _ := ret[0].(ownership.Tree)
-	ret1, _ := ret[1].(enumerated.Tree)
-	ret2, _ := ret[2].(enumeratedtotal.Tree)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
-}
-
-// CreateTreesForContract indicates an expected call of CreateTreesForContract.
-func (mr *MockStateMockRecorder) CreateTreesForContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTreesForContract", reflect.TypeOf((*MockState)(nil).CreateTreesForContract), contract)
-}
-
 // DeleteRootTag mocks base method.
 func (m *MockState) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -654,20 +606,6 @@ func (m *MockState) GetLastTaggedBlock(contract common.Address) (int64, error) {
 func (mr *MockStateMockRecorder) GetLastTaggedBlock(contract any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockState)(nil).GetLastTaggedBlock), contract)
-}
-
-// IsTreeSetForContract mocks base method.
-func (m *MockState) IsTreeSetForContract(contract common.Address) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsTreeSetForContract", contract)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsTreeSetForContract indicates an expected call of IsTreeSetForContract.
-func (mr *MockStateMockRecorder) IsTreeSetForContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTreeSetForContract", reflect.TypeOf((*MockState)(nil).IsTreeSetForContract), contract)
 }
 
 // LoadMerkleTrees mocks base method.

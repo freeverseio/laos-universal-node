@@ -30,7 +30,6 @@ type Tx interface {
 
 // State interface defines functions to interact with state of the blockchain
 type State interface {
-	CreateTreesForContract(contract common.Address) (ownership.Tree, enumerated.Tree, enumeratedtotal.Tree, error)
 	SetTreesForContract(contract common.Address,
 		ownershipTree ownership.Tree,
 		enumeratedTree enumerated.Tree,
@@ -44,7 +43,6 @@ type State interface {
 	TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
-	IsTreeSetForContract(contract common.Address) bool
 	LoadMerkleTrees(contractAddress common.Address) error
 	Get(key string) ([]byte, error)
 	TagRoot(contract common.Address, blockNumber int64) error

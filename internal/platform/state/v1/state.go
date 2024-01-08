@@ -57,16 +57,14 @@ type tx struct {
 	state.EvolutionSyncState
 }
 
-// IsTreeSetForContact returns true if the tree is set
-func (t *tx) IsTreeSetForContract(contract common.Address) bool {
+// isTreeSetForContact returns true if the tree is set
+func (t *tx) isTreeSetForContract(contract common.Address) bool {
 	_, ok := t.ownershipTrees[contract]
 	return ok
 }
 
-// TODO CreateTreesForContract should be GetTreesForContract
-
-// CreateTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
-func (t *tx) CreateTreesForContract(contract common.Address) (
+// createTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
+func (t *tx) createTreesForContract(contract common.Address) (
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
 	enumeratedTotalTree enumeratedtotal.Tree,
@@ -108,8 +106,8 @@ func (t *tx) SetTreesForContract(
 
 // LoadMerkleTrees loads the merkle trees in memory for contractAddress
 func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
-	if !t.IsTreeSetForContract(contractAddress) {
-		ownTree, enumTree, enumTotTree, err := t.CreateTreesForContract(contractAddress)
+	if !t.isTreeSetForContract(contractAddress) {
+		ownTree, enumTree, enumTotTree, err := t.createTreesForContract(contractAddress)
 		if err != nil {
 			return err
 		}
