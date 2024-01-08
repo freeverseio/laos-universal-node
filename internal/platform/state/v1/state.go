@@ -90,8 +90,8 @@ func (t *tx) createTreesForContract(contract common.Address) (
 	return ownershipTree, enumeratedTree, enumeratedTotalTree, nil
 }
 
-// SetTreesForContract sets trees for contract
-func (t *tx) SetTreesForContract(
+// setTreesForContract sets trees for contract in memory
+func (t *tx) setTreesForContract(
 	contract common.Address,
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
@@ -111,7 +111,7 @@ func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
 		if err != nil {
 			return err
 		}
-		t.SetTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
+		t.setTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
 	}
 	return nil
 }

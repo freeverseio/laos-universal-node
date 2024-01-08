@@ -6,9 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 )
 
 // Service interface is used for initializing and terminating state transaction.
@@ -30,11 +27,6 @@ type Tx interface {
 
 // State interface defines functions to interact with state of the blockchain
 type State interface {
-	SetTreesForContract(contract common.Address,
-		ownershipTree ownership.Tree,
-		enumeratedTree enumerated.Tree,
-		enumeratedTotalTree enumeratedtotal.Tree)
-
 	OwnerOf(contract common.Address, tokenId *big.Int) (common.Address, error)
 	BalanceOf(contract, owner common.Address) (*big.Int, error)
 	TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.Int, error)
