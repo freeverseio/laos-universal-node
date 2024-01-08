@@ -61,7 +61,6 @@ func TestCORS(t *testing.T) {
 			if err := res.Body.Close(); err != nil {
 				t.Errorf("could not close response body: %v", err)
 			}
-
 			if res.StatusCode != tc.status {
 				t.Errorf("unexpected status: got %v, expected %v", res.StatusCode, tc.status)
 			}
