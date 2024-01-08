@@ -35,6 +35,7 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	_ = encoder.Encode(block) // omit error since block is constant
 
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_last_block"), buf.Bytes()).Return(nil)
+	mockStorageTransaction.EXPECT().Set([]byte("ownership_block_1"), buf.Bytes())
 
 	err := tx.SetLastOwnershipBlock(block)
 	if err != nil {
