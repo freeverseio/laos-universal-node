@@ -22,12 +22,10 @@ import (
 var (
 	eventTransferName                  = "Transfer"
 	eventNewERC721Universal            = "NewERC721Universal"
-	eventNewCollection                 = "NewCollection"
 	eventMintedWithExternalURI         = "MintedWithExternalURI"
 	eventEvolvedWithExternalURI        = "EvolvedWithExternalURI"
 	eventTransferSigHash               = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
-	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
 	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
@@ -244,7 +242,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	topics := [][]common.Hash{
 		{
 			common.HexToHash(eventTransferSigHash),
-			common.HexToHash(eventNewCollectionSigHash),
 			common.HexToHash(eventMintedWithExternalURISigHash),
 			common.HexToHash(eventEvolvedWithExternalURISigHash),
 		},
@@ -259,11 +256,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	}
 
 	erc721UniversalAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
-	if err != nil {
-		return nil, fmt.Errorf("error instantiating ABI: %w", err)
-	}
-
-	collectionAbi, err := abi.JSON(strings.NewReader(contract.CollectionMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
@@ -291,16 +283,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					parsedEvents = append(parsedEvents, transfer)
 					slog.Info("received event", eventTransferName, transfer)
 				}
-			// Collection event
-			case eventNewCollectionSigHash:
-				ev, err := parseNewCollection(&eventLogs[i], &collectionAbi)
-				if err != nil {
-					return nil, err
-				}
-
-				parsedEvents = append(parsedEvents, ev)
-				slog.Info("received event", eventNewCollection, ev)
-
 			// Evolution events
 			case eventMintedWithExternalURISigHash:
 				ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
@@ -375,17 +357,6 @@ func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC72
 	newERC721Universal.BlockNumber = eL.BlockNumber
 
 	return newERC721Universal, nil
-}
-
-func parseNewCollection(eL *types.Log, contractAbi *abi.ABI) (EventNewCollecion, error) {
-	var newCollection EventNewCollecion
-	err := unpackIntoInterface(&newCollection, eventNewCollection, contractAbi, eL)
-	if err != nil {
-		return newCollection, err
-	}
-	newCollection.Owner = common.HexToAddress(eL.Topics[1].Hex())
-
-	return newCollection, nil
 }
 
 func parseEvolvedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventEvolvedWithExternalURI, error) {

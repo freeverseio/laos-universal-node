@@ -20,7 +20,6 @@ import (
 const (
 	transferEventHash               = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 	newERC721UniversalEventHash     = "0x74b81bc88402765a52dad72d3d893684f472a679558f3641500e0ee14924a10a"
-	newCollectionEventHash          = "0x5b84d9550adb7000df7bee717735ecd3af48ea3f66c6886d52e8227548fb228c"
 	mintedWithExternalURIEventHash  = "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348"
 	evolvedWithExternalURIEventHash = "0xdde18ad2fe10c12a694de65b920c02b851c382cf63115967ea6f7098902fa1c8"
 )
@@ -28,7 +27,6 @@ const (
 var topics = [][]common.Hash{
 	{
 		common.HexToHash(transferEventHash),
-		common.HexToHash(newCollectionEventHash),
 		common.HexToHash(mintedWithExternalURIEventHash),
 		common.HexToHash(evolvedWithExternalURIEventHash),
 	},
@@ -65,22 +63,6 @@ func TestParseEvents(t *testing.T) {
 						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
 						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
 					},
-					BlockNumber: 100,
-				},
-			},
-		},
-		{
-			name:      "it should parse NewCollection event",
-			fromBlock: big.NewInt(0),
-			toBlock:   big.NewInt(100),
-			address:   common.HexToAddress("0x0000000000000000000000000000000000000403"),
-			eventLogs: []types.Log{
-				{
-					Topics: []common.Hash{
-						common.HexToHash(newCollectionEventHash),
-						common.HexToHash(" 0x000000000000000000000000c112bde959080c5b46e73749e3e170f47123e85a"),
-					},
-					Data:        common.Hex2Bytes("000000000000000000000000fffffffffffffffffffffffe00000000000000e5"),
 					BlockNumber: 100,
 				},
 			},
