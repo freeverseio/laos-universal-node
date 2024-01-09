@@ -78,7 +78,7 @@ func (d *discoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startin
 			return err
 		}
 
-		if err = loadMerkleTree(tx, contract.Address); err != nil {
+		if err = tx.LoadMerkleTrees(contract.Address); err != nil {
 			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
 			return err
 		}
@@ -112,17 +112,6 @@ func (d *discoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startin
 		}
 	}
 
-	return nil
-}
-
-func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
-	if !tx.IsTreeSetForContract(contractAddress) {
-		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(contractAddress)
-		if err != nil {
-			return err
-		}
-		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
-	}
 	return nil
 }
 

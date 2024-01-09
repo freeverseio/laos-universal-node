@@ -75,7 +75,7 @@ func ownerOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNumb
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -94,7 +94,7 @@ func balanceOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNu
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -106,7 +106,7 @@ func balanceOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNu
 func totalSupply(params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err := loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err := checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -126,7 +126,7 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ethCallParamsRPCReques
 	}
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -142,7 +142,7 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -159,7 +159,7 @@ func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNum
 
 	tx := stateService.NewTransaction()
 	defer tx.Discard()
-	err = loadMerkleTree(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		slog.Error("error creating merkle trees", "err", err)
 		return getErrorResponse(err, id)
@@ -212,13 +212,12 @@ func getParamAddress(callData erc721.CallData, paramName string) (common.Address
 	return addressParam, nil
 }
 
-func loadMerkleTree(tx state.Tx, contractAddress common.Address, blockNumber string) error {
-	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
+func checkoutBlock(tx state.Tx, contractAddress common.Address, blockNumber string) error {
+	err := tx.LoadMerkleTrees(contractAddress)
 	if err != nil {
 		return err
 	}
 
-	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
 	// if block is not latest we should checkout tree for that tag
 	// it is important that this transaction is not commit which is always the case for this transaction
 	if blockNumber != "latest" {
