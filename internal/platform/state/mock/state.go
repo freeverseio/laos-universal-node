@@ -301,6 +301,21 @@ func (mr *MockTxMockRecorder) GetMintedWithExternalURIEvents(contract any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMintedWithExternalURIEvents", reflect.TypeOf((*MockTx)(nil).GetMintedWithExternalURIEvents), contract)
 }
 
+// GetOwnershipBlock mocks base method.
+func (m *MockTx) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipBlock", blockNumber)
+	ret0, _ := ret[0].(model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipBlock indicates an expected call of GetOwnershipBlock.
+func (mr *MockTxMockRecorder) GetOwnershipBlock(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetOwnershipBlock), blockNumber)
+}
+
 // HasERC721UniversalContract mocks base method.
 func (m *MockTx) HasERC721UniversalContract(contract string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -984,6 +999,21 @@ func (m *MockOwnershipSyncState) GetLastOwnershipBlock() (model.Block, error) {
 func (mr *MockOwnershipSyncStateMockRecorder) GetLastOwnershipBlock() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetLastOwnershipBlock))
+}
+
+// GetOwnershipBlock mocks base method.
+func (m *MockOwnershipSyncState) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipBlock", blockNumber)
+	ret0, _ := ret[0].(model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipBlock indicates an expected call of GetOwnershipBlock.
+func (mr *MockOwnershipSyncStateMockRecorder) GetOwnershipBlock(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetOwnershipBlock), blockNumber)
 }
 
 // SetCurrentEvoEventsIndexForOwnershipContract mocks base method.

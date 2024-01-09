@@ -97,6 +97,20 @@ func (mr *MockProcessorMockRecorder) ProcessUniversalBlockRange(ctx, startingBlo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessUniversalBlockRange", reflect.TypeOf((*MockProcessor)(nil).ProcessUniversalBlockRange), ctx, startingBlock, lastBlock)
 }
 
+// RecoverFromReorg mocks base method.
+func (m *MockProcessor) RecoverFromReorg(ctx context.Context, startingBlock uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecoverFromReorg", ctx, startingBlock)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecoverFromReorg indicates an expected call of RecoverFromReorg.
+func (mr *MockProcessorMockRecorder) RecoverFromReorg(ctx, startingBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecoverFromReorg", reflect.TypeOf((*MockProcessor)(nil).RecoverFromReorg), ctx, startingBlock)
+}
+
 // VerifyChainConsistency mocks base method.
 func (m *MockProcessor) VerifyChainConsistency(ctx context.Context, startingBlock uint64) error {
 	m.ctrl.T.Helper()

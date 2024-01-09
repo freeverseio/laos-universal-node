@@ -29,6 +29,7 @@ type Processor interface {
 	GetInitStartingBlock(ctx context.Context) (uint64, error)
 	GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error)
 	VerifyChainConsistency(ctx context.Context, startingBlock uint64) error
+	RecoverFromReorg(ctx context.Context, startingBlock uint64) error
 	IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipBlock uint64) (bool, error)
 
 	ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error
@@ -110,24 +111,88 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
 		return err
 	}
-
 	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
 	if (lastBlockDB.Hash == common.Hash{}) {
 		return nil
 	}
+	return p.checkBlockForReorg(ctx, lastBlockDB)
 
+}
+
+func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) error {
+	// Start a transaction
+	tx := p.stateService.NewTransaction()
+	defer tx.Discard()
+
+	// Check for reorg recursively
+	saveBlock, err := p.checkForReorgRecursive(ctx, tx, startingBlock)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve all contracts
+	contracts := tx.GetAllERC721UniversalContracts()
+
+	for _, contract := range contracts {
+		// Handle each contract in its own transaction to avoid transaction size limits
+		contractTx := p.stateService.NewTransaction()
+		err = checkout(contractTx, common.HexToAddress(contract), saveBlock.Number)
+		if err != nil {
+			contractTx.Discard()
+			return err
+		}
+		if err := contractTx.Commit(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, currentBlock uint64) (*model.Block, error) {
+	// Base case: If currentBlock goes below the configured range, stop the recursion
+	if currentBlock <= p.configStartingBlock {
+		return nil, fmt.Errorf("unable to recover form reorg, currentBlock %d is below the configured range %d", currentBlock, p.configStartingBlock)
+	}
+
+	// Check for reorg at the current block
+	blockToCheck, err := tx.GetOwnershipBlock(currentBlock)
+	if err != nil {
+		slog.Error("error retrieving block data", "blockNumber", currentBlock, "err", err.Error())
+		return nil, err
+	}
+
+	err = p.checkBlockForReorg(ctx, blockToCheck)
+	switch e := err.(type) {
+	case nil:
+		// no Reorg detected
+		return &blockToCheck, e
+	case ReorgError:
+		// reorg, continue checking the previous blocks
+		previousBlock := currentBlock - p.configBlocksRange
+		return p.checkForReorgRecursive(ctx, tx, previousBlock)
+	default:
+		// Other error occurred
+		return nil, err
+	}
+}
+
+func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck model.Block) error {
+	if (lastBlockToCheck.Hash == common.Hash{}) {
+		return fmt.Errorf("no hash stored in the database for block %d", lastBlockToCheck.Number)
+	}
 	// Verify whether the hash of the last block from the previous iteration remains unchanged;
 	// if it differs, it indicates a reorganization has taken place.
-	previousLastBlock := startingBlock - 1
-	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousLastBlock)
-	previousLastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(previousLastBlock)))
+	previousStoredBlock := lastBlockToCheck.Number
+	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousStoredBlock)
+	previousLastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(previousStoredBlock)))
 	if err != nil {
 		slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 		return err
 	}
 
-	if previousLastBlockData.Hash().Cmp(lastBlockDB.Hash) != 0 {
-		return ReorgError{Block: previousLastBlock, ChainHash: previousLastBlockData.Hash(), StorageHash: lastBlockDB.Hash}
+	// If the hash is the same, it means there was no reorganization
+	if previousLastBlockData.Hash().Cmp(lastBlockToCheck.Hash) != 0 {
+		return ReorgError{Block: previousStoredBlock, ChainHash: previousLastBlockData.Hash(), StorageHash: lastBlockToCheck.Hash}
 	}
 
 	return nil
@@ -221,4 +286,22 @@ func getLastBlockData(ctx context.Context, client scan.EthClient, lastBlock uint
 		Timestamp: block.Header().Time,
 		Hash:      block.Hash(),
 	}, nil
+}
+
+func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) error {
+	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
+	if err != nil {
+		return err
+	}
+
+	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
+
+	err = tx.Checkout(contractAddress, int64(blockNumber))
+	if err != nil {
+		slog.Error("error occurred checking out merkle tree at block number", "block_number", blockNumber,
+			"contract_address", contractAddress, "err", err)
+		return err
+	}
+
+	return nil
 }
