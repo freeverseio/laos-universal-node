@@ -7,9 +7,11 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -35,7 +37,7 @@ type Processor interface {
 }
 
 type processor struct {
-	client              scan.EthClient
+	client              blockchain.EthClient
 	stateService        state.Service
 	scanner             scan.Scanner
 	configStartingBlock uint64
@@ -45,7 +47,7 @@ type processor struct {
 	updater             contractUpdater.Updater
 }
 
-func NewProcessor(client scan.EthClient,
+func NewProcessor(client blockchain.EthClient,
 	stateService state.Service,
 	scanner scan.Scanner,
 	c *config.Config,
@@ -209,7 +211,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	return nil
 }
 
-func getLastBlockData(ctx context.Context, client scan.EthClient, lastBlock uint64) (model.Block, error) {
+func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBlock uint64) (model.Block, error) {
 	block, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred retrieving ownership end range block", "lastBlock", lastBlock, "err", err.Error())

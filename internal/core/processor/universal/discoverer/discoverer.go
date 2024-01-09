@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	uValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -21,14 +23,14 @@ type Discoverer interface {
 }
 
 type discoverer struct {
-	client    scan.EthClient
+	client    blockchain.EthClient
 	contracts []string
 	scanner   scan.Scanner
 	validator uValidator.Validator
 }
 
 func New(
-	client scan.EthClient,
+	client blockchain.EthClient,
 	contracts []string,
 	scanner scan.Scanner,
 	validator uValidator.Validator,
