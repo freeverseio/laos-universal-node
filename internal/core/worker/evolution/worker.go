@@ -9,6 +9,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	utils "github.com/freeverseio/laos-universal-node/internal/core/worker"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
@@ -16,12 +17,13 @@ import (
 type Worker interface {
 	Run(ctx context.Context) error
 }
+
 type worker struct {
 	waitingTime time.Duration
 	processor   evolution.Processor
 }
 
-func New(c *config.Config, client scan.EthClient, scanner scan.Scanner, stateService state.Service) Worker {
+func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, stateService state.Service) Worker {
 	return &worker{
 		waitingTime: c.WaitingTime,
 		processor: evolution.NewProcessor(
