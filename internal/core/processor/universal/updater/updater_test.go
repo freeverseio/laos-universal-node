@@ -7,13 +7,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
+	"go.uber.org/mock/gomock"
 
 	uUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
-	"go.uber.org/mock/gomock"
 )
 
 func TestUpdateState(t *testing.T) {
@@ -133,9 +134,9 @@ func TestGetModelTransferEvents(t *testing.T) {
 	}
 }
 
-func createMocks(t *testing.T) (*mockTx.MockTx, *mockScan.MockEthClient, *mockScan.MockScanner) {
+func createMocks(t *testing.T) (*mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner) {
 	ctrl := gomock.NewController(t)
-	return mockTx.NewMockTx(ctrl), mockScan.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl)
+	return mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl)
 }
 
 func assertError(t *testing.T, expectedError, err error) {

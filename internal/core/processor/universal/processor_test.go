@@ -8,14 +8,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.uber.org/mock/gomock"
+
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	mockDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/mock"
 	mockUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater/mock"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
-	"go.uber.org/mock/gomock"
-
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 )
 
@@ -326,13 +327,13 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 func createMocks(t *testing.T) (
 	*mockTx.MockService,
 	*mockTx.MockTx,
-	*mockScan.MockEthClient,
+	*mockClient.MockEthClient,
 	*mockScan.MockScanner,
 	*mockDiscoverer.MockDiscoverer,
 	*mockUpdater.MockUpdater,
 ) {
 	ctrl := gomock.NewController(t)
-	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockScan.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockDiscoverer.NewMockDiscoverer(ctrl), mockUpdater.NewMockUpdater(ctrl)
+	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockDiscoverer.NewMockDiscoverer(ctrl), mockUpdater.NewMockUpdater(ctrl)
 }
 
 func assertError(t *testing.T, expectedError, err error) {
