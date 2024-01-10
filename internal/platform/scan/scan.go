@@ -11,49 +11,25 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain/contract"
 )
 
 var (
 	eventTransferName                  = "Transfer"
-	eventApprovalName                  = "Approval"
-	eventApprovalForAllName            = "ApprovalForAll"
 	eventNewERC721Universal            = "NewERC721Universal"
-	eventNewCollection                 = "NewCollection"
 	eventMintedWithExternalURI         = "MintedWithExternalURI"
 	eventEvolvedWithExternalURI        = "EvolvedWithExternalURI"
 	eventTransferSigHash               = generateEventSignatureHash(eventTransferName, "address", "address", "uint256")
-	eventApprovalSigHash               = generateEventSignatureHash(eventApprovalName, "address", "address", "uint256")
-	eventApprovalForAllSigHash         = generateEventSignatureHash(eventApprovalForAllName, "address", "address", "bool")
 	eventNewERC721UniversalSigHash     = generateEventSignatureHash(eventNewERC721Universal, "address", "string")
-	eventNewCollectionSigHash          = generateEventSignatureHash(eventNewCollection, "address", "address")
 	eventMintedWithExternalURISigHash  = generateEventSignatureHash(eventMintedWithExternalURI, "address", "uint96", "uint256", "string")
 	eventEvolvedWithExternalURISigHash = generateEventSignatureHash(eventEvolvedWithExternalURI, "uint256", "string")
 	eventTopicsError                   = fmt.Errorf("unexpected topics length")
 )
-
-// EthClient is an interface for interacting with Ethereum.
-// https://github.com/ethereum/go-ethereum/pull/23884
-type EthClient interface {
-	ethereum.ChainReader
-	ethereum.TransactionReader
-	ethereum.ChainSyncReader
-	ethereum.ContractCaller
-	ethereum.LogFilterer
-	ethereum.TransactionSender
-	ethereum.GasPricer
-	ethereum.PendingContractCaller
-	ethereum.GasEstimator
-	bind.ContractBackend
-	ChainID(ctx context.Context) (*big.Int, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-	Close()
-}
 
 // Event is an alias of interface{} and it represents the ERC721 events
 type Event interface{}
@@ -179,12 +155,12 @@ type Scanner interface {
 }
 
 type scanner struct {
-	client    EthClient
+	client    blockchain.EthClient
 	contracts []common.Address
 }
 
 // NewScanner instantiates the default implementation for the Scanner interface
-func NewScanner(client EthClient, contracts ...string) Scanner {
+func NewScanner(client blockchain.EthClient, contracts ...string) Scanner {
 	scan := scanner{
 		client: client,
 	}
@@ -199,7 +175,7 @@ func NewScanner(client EthClient, contracts ...string) Scanner {
 // ScanEvents returns the ERC721 events between fromBlock and toBlock
 func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock *big.Int) ([]EventNewERC721Universal, error) {
 	slog.Info("scanning universal events", "from_block", fromBlock, "to_block", toBlock)
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, s.contracts...)
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, [][]common.Hash{{common.HexToHash(eventNewERC721UniversalSigHash)}}, s.contracts...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -245,7 +221,14 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 		addresses = append(addresses, common.HexToAddress(c))
 	}
 
-	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, addresses...)
+	topics := [][]common.Hash{
+		{
+			common.HexToHash(eventTransferSigHash),
+			common.HexToHash(eventMintedWithExternalURISigHash),
+			common.HexToHash(eventEvolvedWithExternalURISigHash),
+		},
+	}
+	eventLogs, err := s.filterEventLogs(ctx, fromBlock, toBlock, topics, addresses...)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering events: %w", err)
 	}
@@ -255,11 +238,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	}
 
 	erc721UniversalAbi, err := abi.JSON(strings.NewReader(contract.Erc721universalMetaData.ABI))
-	if err != nil {
-		return nil, fmt.Errorf("error instantiating ABI: %w", err)
-	}
-
-	collectionAbi, err := abi.JSON(strings.NewReader(contract.CollectionMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating ABI: %w", err)
 	}
@@ -287,42 +265,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 					parsedEvents = append(parsedEvents, transfer)
 					slog.Info("received event", eventTransferName, transfer)
 				}
-			case eventApprovalSigHash:
-				approval, err := parseApproval(&eventLogs[i], &erc721UniversalAbi)
-				if err != nil {
-					if err != eventTopicsError {
-						return nil, err
-					}
-					slog.Warn("incorrect number of topics found in Approval event",
-						"topics_found", len(eventLogs[i].Topics),
-						"topics_expected", 4)
-				} else {
-					parsedEvents = append(parsedEvents, approval)
-					slog.Info("received event", eventApprovalName, approval)
-				}
-			case eventApprovalForAllSigHash:
-				approvalForAll, err := parseApprovalForAll(&eventLogs[i], &erc721UniversalAbi)
-				if err != nil {
-					if err != eventTopicsError {
-						return nil, err
-					}
-					slog.Warn("incorrect number of topics found in ApprovalForAll event",
-						"topics_found", len(eventLogs[i].Topics),
-						"topics_expected", 3)
-				} else {
-					parsedEvents = append(parsedEvents, approvalForAll)
-					slog.Info("received event", eventApprovalForAllName, approvalForAll)
-				}
-			// Collection event
-			case eventNewCollectionSigHash:
-				ev, err := parseNewCollection(&eventLogs[i], &collectionAbi)
-				if err != nil {
-					return nil, err
-				}
-
-				parsedEvents = append(parsedEvents, ev)
-				slog.Info("received event", eventNewCollection, ev)
-
 			// Evolution events
 			case eventMintedWithExternalURISigHash:
 				ev, err := parseMintedWithExternalURI(&eventLogs[i], &evoAbi)
@@ -360,12 +302,12 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 	return parsedEvents, nil
 }
 
-func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, contracts ...common.Address) ([]types.Log, error) {
-	// TODO optionally filter by topics?
+func (s scanner) filterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, topics [][]common.Hash, contracts ...common.Address) ([]types.Log, error) {
 	return s.client.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: firstBlock,
 		ToBlock:   lastBlock,
 		Addresses: contracts,
+		Topics:    topics,
 	})
 }
 
@@ -387,37 +329,6 @@ func parseTransfer(eL *types.Log, contractAbi *abi.ABI) (EventTransfer, error) {
 	return transfer, nil
 }
 
-func parseApproval(eL *types.Log, contractAbi *abi.ABI) (EventApproval, error) {
-	var approval EventApproval
-	if len(eL.Topics) != 4 {
-		return approval, eventTopicsError
-	}
-	err := unpackIntoInterface(&approval, eventApprovalName, contractAbi, eL)
-	if err != nil {
-		return approval, err
-	}
-	approval.Owner = common.HexToAddress(eL.Topics[1].Hex())
-	approval.Approved = common.HexToAddress(eL.Topics[2].Hex())
-	approval.TokenId = eL.Topics[3].Big()
-
-	return approval, nil
-}
-
-func parseApprovalForAll(eL *types.Log, contractAbi *abi.ABI) (EventApprovalForAll, error) {
-	var approvalForAll EventApprovalForAll
-	if len(eL.Topics) != 3 {
-		return approvalForAll, eventTopicsError
-	}
-	err := unpackIntoInterface(&approvalForAll, eventApprovalForAllName, contractAbi, eL)
-	if err != nil {
-		return approvalForAll, err
-	}
-	approvalForAll.Owner = common.HexToAddress(eL.Topics[1].Hex())
-	approvalForAll.Operator = common.HexToAddress(eL.Topics[2].Hex())
-
-	return approvalForAll, nil
-}
-
 func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC721Universal, error) {
 	var newERC721Universal EventNewERC721Universal
 	err := unpackIntoInterface(&newERC721Universal, eventNewERC721Universal, contractAbi, eL)
@@ -427,17 +338,6 @@ func parseNewERC721Universal(eL *types.Log, contractAbi *abi.ABI) (EventNewERC72
 	newERC721Universal.BlockNumber = eL.BlockNumber
 
 	return newERC721Universal, nil
-}
-
-func parseNewCollection(eL *types.Log, contractAbi *abi.ABI) (EventNewCollecion, error) {
-	var newCollection EventNewCollecion
-	err := unpackIntoInterface(&newCollection, eventNewCollection, contractAbi, eL)
-	if err != nil {
-		return newCollection, err
-	}
-	newCollection.Owner = common.HexToAddress(eL.Topics[1].Hex())
-
-	return newCollection, nil
 }
 
 func parseEvolvedWithExternalURI(eL *types.Log, contractAbi *abi.ABI) (EventEvolvedWithExternalURI, error) {

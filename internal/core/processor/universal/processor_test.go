@@ -173,7 +173,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 		startingBlock          uint64
 		lastBlockDB            model.Block
 		lastBlockDBError       error
-		previousBlockData      *types.Block
+		previousBlockData      *types.Header
 		previousBlockDataError error
 		expectedError          error
 	}{
@@ -198,7 +198,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
 			},
 			lastBlockDBError:  nil,
-			previousBlockData: types.NewBlockWithHeader(&types.Header{ParentHash: common.HexToHash("0x123")}),
+			previousBlockData: &types.Header{ParentHash: common.HexToHash("0x123")},
 			expectedError:     nil,
 		},
 
@@ -221,7 +221,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 				Number: 99,
 				Hash:   common.HexToHash("0x123")},
 			lastBlockDBError:       nil,
-			previousBlockData:      types.NewBlockWithHeader(&types.Header{ParentHash: common.HexToHash("0x123")}),
+			previousBlockData:      &types.Header{ParentHash: common.HexToHash("0x123")},
 			previousBlockDataError: nil,
 			expectedError: universal.ReorgError{
 				Block:       99,
@@ -243,7 +243,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 			tx.EXPECT().Discard()
 
 			if tt.lastBlockDBError == nil && tt.lastBlockDB.Hash != (common.Hash{}) {
-				client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.startingBlock-1))).
+				client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock-1))).
 					Return(tt.previousBlockData, tt.previousBlockDataError)
 			}
 
@@ -264,10 +264,10 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 	startingBlock := uint64(100)
 	stateService.EXPECT().NewTransaction().Return(tx)
 
-	block := types.NewBlockWithHeader(&types.Header{Number: big.NewInt(100)})
+	blockHeader := &types.Header{Number: big.NewInt(100)}
 	blockData := model.Block{Number: 100, Hash: common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c")}
 
-	client.EXPECT().BlockByNumber(ctx, big.NewInt(100)).Return(block, nil)
+	client.EXPECT().HeaderByNumber(ctx, big.NewInt(100)).Return(blockHeader, nil)
 	tx.EXPECT().SetLastOwnershipBlock(blockData).Return(nil)
 	discoverer.EXPECT().ShouldDiscover(tx, startingBlock, blockData.Number).Return(false, nil)
 	discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)

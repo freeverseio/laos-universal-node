@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	uValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -21,14 +23,14 @@ type Discoverer interface {
 }
 
 type discoverer struct {
-	client    scan.EthClient
+	client    blockchain.EthClient
 	contracts []string
 	scanner   scan.Scanner
 	validator uValidator.Validator
 }
 
 func New(
-	client scan.EthClient,
+	client blockchain.EthClient,
 	contracts []string,
 	scanner scan.Scanner,
 	validator uValidator.Validator,
@@ -76,7 +78,7 @@ func (d *discoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startin
 			return err
 		}
 
-		if err = loadMerkleTree(tx, contract.Address); err != nil {
+		if err = tx.LoadMerkleTrees(contract.Address); err != nil {
 			slog.Error("error creating merkle trees for newly discovered universal contract(s)", "err", err)
 			return err
 		}
@@ -110,17 +112,6 @@ func (d *discoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startin
 		}
 	}
 
-	return nil
-}
-
-func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
-	if !tx.IsTreeSetForContract(contractAddress) {
-		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(contractAddress)
-		if err != nil {
-			return err
-		}
-		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
-	}
 	return nil
 }
 

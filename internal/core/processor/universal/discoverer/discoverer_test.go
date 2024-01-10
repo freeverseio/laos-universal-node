@@ -15,9 +15,6 @@ import (
 	mockValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator/mock"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 	"go.uber.org/mock/gomock"
 )
 
@@ -263,11 +260,7 @@ func TestDiscoverContractsErrMintEvents(t *testing.T) {
 		tx.EXPECT().StoreERC721UniversalContracts([]model.ERC721UniversalContract{expectedContract}).
 			Return(nil)
 
-		tx.EXPECT().IsTreeSetForContract(expectedContract.Address).Return(false)
-		ot, et, ett := createTestMerkleTrees(expectedContract.Address)
-
-		tx.EXPECT().CreateTreesForContract(expectedContract.Address).Return(ot, et, ett, nil)
-		tx.EXPECT().SetTreesForContract(expectedContract.Address, ot, et, ett).Times(1)
+		tx.EXPECT().LoadMerkleTrees(expectedContract.Address).Return(nil).Times(1)
 		mintedEvents := getMockMintedEvents(120, 5)
 		tx.EXPECT().GetMintedWithExternalURIEvents(expectedContract.CollectionAddress.String()).
 			Return(mintedEvents, errorOnGetMintedEvents)
@@ -310,11 +303,8 @@ func TestDiscoverContractsSuccess(t *testing.T) {
 		tx.EXPECT().StoreERC721UniversalContracts([]model.ERC721UniversalContract{expectedContract}).
 			Return(nil)
 
-		tx.EXPECT().IsTreeSetForContract(expectedContract.Address).Return(false)
-		ot, et, ett := createTestMerkleTrees(expectedContract.Address)
+		tx.EXPECT().LoadMerkleTrees(expectedContract.Address).Return(nil).Times(1)
 
-		tx.EXPECT().CreateTreesForContract(expectedContract.Address).Return(ot, et, ett, nil)
-		tx.EXPECT().SetTreesForContract(expectedContract.Address, ot, et, ett).Times(1)
 		mintedEvents := getMockMintedEvents(120, 5)
 		tx.EXPECT().GetMintedWithExternalURIEvents(expectedContract.CollectionAddress.String()).
 			Return(mintedEvents, nil)
@@ -345,14 +335,6 @@ func assertError(t *testing.T, expectedError, err error) {
 			t.Fatalf(`got error "%v", expected error: "%v"`, err, expectedError)
 		}
 	}
-}
-
-func createTestMerkleTrees(address common.Address) (ot ownership.Tree, et enumerated.Tree, ett enumeratedtotal.Tree) {
-	ownershipTree, _ := ownership.NewTree(address, nil)
-	enumeratedTree, _ := enumerated.NewTree(address, nil)
-	enumeratedtotalTree, _ := enumeratedtotal.NewTree(address, nil)
-
-	return ownershipTree, enumeratedTree, enumeratedtotalTree
 }
 
 func getMockMintedEvents(blockNumber, timestamp uint64) []model.MintedWithExternalURI {

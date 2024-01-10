@@ -7,9 +7,11 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -36,7 +38,7 @@ type Processor interface {
 }
 
 type processor struct {
-	client              scan.EthClient
+	client              blockchain.EthClient
 	stateService        state.Service
 	scanner             scan.Scanner
 	configStartingBlock uint64
@@ -46,7 +48,7 @@ type processor struct {
 	updater             contractUpdater.Updater
 }
 
-func NewProcessor(client scan.EthClient,
+func NewProcessor(client blockchain.EthClient,
 	stateService state.Service,
 	scanner scan.Scanner,
 	c *config.Config,
@@ -184,7 +186,7 @@ func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck mod
 	// if it differs, it indicates a reorganization has taken place.
 	previousStoredBlock := lastBlockToCheck.Number
 	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousStoredBlock)
-	previousLastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(previousStoredBlock)))
+	previousLastBlockData, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(previousStoredBlock)))
 	if err != nil {
 		slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 		return err
@@ -274,27 +276,25 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	return nil
 }
 
-func getLastBlockData(ctx context.Context, client scan.EthClient, lastBlock uint64) (model.Block, error) {
-	block, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBlock uint64) (model.Block, error) {
+	header, err := client.HeaderByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
-		slog.Error("error occurred retrieving ownership end range block", "lastBlock", lastBlock, "err", err.Error())
+		slog.Error("error occurred retrieving ownership end range block from L1", "lastBlock", lastBlock, "err", err.Error())
 		return model.Block{}, err
 	}
 
 	return model.Block{
 		Number:    lastBlock,
-		Timestamp: block.Header().Time,
-		Hash:      block.Hash(),
+		Timestamp: header.Time,
+		Hash:      header.Hash(),
 	}, nil
 }
 
 func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) error {
-	ownershipTree, enumeratedTree, enumeratedtotalTree, err := tx.CreateTreesForContract(contractAddress)
+	err := tx.LoadMerkleTrees(contractAddress)
 	if err != nil {
 		return err
 	}
-
-	tx.SetTreesForContract(contractAddress, ownershipTree, enumeratedTree, enumeratedtotalTree)
 
 	err = tx.Checkout(contractAddress, int64(blockNumber))
 	if err != nil {

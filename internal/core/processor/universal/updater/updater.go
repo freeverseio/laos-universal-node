@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -33,11 +35,11 @@ type Updater interface {
 }
 
 type updater struct {
-	client  scan.EthClient
+	client  blockchain.EthClient
 	scanner scan.Scanner
 }
 
-func New(client scan.EthClient, scanner scan.Scanner) Updater {
+func New(client blockchain.EthClient, scanner scan.Scanner) Updater {
 	return &updater{
 		client:  client,
 		scanner: scanner,
@@ -84,7 +86,7 @@ func (u *updater) UpdateState(
 	lastBlockData model.Block,
 ) error {
 	for _, contract := range contracts {
-		err := loadMerkleTree(tx, common.HexToAddress(contract))
+		err := tx.LoadMerkleTrees(common.HexToAddress(contract))
 		if err != nil {
 			slog.Error("error creating merkle trees", "err", err)
 			return err
@@ -119,18 +121,7 @@ func (u *updater) UpdateState(
 	return nil
 }
 
-func loadMerkleTree(tx state.Tx, contractAddress common.Address) error {
-	if !tx.IsTreeSetForContract(contractAddress) {
-		ownership, enumerated, enumeratedTotal, err := tx.CreateTreesForContract(contractAddress)
-		if err != nil {
-			return err
-		}
-		tx.SetTreesForContract(contractAddress, ownership, enumerated, enumeratedTotal)
-	}
-	return nil
-}
-
-func mergeAndUpdate(ctx context.Context, client scan.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlockTimestamp uint64) (uint64, error) {
+func mergeAndUpdate(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlockTimestamp uint64) (uint64, error) {
 	ownershipContractEvoEventIndex, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
 	if err != nil {
 		return 0, err
@@ -187,7 +178,7 @@ func updateStateWithTransfer(contract string, tx state.Tx, transferEvent *model.
 	return tx.Transfer(common.HexToAddress(contract), transferEvent)
 }
 
-func updateStateWithMint(ctx context.Context, client scan.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI) error {
+func updateStateWithMint(ctx context.Context, client blockchain.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI) error {
 	slog.Debug("updating state with mint event", "modelTransferEvent", mintedEvent, "contract", contract)
 	block, err := getFirstOwnershipBlockAfterMintEvent(ctx, client, contract, tx, mintedEvent)
 	if err != nil {
@@ -203,7 +194,7 @@ func updateStateWithMint(ctx context.Context, client scan.EthClient, contract st
 }
 
 func getFirstOwnershipBlockAfterMintEvent(ctx context.Context,
-	client scan.EthClient,
+	client blockchain.EthClient,
 	contract string,
 	tx state.Tx,
 	mintedEvent *model.MintedWithExternalURI,

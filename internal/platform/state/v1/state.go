@@ -57,16 +57,14 @@ type tx struct {
 	state.EvolutionSyncState
 }
 
-// IsTreeSetForContact returns true if the tree is set
-func (t *tx) IsTreeSetForContract(contract common.Address) bool {
+// isTreeSetForContact returns true if the tree is set
+func (t *tx) isTreeSetForContract(contract common.Address) bool {
 	_, ok := t.ownershipTrees[contract]
 	return ok
 }
 
-// TODO CreateTreesForContract should be GetTreesForContract
-
-// CreateTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
-func (t *tx) CreateTreesForContract(contract common.Address) (
+// createTreesForContract creates new trees for contract (ownership, enumerated, and enumeratedtotal)
+func (t *tx) createTreesForContract(contract common.Address) (
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
 	enumeratedTotalTree enumeratedtotal.Tree,
@@ -92,8 +90,8 @@ func (t *tx) CreateTreesForContract(contract common.Address) (
 	return ownershipTree, enumeratedTree, enumeratedTotalTree, nil
 }
 
-// SetTreesForContract sets trees for contract
-func (t *tx) SetTreesForContract(
+// setTreesForContract sets trees for contract in memory
+func (t *tx) setTreesForContract(
 	contract common.Address,
 	ownershipTree ownership.Tree,
 	enumeratedTree enumerated.Tree,
@@ -104,6 +102,18 @@ func (t *tx) SetTreesForContract(
 	t.ownershipTrees[contract] = ownershipTree
 	t.enumeratedTrees[contract] = enumeratedTree
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
+}
+
+// LoadMerkleTrees loads the merkle trees in memory for contractAddress
+func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
+	if !t.isTreeSetForContract(contractAddress) {
+		ownTree, enumTree, enumTotTree, err := t.createTreesForContract(contractAddress)
+		if err != nil {
+			return err
+		}
+		t.setTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
+	}
+	return nil
 }
 
 // OwnerOf returns the owner of the token
