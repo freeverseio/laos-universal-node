@@ -30,9 +30,7 @@ func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, st
 			client,
 			stateService,
 			scanner,
-			c.EvoStartingBlock,
-			uint64(c.EvoBlocksMargin),
-			uint64(c.EvoBlocksRange)),
+			c),
 	}
 }
 
