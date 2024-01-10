@@ -57,3 +57,18 @@ func (s *service) GetCurrentEvoEventsIndexForOwnershipContract(contract string) 
 	}
 	return strconv.ParseUint(string(value), 10, 64)
 }
+
+func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
+	var blockNumbers []uint64
+	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag))
+	for i := range keys {
+		blockNumberStr := strings.TrimPrefix(string(keys[i]), ownershipBlockTag)
+		blockNumber, err := strconv.ParseInt(blockNumberStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		blockNumbers = append(blockNumbers, uint64(blockNumber))
+	}
+	return blockNumbers, nil
+}
