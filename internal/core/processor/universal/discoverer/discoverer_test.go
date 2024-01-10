@@ -8,14 +8,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"go.uber.org/mock/gomock"
+
 	cDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
+	mockValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator/mock"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-
-	mockValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator/mock"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
-	"go.uber.org/mock/gomock"
 )
 
 func TestShouldDiscover(t *testing.T) {
@@ -319,9 +320,9 @@ func TestDiscoverContractsSuccess(t *testing.T) {
 	})
 }
 
-func createMocks(t *testing.T) (*mockTx.MockTx, *mockScan.MockEthClient, *mockScan.MockScanner, *mockValidator.MockValidator) {
+func createMocks(t *testing.T) (*mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner, *mockValidator.MockValidator) {
 	ctrl := gomock.NewController(t)
-	return mockTx.NewMockTx(ctrl), mockScan.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockValidator.NewMockValidator(ctrl)
+	return mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockValidator.NewMockValidator(ctrl)
 }
 
 func assertError(t *testing.T, expectedError, err error) {
