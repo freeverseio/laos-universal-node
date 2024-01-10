@@ -12,9 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 
+	"github.com/freeverseio/laos-universal-node/internal/platform/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-	"github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 )
 
 const (

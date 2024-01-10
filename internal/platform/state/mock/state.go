@@ -15,9 +15,6 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	state "github.com/freeverseio/laos-universal-node/internal/platform/state"
-	enumerated "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
-	enumeratedtotal "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
-	ownership "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -399,18 +396,6 @@ func (mr *MockTxMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetLastOwnershipBlock), block)
 }
 
-// SetTreesForContract mocks base method.
-func (m *MockTx) SetTreesForContract(contract common.Address, ownershipTree ownership.Tree, enumeratedTree enumerated.Tree, enumeratedTotalTree enumeratedtotal.Tree) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetTreesForContract", contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
-}
-
-// SetTreesForContract indicates an expected call of SetTreesForContract.
-func (mr *MockTxMockRecorder) SetTreesForContract(contract, ownershipTree, enumeratedTree, enumeratedTotalTree any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTreesForContract", reflect.TypeOf((*MockTx)(nil).SetTreesForContract), contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
-}
-
 // StoreERC721UniversalContracts mocks base method.
 func (m *MockTx) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	m.ctrl.T.Helper()
@@ -664,18 +649,6 @@ func (m *MockState) OwnerOf(contract common.Address, tokenId *big.Int) (common.A
 func (mr *MockStateMockRecorder) OwnerOf(contract, tokenId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerOf", reflect.TypeOf((*MockState)(nil).OwnerOf), contract, tokenId)
-}
-
-// SetTreesForContract mocks base method.
-func (m *MockState) SetTreesForContract(contract common.Address, ownershipTree ownership.Tree, enumeratedTree enumerated.Tree, enumeratedTotalTree enumeratedtotal.Tree) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetTreesForContract", contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
-}
-
-// SetTreesForContract indicates an expected call of SetTreesForContract.
-func (mr *MockStateMockRecorder) SetTreesForContract(contract, ownershipTree, enumeratedTree, enumeratedTotalTree any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTreesForContract", reflect.TypeOf((*MockState)(nil).SetTreesForContract), contract, ownershipTree, enumeratedTree, enumeratedTotalTree)
 }
 
 // TagRoot mocks base method.
