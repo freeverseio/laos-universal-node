@@ -122,7 +122,7 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 	// if it differs, it indicates a reorganization has taken place.
 	previousLastBlock := startingBlock - 1
 	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousLastBlock)
-	previousLastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(previousLastBlock)))
+	previousLastBlockData, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(previousLastBlock)))
 	if err != nil {
 		slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 		return err
@@ -212,15 +212,15 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 }
 
 func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBlock uint64) (model.Block, error) {
-	block, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+	header, err := client.HeaderByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
-		slog.Error("error occurred retrieving ownership end range block", "lastBlock", lastBlock, "err", err.Error())
+		slog.Error("error occurred retrieving ownership end range block from L1", "lastBlock", lastBlock, "err", err.Error())
 		return model.Block{}, err
 	}
 
 	return model.Block{
 		Number:    lastBlock,
-		Timestamp: block.Header().Time,
-		Hash:      block.Hash(),
+		Timestamp: header.Time,
+		Hash:      header.Hash(),
 	}, nil
 }
