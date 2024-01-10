@@ -92,10 +92,9 @@ func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
 		t.Fatalf("got %d, expecting %d", result, 50)
 	}
 }
+
 func TestGetAllStoredBlockNumbers(t *testing.T) {
 	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 
 	testCases := []struct {
 		name             string
@@ -128,14 +127,17 @@ func TestGetAllStoredBlockNumbers(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
 			mockStorageTransaction := mock.NewMockTx(mockCtrl)
+			defer mockCtrl.Finish()
 			mockStorageTransaction.EXPECT().
 				GetKeysWithPrefix([]byte("ownership_block_")).
 				Return(convertToByteSliceArray(tc.mockBlockNumbers))
 
 			service := ownership.NewService(mockStorageTransaction)
-
 			numbers, err := service.GetAllStoredBlockNumbers()
 			if tc.expectError {
 				if err == nil {

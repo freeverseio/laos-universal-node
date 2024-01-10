@@ -177,11 +177,12 @@ func (mr *MockTxMockRecorder) GetAllERC721UniversalContracts() *gomock.Call {
 }
 
 // GetAllStoredBlockNumbers mocks base method.
-func (m *MockTx) GetAllStoredBlockNumbers() []string {
+func (m *MockTx) GetAllStoredBlockNumbers() ([]uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
-	ret0, _ := ret[0].([]string)
-	return ret0
+	ret0, _ := ret[0].([]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
@@ -925,11 +926,12 @@ func (m *MockOwnershipSyncState) EXPECT() *MockOwnershipSyncStateMockRecorder {
 }
 
 // GetAllStoredBlockNumbers mocks base method.
-func (m *MockOwnershipSyncState) GetAllStoredBlockNumbers() []string {
+func (m *MockOwnershipSyncState) GetAllStoredBlockNumbers() ([]uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
-	ret0, _ := ret[0].([]string)
-	return ret0
+	ret0, _ := ret[0].([]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
