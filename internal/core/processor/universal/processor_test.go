@@ -207,7 +207,8 @@ func TestVerifyChainConsistency(t *testing.T) {
 			startingBlock: 100,
 			lastBlockDB: model.Block{
 				Number: 99,
-				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e")},
+				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+			},
 			lastBlockDBError:       nil,
 			previousBlockData:      nil,
 			previousBlockDataError: errors.New("error retrieving previous block from chain"),
@@ -219,7 +220,8 @@ func TestVerifyChainConsistency(t *testing.T) {
 			startingBlock: 100,
 			lastBlockDB: model.Block{
 				Number: 99,
-				Hash:   common.HexToHash("0x123")},
+				Hash:   common.HexToHash("0x123"),
+			},
 			lastBlockDBError:       nil,
 			previousBlockData:      &types.Header{ParentHash: common.HexToHash("0x123")},
 			previousBlockDataError: nil,
@@ -340,22 +342,22 @@ func TestRecoverFromReorg(t *testing.T) {
 		checkoutError   error
 		expectedError   error
 	}{
-		// {
-		// 	name:            "successful reorg recovery",
-		// 	startingBlock:   100,
-		// 	checkReorgError: nil,
-		// 	getAllContracts: []string{"contract1", "contract2"},
-		// 	checkoutError:   nil,
-		// 	expectedError:   nil,
-		// },
 		{
-			name:            "reorg check error",
+			name:            "successful reorg recovery",
 			startingBlock:   100,
-			checkReorgError: errors.New("reorg check error"),
-			getAllContracts: nil,
+			checkReorgError: nil,
+			getAllContracts: []string{"contract1", "contract2"},
 			checkoutError:   nil,
-			expectedError:   errors.New("reorg check error"),
+			expectedError:   nil,
 		},
+		// {
+		// 	name:            "reorg check error",
+		// 	startingBlock:   100,
+		// 	checkReorgError: errors.New("reorg check error"),
+		// 	getAllContracts: nil,
+		// 	checkoutError:   nil,
+		// 	expectedError:   errors.New("reorg check error"),
+		// },
 		// {
 		// 	name:            "checkout error",
 		// 	startingBlock:   100,
@@ -373,11 +375,11 @@ func TestRecoverFromReorg(t *testing.T) {
 
 			ctx := context.TODO()
 			stateService, tx, client, _, _, _ := createMocks(t)
-			block := types.NewBlockWithHeader(&types.Header{
+			block := &types.Header{
 				Number: big.NewInt(int64(tt.startingBlock)),
-			})
+			}
 
-			client.EXPECT().BlockByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(block, nil)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(block, nil)
 
 			stateService.EXPECT().NewTransaction().Return(tx).AnyTimes()
 			tx.EXPECT().Discard().AnyTimes()
@@ -389,8 +391,7 @@ func TestRecoverFromReorg(t *testing.T) {
 
 			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts)
 			for _, contract := range tt.getAllContracts {
-				tx.EXPECT().CreateTreesForContract(common.HexToAddress(contract)).Return(nil, nil, nil, nil)
-				tx.EXPECT().SetTreesForContract(common.HexToAddress(contract), nil, nil, nil)
+				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil)
 				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.startingBlock)).Return(tt.checkoutError)
 			}
 

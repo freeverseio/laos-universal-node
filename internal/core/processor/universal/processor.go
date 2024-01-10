@@ -118,7 +118,6 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 		return nil
 	}
 	return p.checkBlockForReorg(ctx, lastBlockDB)
-
 }
 
 func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) error {
@@ -150,6 +149,7 @@ func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) 
 
 	return nil
 }
+
 func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, currentBlock uint64) (*model.Block, error) {
 	// Base case: If currentBlock goes below the configured range, stop the recursion
 	if currentBlock <= p.configStartingBlock {
