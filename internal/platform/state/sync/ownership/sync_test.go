@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"go.uber.org/mock/gomock"
@@ -90,4 +91,85 @@ func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
 	if result != 50 {
 		t.Fatalf("got %d, expecting %d", result, 50)
 	}
+}
+func TestGetAllStoredBlockNumbers(t *testing.T) {
+	t.Parallel()
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	testCases := []struct {
+		name             string
+		mockBlockNumbers []string
+		expectedNumbers  []uint64
+		expectError      bool
+	}{
+		{
+			name:             "SingleBlockNumber",
+			mockBlockNumbers: []string{"ownership_block_1"},
+			expectedNumbers:  []uint64{1},
+		},
+		{
+			name:             "MultipleBlockNumbers",
+			mockBlockNumbers: []string{"ownership_block_1", "ownership_block_2", "ownership_block_3"},
+			expectedNumbers:  []uint64{1, 2, 3},
+		},
+		{
+			name:             "NoBlockNumbers",
+			mockBlockNumbers: []string{},
+			expectedNumbers:  []uint64{},
+		},
+
+		{
+			name:             "WithErrorInvalidNumber",
+			mockBlockNumbers: []string{"ownership_block_1", "ownership_block_a"},
+			expectedNumbers:  nil,
+			expectError:      true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageTransaction := mock.NewMockTx(mockCtrl)
+			mockStorageTransaction.EXPECT().
+				GetKeysWithPrefix([]byte("ownership_block_")).
+				Return(convertToByteSliceArray(tc.mockBlockNumbers))
+
+			service := ownership.NewService(mockStorageTransaction)
+
+			numbers, err := service.GetAllStoredBlockNumbers()
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("expected an error in test case %s, but got none", tc.name)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("got error %v, expected no error in test case %s", err, tc.name)
+				}
+
+				if !compareSlices(numbers, tc.expectedNumbers) {
+					t.Errorf("got %v, expected %v in test case %s", numbers, tc.expectedNumbers, tc.name)
+				}
+			}
+		})
+	}
+}
+
+func convertToByteSliceArray(strs []string) [][]byte {
+	var result [][]byte
+	for _, s := range strs {
+		result = append(result, []byte(s))
+	}
+	return result
+}
+
+func compareSlices(a, b []uint64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }

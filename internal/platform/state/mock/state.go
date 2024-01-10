@@ -176,6 +176,20 @@ func (mr *MockTxMockRecorder) GetAllERC721UniversalContracts() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).GetAllERC721UniversalContracts))
 }
 
+// GetAllStoredBlockNumbers mocks base method.
+func (m *MockTx) GetAllStoredBlockNumbers() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
+func (mr *MockTxMockRecorder) GetAllStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStoredBlockNumbers", reflect.TypeOf((*MockTx)(nil).GetAllStoredBlockNumbers))
+}
+
 // GetCollectionAddress mocks base method.
 func (m *MockTx) GetCollectionAddress(contract string) (common.Address, error) {
 	m.ctrl.T.Helper()
@@ -908,6 +922,20 @@ func NewMockOwnershipSyncState(ctrl *gomock.Controller) *MockOwnershipSyncState 
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockOwnershipSyncState) EXPECT() *MockOwnershipSyncStateMockRecorder {
 	return m.recorder
+}
+
+// GetAllStoredBlockNumbers mocks base method.
+func (m *MockOwnershipSyncState) GetAllStoredBlockNumbers() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
+func (mr *MockOwnershipSyncStateMockRecorder) GetAllStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetAllStoredBlockNumbers))
 }
 
 // GetCurrentEvoEventsIndexForOwnershipContract mocks base method.
