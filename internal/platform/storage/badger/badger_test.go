@@ -138,13 +138,21 @@ func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 	t.Parallel()
 	service := badgerStorage.NewService(db)
-	service.Set([]byte("prefix_001"), []byte("1"))
-	service.Set([]byte("prefix_002"), []byte("2"))
-	service.Set([]byte("prefix_003"), []byte("3"))
-	service.Set([]byte("prefix_004"), []byte("4"))
-	service.Set([]byte("prefix_005"), []byte("5"))
-	service.Set([]byte("prefix_010"), []byte("10"))
-	service.Set([]byte("prefix_111"), []byte("111"))
+	keysAndValues := [][]byte{
+		[]byte("prefix_001"), []byte("1"),
+		[]byte("prefix_002"), []byte("2"),
+		[]byte("prefix_003"), []byte("3"),
+		[]byte("prefix_004"), []byte("4"),
+		[]byte("prefix_005"), []byte("5"),
+		[]byte("prefix_010"), []byte("10"),
+		[]byte("prefix_111"), []byte("111"),
+	}
+
+	for i := 0; i < len(keysAndValues); i += 2 {
+		if err := service.Set(keysAndValues[i], keysAndValues[i+1]); err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
 
 	got, err := service.GetKeysWithPrefix([]byte("prefix_"))
 	if err != nil {
@@ -165,7 +173,10 @@ func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
 	t.Parallel()
 	service := badgerStorage.NewService(db)
 	for i := 0; i < 10000; i++ {
-		service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
+		err := service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
+		if err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
 	}
 
 	got, err := service.GetKeysWithPrefix([]byte("prefix_"), true)
