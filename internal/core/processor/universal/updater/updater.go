@@ -231,9 +231,6 @@ func tagRootsUntilBlock(tx state.Tx, contractAddress string, blockNumber uint64)
 		if err := tx.TagRoot(common.HexToAddress(contractAddress), block); err != nil {
 			return err
 		}
-		if err := tx.DeleteRootTag(common.HexToAddress(contractAddress), block-historyLength); err != nil {
-			return err
-		}
 	}
 	return nil
 }
