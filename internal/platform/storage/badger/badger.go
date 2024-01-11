@@ -41,21 +41,42 @@ func (b Badger) Get(key []byte) ([]byte, error) {
 	return returnValue, err
 }
 
-func (b Badger) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
+// GetKeysWithPrefix fetches keys with a given prefix.
+// The reverse parameter is optional and defaults to false (non-reverse iterator).
+// Pass true as the second argument to enable reverse iteration.
+func (b Badger) GetKeysWithPrefix(prefix []byte, reverse ...bool) ([][]byte, error) {
 	var keys [][]byte
+
+	// Determine the reverse setting based on the optional parameter
+	isReverse := false
+	if len(reverse) > 0 {
+		isReverse = reverse[0]
+	}
+
 	err := b.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
+		opts.Reverse = isReverse
 		iterator := txn.NewIterator(opts)
 		defer iterator.Close()
-		for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+
+		// Append 0xff to the prefix for the seek key if in reverse mode
+		var seekPrefix []byte
+		if isReverse {
+			seekPrefix = append([]byte(nil), prefix...)
+			seekPrefix = append(seekPrefix, 0xff)
+		} else {
+			seekPrefix = prefix
+		}
+
+		for iterator.Seek(seekPrefix); iterator.ValidForPrefix(prefix); iterator.Next() {
 			item := iterator.Item()
-			var key []byte
-			key = item.KeyCopy(key)
+			key := item.KeyCopy(nil)
 			keys = append(keys, key)
 		}
 		return nil
 	})
+
 	return keys, err
 }
 
@@ -102,7 +123,7 @@ func (t Tx) Delete(key []byte) error {
 }
 
 // GetKeysWithPrefix looks for all the keys with the specified prefix and returns them. It doesn't return values
-func (t Tx) GetKeysWithPrefix(prefix []byte) [][]byte {
+func (t Tx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	var keys [][]byte
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false

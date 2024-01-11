@@ -94,17 +94,22 @@ func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
 }
 
 // GetKeysWithPrefix mocks base method.
-func (m *MockTx) GetKeysWithPrefix(prefix []byte) [][]byte {
+func (m *MockTx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
+	varargs := []any{prefix}
+	for _, a := range reverse {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetKeysWithPrefix", varargs...)
 	ret0, _ := ret[0].([][]byte)
 	return ret0
 }
 
 // GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
-func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any, reverse ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), prefix)
+	varargs := append([]any{prefix}, reverse...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), varargs...)
 }
 
 // Set mocks base method.
@@ -160,18 +165,23 @@ func (mr *MockServiceMockRecorder) Get(key any) *gomock.Call {
 }
 
 // GetKeysWithPrefix mocks base method.
-func (m *MockService) GetKeysWithPrefix(prefix []byte) ([][]byte, error) {
+func (m *MockService) GetKeysWithPrefix(prefix []byte, reverse ...bool) ([][]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetKeysWithPrefix", prefix)
+	varargs := []any{prefix}
+	for _, a := range reverse {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetKeysWithPrefix", varargs...)
 	ret0, _ := ret[0].([][]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetKeysWithPrefix indicates an expected call of GetKeysWithPrefix.
-func (mr *MockServiceMockRecorder) GetKeysWithPrefix(prefix any) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetKeysWithPrefix(prefix any, reverse ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockService)(nil).GetKeysWithPrefix), prefix)
+	varargs := append([]any{prefix}, reverse...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockService)(nil).GetKeysWithPrefix), varargs...)
 }
 
 // NewTransaction mocks base method.
