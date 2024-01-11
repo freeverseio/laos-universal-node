@@ -12,7 +12,7 @@ import (
 
 	cDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	mockValidator "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator/mock"
-	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/mock"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"

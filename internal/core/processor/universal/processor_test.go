@@ -14,7 +14,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	mockDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/mock"
 	mockUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater/mock"
-	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/mock"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"

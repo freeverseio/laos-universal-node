@@ -11,7 +11,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
-	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/mock"
+	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
