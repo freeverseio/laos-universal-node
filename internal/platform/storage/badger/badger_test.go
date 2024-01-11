@@ -145,7 +145,7 @@ func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 		[]byte("prefix_004"), []byte("4"),
 		[]byte("prefix_005"), []byte("5"),
 		[]byte("prefix_010"), []byte("10"),
-		[]byte("prefix_111"), []byte("111"),
+		[]byte("prefix_123654487745555421516551151615165151155165515165"), []byte("111"),
 	}
 
 	for i := 0; i < len(keysAndValues); i += 2 {

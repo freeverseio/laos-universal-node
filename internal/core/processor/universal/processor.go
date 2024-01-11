@@ -178,6 +178,15 @@ func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, cur
 	}
 }
 
+func getNextBlockNumberToCheck(tx state.Tx, currentBlock uint64) (uint64, error) {
+	// blockNumbers, err := tx.GetAllStoredBlockNumbers()
+	// if err != nil {
+	// 	slog.Error("error retrieving all stored block numbers", "err", err.Error())
+	// 	return 0, err
+	// }
+	return 0, nil
+}
+
 func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck model.Block) error {
 	if (lastBlockToCheck.Hash == common.Hash{}) {
 		return fmt.Errorf("no hash stored in the database for block %d", lastBlockToCheck.Number)
@@ -263,6 +272,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 
 	slog.Debug("setting ownership end range block hash for block number",
 		"blockNumber", lastBlockData.Number, "blockHash", lastBlockData.Hash, "timestamp", lastBlockData.Timestamp)
+
 	if err = tx.SetLastOwnershipBlock(lastBlockData); err != nil {
 		slog.Error("error occurred while storing end range block hash", "err", err.Error())
 		return err

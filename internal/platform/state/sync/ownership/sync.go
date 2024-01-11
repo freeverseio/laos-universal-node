@@ -13,6 +13,7 @@ const (
 	contractEvoCurrentIndexPrefix = "ownership_contract_evo_current_index_"
 	lastBlock                     = "ownership_last_block"
 	ownershipBlockTag             = "ownership_block_"
+	blockNumberDigits             = 18
 )
 
 type service struct {
@@ -25,14 +26,15 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) SetOwnershipBlock(formatedBlockNumber string, block model.Block) error {
+func (s *service) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
+	formatedOwnerhipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
 	// Saving the block with blocknumber as key
-	return sync.SetBlock(s.tx, ownershipBlockTag+formatedBlockNumber, block)
+	return sync.SetBlock(s.tx, ownershipBlockTag+formatedOwnerhipBlockNumber, block)
 }
 
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
 	// Saving the block with blocknumber as key
-	err := sync.SetBlock(s.tx, ownershipBlockTag+strconv.FormatUint(block.Number, 10), block)
+	err := s.SetOwnershipBlock(block.Number, block)
 	if err != nil {
 		return err
 	}
@@ -76,4 +78,14 @@ func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
 		blockNumbers = append(blockNumbers, uint64(blockNumber))
 	}
 	return blockNumbers, nil
+}
+
+func formatBlockNumber(blockNumber uint64, blockNumberDigits uint16) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(blockNumberDigits) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }

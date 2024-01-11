@@ -156,6 +156,76 @@ func TestGetAllStoredBlockNumbers(t *testing.T) {
 	}
 }
 
+func TestSetLastOwnershipBlock(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name                      string
+		blockNumber               uint64
+		expectedOwnershipBlockTag string
+	}{
+		{
+			name:                      "Block 1",
+			blockNumber:               1,
+			expectedOwnershipBlockTag: "ownership_block_000000000000000001",
+		},
+		{
+			name:                      "Block 2",
+			blockNumber:               2,
+			expectedOwnershipBlockTag: "ownership_block_000000000000000002",
+		},
+		{
+			name:                      "Block 3",
+			blockNumber:               3,
+			expectedOwnershipBlockTag: "ownership_block_000000000000000003",
+		},
+		{
+			name:                      "Block 1254",
+			blockNumber:               1254,
+			expectedOwnershipBlockTag: "ownership_block_000000000000001254",
+		},
+		{
+			name:                      "Blocknumer with 18 digits",
+			blockNumber:               123654258965487545,
+			expectedOwnershipBlockTag: "ownership_block_123654258965487545",
+		},
+		{
+			name:                      "Blocknumer with more than 18 digits",
+			blockNumber:               8888888754587958787,
+			expectedOwnershipBlockTag: "ownership_block_8888888754587958787",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			mockStorageTransaction := mock.NewMockTx(mockCtrl)
+			defer mockCtrl.Finish()
+
+			block := model.Block{
+				Number:    tc.blockNumber,
+				Timestamp: 1,
+				Hash:      common.HexToHash("0x123"),
+			}
+
+			var buf bytes.Buffer
+			encoder := gob.NewEncoder(&buf)
+			_ = encoder.Encode(block) // omit error since block is constant
+
+			mockStorageTransaction.EXPECT().Set([]byte("ownership_last_block"), buf.Bytes()).Return(nil)
+			mockStorageTransaction.EXPECT().Set([]byte(tc.expectedOwnershipBlockTag), buf.Bytes()).Return(nil)
+
+			service := ownership.NewService(mockStorageTransaction)
+			err := service.SetLastOwnershipBlock(block)
+			if err != nil {
+				t.Errorf("got error %v, expected no error in test case %s", err, tc.name)
+			}
+		})
+	}
+}
+
 func convertToByteSliceArray(strs []string) [][]byte {
 	var result [][]byte
 	for _, s := range strs {
