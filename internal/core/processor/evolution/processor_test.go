@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 
+	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -94,7 +95,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				client.EXPECT().BlockNumber(ctx).Return(tt.lastBlockNumberFromClient, tt.lastBlockNumberFromClientError)
 			}
 
-			p := evolution.NewProcessor(client, stateService, nil, tt.userProvidedBlock, 0, 0)
+			p := evolution.NewProcessor(client, stateService, nil, &config.Config{EvoStartingBlock: tt.userProvidedBlock})
 			result, err := p.GetInitStartingBlock(ctx)
 			assertError(t, tt.expectedError, err)
 			if result != tt.expectedResult {
@@ -154,7 +155,7 @@ func TestGetLastBlock(t *testing.T) {
 
 			client.EXPECT().BlockNumber(ctx).Return(tt.l1LatestBlock, tt.expectedError)
 
-			p := evolution.NewProcessor(client, nil, nil, 0, tt.configBlocksMargin, tt.configBlocksRange)
+			p := evolution.NewProcessor(client, nil, nil, &config.Config{EvoBlocksMargin: uint(tt.configBlocksMargin), EvoBlocksRange: uint(tt.configBlocksRange)})
 			result, err := p.GetLastBlock(ctx, tt.startingBlock)
 			assertError(t, tt.expectedError, err)
 			if result != tt.expectedResult {
@@ -239,7 +240,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 					Return(tt.previousBlockData, tt.previousBlockDataError)
 			}
 
-			p := evolution.NewProcessor(client, stateService, nil, 0, 0, 0)
+			p := evolution.NewProcessor(client, stateService, nil, &config.Config{})
 			err := p.VerifyChainConsistency(ctx, tt.startingBlock)
 			assertError(t, tt.expectedError, err)
 		})
@@ -264,7 +265,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return(make([]scan.Event, 0), errors.New("error scanning events"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error scanning events"), err)
 	})
@@ -289,7 +290,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			GetMintedWithExternalURIEvents(contract.String()).
 			Return(nil, errors.New("error getting events from db"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error getting events from db"), err)
 	})
@@ -318,7 +319,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
 			Return(errors.New("error storing events to db"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error storing events to db"), err)
 	})
@@ -351,7 +352,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			BlockByNumber(ctx, big.NewInt(int64(lastBlockData.Number))).
 			Return(nil, errors.New("error getting last block info"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error getting last block info"), err)
 	})
@@ -393,7 +394,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(errors.New("error storing last block info"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error storing last block info"), err)
 	})
@@ -436,7 +437,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(nil)
 		tx.EXPECT().Commit().Return(nil)
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, &config.Config{})
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, nil, err)
 	})

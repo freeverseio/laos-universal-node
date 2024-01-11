@@ -2,13 +2,13 @@ package universal
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	shared "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
@@ -37,14 +37,12 @@ type Processor interface {
 }
 
 type processor struct {
-	client              blockchain.EthClient
-	stateService        state.Service
-	scanner             scan.Scanner
-	configStartingBlock uint64
-	configBlocksMargin  uint64
-	configBlocksRange   uint64
-	discoverer          contractDiscoverer.Discoverer
-	updater             contractUpdater.Updater
+	client       blockchain.EthClient
+	stateService state.Service
+	scanner      scan.Scanner
+	*shared.BlockHelper
+	discoverer contractDiscoverer.Discoverer
+	updater    contractUpdater.Updater
 }
 
 func NewProcessor(client blockchain.EthClient,
@@ -55,52 +53,23 @@ func NewProcessor(client blockchain.EthClient,
 	updater contractUpdater.Updater,
 ) *processor {
 	return &processor{
-		client:              client,
-		stateService:        stateService,
-		scanner:             scanner,
-		configStartingBlock: c.StartingBlock,
-		configBlocksMargin:  uint64(c.BlocksMargin),
-		configBlocksRange:   uint64(c.BlocksRange),
-		discoverer:          discoverer,
-		updater:             updater,
+		client:       client,
+		stateService: stateService,
+		scanner:      scanner,
+		BlockHelper: shared.NewBlockHelper(
+			client,
+			stateService,
+			uint64(c.BlocksRange),
+			uint64(c.BlocksMargin),
+			c.StartingBlock,
+		),
+		discoverer: discoverer,
+		updater:    updater,
 	}
 }
 
 func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
-	tx := p.stateService.NewTransaction()
-	defer tx.Discard()
-	startingBlockData, err := tx.GetLastOwnershipBlock()
-	if err != nil {
-		return 0, fmt.Errorf("error retrieving the current block from storage: %w", err)
-	}
-
-	if startingBlockData.Number != 0 {
-		slog.Debug("ignoring user provided starting block, using last updated block from storage", "startingBlock", startingBlockData.Number)
-		return startingBlockData.Number + 1, nil
-	}
-
-	if p.configStartingBlock != 0 {
-		slog.Debug("using user provided starting block", "startingBlock", p.configStartingBlock)
-		return p.configStartingBlock, nil
-	}
-
-	startingBlock, err := p.client.BlockNumber(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("error retrieving the latest block from chain: %w", err)
-	}
-
-	slog.Debug("using latestBlock from blockchain as startingBlock", "startingBlock", startingBlock)
-	return startingBlock, nil
-}
-
-func (p *processor) GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error) {
-	l1LatestBlock, err := p.client.BlockNumber(ctx)
-	if err != nil {
-		slog.Error("error retrieving the latest block", "err", err.Error())
-		return 0, err
-	}
-
-	return min(startingBlock+p.configBlocksRange, l1LatestBlock-p.configBlocksMargin), nil
+	return p.GetOwnershipInitStartingBlock(ctx)
 }
 
 func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock uint64) error {
