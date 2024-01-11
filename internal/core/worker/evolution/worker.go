@@ -8,7 +8,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
-	utils "github.com/freeverseio/laos-universal-node/internal/core/worker"
+	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -30,9 +30,7 @@ func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, st
 			client,
 			stateService,
 			scanner,
-			c.EvoStartingBlock,
-			uint64(c.EvoBlocksMargin),
-			uint64(c.EvoBlocksRange)),
+			c),
 	}
 }
 
@@ -76,7 +74,7 @@ func executeEvoBlockRange(ctx context.Context, w *worker, startingBlock uint64) 
 	if lastBlock < startingBlock {
 		slog.Debug("evolution worker, last calculated block is behind starting block, waiting...",
 			"lastBlock", lastBlock, "startingBlock", startingBlock)
-		utils.WaitBeforeNextScan(ctx, w.waitingTime)
+		shared.WaitBeforeNextScan(ctx, w.waitingTime)
 		return startingBlock - 1, nil // return lastBlock from previous range to avoid skipping a block
 	}
 
