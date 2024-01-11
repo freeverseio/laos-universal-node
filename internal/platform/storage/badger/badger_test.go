@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/dgraph-io/badger/v4"
@@ -131,6 +132,52 @@ func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 	}
 	if len(got) > 0 {
 		t.Fatalf("got %d keys when 0 keys were expected", len(got))
+	}
+}
+
+func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
+	t.Parallel()
+	service := badgerStorage.NewService(db)
+	service.Set([]byte("prefix_001"), []byte("1"))
+	service.Set([]byte("prefix_002"), []byte("2"))
+	service.Set([]byte("prefix_003"), []byte("3"))
+	service.Set([]byte("prefix_004"), []byte("4"))
+	service.Set([]byte("prefix_005"), []byte("5"))
+	service.Set([]byte("prefix_010"), []byte("10"))
+	service.Set([]byte("prefix_111"), []byte("111"))
+
+	got, err := service.GetKeysWithPrefix([]byte("prefix_"))
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+	if len(got) != 7 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+	if string(got[0]) != "prefix_001" {
+		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_001")
+	}
+	if string(got[1]) != "prefix_002" {
+		t.Fatalf("got %v, expected %v", string(got[1]), "prefix_002")
+	}
+}
+
+func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
+	t.Parallel()
+	service := badgerStorage.NewService(db)
+	for i := 0; i < 10000; i++ {
+		service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
+	}
+
+	got, err := service.GetKeysWithPrefix([]byte("prefix_"), true)
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
+
+	if len(got) != 10000 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+	if string(got[0]) != "prefix_9999" {
+		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_9999")
 	}
 }
 
