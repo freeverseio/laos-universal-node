@@ -3,6 +3,7 @@ package ownership_test
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -36,7 +37,7 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	_ = encoder.Encode(block) // omit error since block is constant
 
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_last_block"), buf.Bytes()).Return(nil)
-	mockStorageTransaction.EXPECT().Set([]byte("ownership_block_1"), buf.Bytes())
+	mockStorageTransaction.EXPECT().Set([]byte("ownership_block_000000000000000001"), buf.Bytes())
 
 	err := tx.SetLastOwnershipBlock(block)
 	if err != nil {
@@ -222,6 +223,76 @@ func TestSetLastOwnershipBlock(t *testing.T) {
 			if err != nil {
 				t.Errorf("got error %v, expected no error in test case %s", err, tc.name)
 			}
+		})
+	}
+}
+
+func TestSetAndGetOwnershipBlock(t *testing.T) {
+	t.Parallel()
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	testCases := []struct {
+		name  string
+		block model.Block
+	}{
+		{
+			name: "Successful Set and Get",
+			block: model.Block{
+				Number:    1,
+				Timestamp: 1,
+				Hash:      common.HexToHash("0x123"),
+			},
+		},
+		{
+			name: "Successful Set and Get with blocknumber 2",
+			block: model.Block{
+				Number:    2,
+				Timestamp: 1,
+				Hash:      common.HexToHash("0x123"),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // Capture range variable.
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockStorageTransaction := mock.NewMockTx(mockCtrl)
+
+			var buf bytes.Buffer
+			encoder := gob.NewEncoder(&buf)
+			_ = encoder.Encode(tc.block) // omit error since block is constant
+
+			mockStorageTransaction.EXPECT().Set([]byte(fmt.Sprintf("ownership_block_%018d", tc.block.Number)), buf.Bytes()).Return(nil)
+			mockStorageTransaction.EXPECT().Get([]byte(fmt.Sprintf("ownership_block_%018d", tc.block.Number))).Return(buf.Bytes(), nil)
+
+			service := ownership.NewService(mockStorageTransaction)
+
+			err := service.SetOwnershipBlock(tc.block.Number, tc.block)
+
+			if err != nil {
+				t.Errorf("got error %s, expecting no error", err.Error())
+			}
+
+			newBlock, err := service.GetOwnershipBlock(tc.block.Number)
+			if err != nil {
+				t.Errorf("got error %s, expecting no error", err.Error())
+			}
+
+			if newBlock.Number != tc.block.Number {
+				t.Errorf("got block number %d, expected %d", newBlock.Number, tc.block.Number)
+			}
+
+			if newBlock.Timestamp != tc.block.Timestamp {
+				t.Errorf("got block timestamp %d, expected %d", newBlock.Timestamp, tc.block.Timestamp)
+			}
+
+			if newBlock.Hash != tc.block.Hash {
+				t.Errorf("got block hash %s, expecting %s", newBlock.Hash.String(), tc.block.Hash.String())
+			}
+
 		})
 	}
 }

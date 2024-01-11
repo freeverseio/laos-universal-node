@@ -47,7 +47,8 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 }
 
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
-	return sync.GetBlock(s.tx, ownershipBlockTag+strconv.FormatUint(blockNumber, 10))
+	formatedOwnerhipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnerhipBlockNumber)
 }
 
 func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {
