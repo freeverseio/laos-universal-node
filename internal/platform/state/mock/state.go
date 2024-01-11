@@ -411,6 +411,20 @@ func (mr *MockTxMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetLastOwnershipBlock), block)
 }
 
+// SetOwnershipBlock mocks base method.
+func (m *MockTx) SetOwnershipBlock(formatedBlockNumber string, block model.Block) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipBlock", formatedBlockNumber, block)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipBlock indicates an expected call of SetOwnershipBlock.
+func (mr *MockTxMockRecorder) SetOwnershipBlock(formatedBlockNumber, block any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetOwnershipBlock), formatedBlockNumber, block)
+}
+
 // StoreERC721UniversalContracts mocks base method.
 func (m *MockTx) StoreERC721UniversalContracts(universalContracts []model.ERC721UniversalContract) error {
 	m.ctrl.T.Helper()
@@ -1011,6 +1025,20 @@ func (m *MockOwnershipSyncState) SetLastOwnershipBlock(block model.Block) error 
 func (mr *MockOwnershipSyncStateMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetLastOwnershipBlock), block)
+}
+
+// SetOwnershipBlock mocks base method.
+func (m *MockOwnershipSyncState) SetOwnershipBlock(formatedBlockNumber string, block model.Block) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipBlock", formatedBlockNumber, block)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipBlock indicates an expected call of SetOwnershipBlock.
+func (mr *MockOwnershipSyncStateMockRecorder) SetOwnershipBlock(formatedBlockNumber, block any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetOwnershipBlock), formatedBlockNumber, block)
 }
 
 // MockEvolutionSyncState is a mock of EvolutionSyncState interface.

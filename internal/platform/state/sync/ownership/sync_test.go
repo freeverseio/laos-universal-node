@@ -109,7 +109,7 @@ func TestGetAllStoredBlockNumbers(t *testing.T) {
 		},
 		{
 			name:             "MultipleBlockNumbers",
-			mockBlockNumbers: []string{"ownership_block_1", "ownership_block_2", "ownership_block_3"},
+			mockBlockNumbers: []string{"ownership_block_01", "ownership_block_02", "ownership_block_03"},
 			expectedNumbers:  []uint64{1, 2, 3},
 		},
 		{

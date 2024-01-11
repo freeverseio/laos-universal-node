@@ -25,6 +25,11 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
+func (s *service) SetOwnershipBlock(formatedBlockNumber string, block model.Block) error {
+	// Saving the block with blocknumber as key
+	return sync.SetBlock(s.tx, ownershipBlockTag+formatedBlockNumber, block)
+}
+
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
 	// Saving the block with blocknumber as key
 	err := sync.SetBlock(s.tx, ownershipBlockTag+strconv.FormatUint(block.Number, 10), block)
