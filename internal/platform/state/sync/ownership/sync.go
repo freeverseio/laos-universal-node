@@ -14,6 +14,7 @@ const (
 	lastBlock                     = "ownership_last_block"
 	ownershipBlockTag             = "ownership_block_"
 	blockNumberDigits             = 18
+	numberOfBlocksToKeep          = 250
 )
 
 type service struct {
