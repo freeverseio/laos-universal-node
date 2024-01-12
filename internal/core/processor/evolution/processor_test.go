@@ -11,12 +11,15 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
+	mockRPCRequests "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution/mock"
 	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 )
+
+const latestFinalizedBlockHash = "0x95207a95aaf6c516017758f2fd4b7e173fb5a3fb56d3b0cdc0044cd0a9553f38"
 
 func TestGetInitStartingBlock(t *testing.T) {
 	t.Parallel()
@@ -85,7 +88,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.TODO()
-			stateService, tx, client, _ := createMocks(t)
+			stateService, tx, client, _, laosRpc := createMocks(t)
 
 			stateService.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().GetLastEvoBlock().Return(tt.startingBlockData, tt.startingBlockError)
@@ -94,7 +97,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				client.EXPECT().BlockNumber(ctx).Return(tt.lastBlockNumberFromClient, tt.lastBlockNumberFromClientError)
 			}
 
-			p := evolution.NewProcessor(client, stateService, nil, tt.userProvidedBlock, 0, 0)
+			p := evolution.NewProcessor(client, stateService, nil, tt.userProvidedBlock, 0, 0, laosRpc)
 			result, err := p.GetInitStartingBlock(ctx)
 			assertError(t, tt.expectedError, err)
 			if result != tt.expectedResult {
@@ -150,11 +153,11 @@ func TestGetLastBlock(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.TODO()
-			_, _, client, _ := createMocks(t)
+			_, _, client, _, laosRpc := createMocks(t)
 
 			client.EXPECT().BlockNumber(ctx).Return(tt.l1LatestBlock, tt.expectedError)
 
-			p := evolution.NewProcessor(client, nil, nil, 0, tt.configBlocksMargin, tt.configBlocksRange)
+			p := evolution.NewProcessor(client, nil, nil, 0, tt.configBlocksMargin, tt.configBlocksRange, laosRpc)
 			result, err := p.GetLastBlock(ctx, tt.startingBlock)
 			assertError(t, tt.expectedError, err)
 			if result != tt.expectedResult {
@@ -228,7 +231,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.TODO()
-			stateService, tx, client, _ := createMocks(t)
+			stateService, tx, client, _, laosRpc := createMocks(t)
 
 			stateService.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().GetLastEvoBlock().Return(tt.lastBlockDB, tt.lastBlockDBError)
@@ -239,7 +242,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 					Return(tt.previousBlockData, tt.previousBlockDataError)
 			}
 
-			p := evolution.NewProcessor(client, stateService, nil, 0, 0, 0)
+			p := evolution.NewProcessor(client, stateService, nil, 0, 0, 0, laosRpc)
 			err := p.VerifyChainConsistency(ctx, tt.startingBlock)
 			assertError(t, tt.expectedError, err)
 		})
@@ -252,7 +255,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("error when scanning for events", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -260,11 +263,14 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
 		startingBlock := uint64(100)
 
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return(make([]scan.Event, 0), errors.New("error scanning events"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error scanning events"), err)
 	})
@@ -272,7 +278,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("obtained one event, error on getting events from db ", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -281,6 +287,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 		contract := common.HexToAddress("0x555")
 		event, _ := createEventMintedWithExternalURI(lastBlockData.Number, contract)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
@@ -289,7 +299,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			GetMintedWithExternalURIEvents(contract.String()).
 			Return(nil, errors.New("error getting events from db"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error getting events from db"), err)
 	})
@@ -297,7 +307,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("obtained one event, error on storing events in db", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -306,6 +316,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
@@ -318,7 +332,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
 			Return(errors.New("error storing events to db"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error storing events to db"), err)
 	})
@@ -326,7 +340,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("obtained one event, error when getting last block info", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -335,6 +349,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
@@ -351,7 +369,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			BlockByNumber(ctx, big.NewInt(int64(lastBlockData.Number))).
 			Return(nil, errors.New("error getting last block info"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error getting last block info"), err)
 	})
@@ -359,7 +377,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("obtained one event, error when storing last block info", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -372,6 +390,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
@@ -393,7 +415,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(errors.New("error storing last block info"))
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, errors.New("error storing last block info"), err)
 	})
@@ -401,7 +423,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 	t.Run("obtained one event, event processed and last block updated successfully", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
-		stateService, tx, client, scanner := createMocks(t)
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
 		stateService.EXPECT().NewTransaction().Return(tx)
 		tx.EXPECT().Discard()
@@ -414,6 +436,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		startingBlock := uint64(100)
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
+
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
@@ -436,15 +462,16 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(nil)
 		tx.EXPECT().Commit().Return(nil)
 
-		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0)
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, nil, err)
 	})
 }
 
-func createMocks(t *testing.T) (*mockTx.MockService, *mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner) {
+func createMocks(t *testing.T) (*mockTx.MockService, *mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner, *mockRPCRequests.MockLaosRPCRequests) {
 	ctrl := gomock.NewController(t)
-	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl)
+
+	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockRPCRequests.NewMockLaosRPCRequests(ctrl)
 }
 
 func assertError(t *testing.T, expectedError, err error) {
