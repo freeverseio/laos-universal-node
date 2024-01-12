@@ -90,7 +90,7 @@ func (w *worker) Run(ctx context.Context) error {
 						slog.Error("error occurred while recovering from reorg", "err", err.Error())
 						return err
 					}
-					slog.Info("recovered succesfully from reorg: HURRAY!")
+					slog.Info("recovered successfully from reorg: HURRAY!")
 					startingBlock = blockWithouReorg.Number
 					lastBlock = blockWithouReorg.Number
 				}

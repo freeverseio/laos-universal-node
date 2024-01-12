@@ -86,10 +86,9 @@ func (s *service) CleanStoredBlockNumbers() error {
 	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
 
 	// Skip the first 250 keys (newest entries)
-	if len(keys) > 250 {
-		keys = keys[250:]
+	if len(keys) > numberOfBlocksToKeep {
+		keys = keys[numberOfBlocksToKeep:]
 	} else {
-		// If there are 250 or fewer keys, nothing needs to be deleted
 		return nil
 	}
 
@@ -98,6 +97,26 @@ func (s *service) CleanStoredBlockNumbers() error {
 		err := s.tx.Delete(key)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *service) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef uint64) error {
+	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
+	// Delete all keys
+	for i, key := range keys {
+		blockNumberStr := strings.TrimPrefix(string(keys[i]), ownershipBlockTag)
+		blockNumber, err := strconv.ParseInt(blockNumberStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		if blockNumber > int64(blockNumberRef) {
+			err := s.tx.Delete(key)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

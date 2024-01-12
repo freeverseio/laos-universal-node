@@ -44,43 +44,44 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockClient := mockClient.NewMockEthClient(mockCtrl)
+			mockClientService := mockClient.NewMockEthClient(mockCtrl)
 			mockScanner := mockScan.NewMockScanner(mockCtrl)
 			mockStateService := mockTx.NewMockService(mockCtrl)
-			mockDiscoverer := mockDiscoverer.NewMockDiscoverer(mockCtrl)
-			mockUpdater := mockUpdater.NewMockUpdater(mockCtrl)
-			mockProcessor := mockProcessor.NewMockProcessor(mockCtrl)
+			mockDiscovererService := mockDiscoverer.NewMockDiscoverer(mockCtrl)
+			mockUpdaterService := mockUpdater.NewMockUpdater(mockCtrl)
+			mockProcessorService := mockProcessor.NewMockProcessor(mockCtrl)
 
-			mockProcessor.EXPECT().GetInitStartingBlock(gomock.Any()).Return(tc.startingBlocks[0], tc.initBlockError)
-			mockProcessor.EXPECT().ProcessUniversalBlockRange(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, startingBlock, lastBlock uint64) error {
+			mockProcessorService.EXPECT().GetInitStartingBlock(gomock.Any()).Return(tc.startingBlocks[0], tc.initBlockError)
+			mockProcessorService.EXPECT().ProcessUniversalBlockRange(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, startingBlock, lastBlock uint64) error {
 				cancel()
 				return nil
 			})
 
 			for i := 0; i < tc.numberOfExecutions; i++ {
-				mockProcessor.EXPECT().GetLastBlock(ctx, tc.startingBlocks[i]).Return(tc.startingBlocks[i], nil)
-				mockProcessor.EXPECT().IsEvoSyncedWithOwnership(ctx, tc.startingBlocks[i]).Return(true, nil)
-				mockProcessor.EXPECT().VerifyChainConsistency(ctx, tc.startingBlocks[i]).Return(tc.verifyReorgErrors[i]).Do(func(ctx context.Context, block uint64) {
+				mockProcessorService.EXPECT().GetLastBlock(ctx, tc.startingBlocks[i]).Return(tc.startingBlocks[i], nil)
+				mockProcessorService.EXPECT().IsEvoSyncedWithOwnership(ctx, tc.startingBlocks[i]).Return(true, nil)
+				mockProcessorService.EXPECT().VerifyChainConsistency(ctx, tc.startingBlocks[i]).Return(tc.verifyReorgErrors[i]).Do(func(ctx context.Context, block uint64) {
 					if block == tc.startingBlocks[len(tc.startingBlocks)-1] {
 						cancel()
 					}
 				})
-
 			}
-			mockProcessor.EXPECT().RecoverFromReorg(ctx, tc.startingBlocks[0]).Return(&model.Block{
+			mockProcessorService.EXPECT().RecoverFromReorg(ctx, tc.startingBlocks[0]).Return(&model.Block{
 				Number: tc.startingBlocks[1],
 				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
 			}, nil).Times(tc.recoverFromReorg)
 
-			w := worker.New(&config.Config{WaitingTime: 1 * time.Second}, mockClient, mockScanner, mockStateService, mockDiscoverer, mockUpdater,
-				worker.WithProcessor(mockProcessor))
+			w := worker.New(&config.Config{WaitingTime: 1 * time.Second}, mockClientService, mockScanner, mockStateService, mockDiscovererService, mockUpdaterService,
+				worker.WithProcessor(mockProcessorService))
 
 			err := w.Run(ctx)
 
@@ -93,7 +94,6 @@ func TestRun(t *testing.T) {
 					t.Errorf("expected no error, got: %v", err)
 				}
 			}
-
 		})
 	}
 }

@@ -416,6 +416,79 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	}
 }
 
+func TestDeleteStoredBlockNumbersNewerThanBlockNumberWithBadgerInMemory(t *testing.T) {
+	// Do not run this test in parallel
+	testCases := []struct {
+		name                   string
+		numberOfBlocks         int
+		expectedNumberOfBlocks int
+		blockNumberRef         uint64
+	}{
+		{
+			name:                   "should delete newest 49 blocks from 300 blocks ",
+			numberOfBlocks:         300,
+			expectedNumberOfBlocks: 251,
+			blockNumberRef:         251,
+		},
+		{
+			name:                   "should delete none ",
+			numberOfBlocks:         300,
+			expectedNumberOfBlocks: 300,
+			blockNumberRef:         300,
+		},
+		{
+			name:                   "should delete all than 1",
+			numberOfBlocks:         300,
+			expectedNumberOfBlocks: 1,
+			blockNumberRef:         1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, err := badger.Open(
+				badger.DefaultOptions("").
+					WithInMemory(true).
+					WithLoggingLevel(badger.ERROR))
+			if err != nil {
+				t.Fatalf("error initializing storage: %v", err)
+			}
+			badgerService := badgerStorage.NewService(db)
+			tx := badgerService.NewTransaction()
+			service := ownership.NewService(tx)
+			generationBlockKeysInBadger(t, tx, tc.numberOfBlocks)
+			blockNumbers, err := service.GetAllStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("GetAllStoredBlockNumbers returned an error: %v", err)
+			}
+			if len(blockNumbers) != tc.numberOfBlocks {
+				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.numberOfBlocks)
+			}
+			err = service.DeleteStoredBlockNumbersNewerThanBlockNumber(tc.blockNumberRef)
+			if err != nil {
+				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+			}
+			blockNumbers, err = service.GetAllStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("GetAllStoredBlockNumbers returned an error: %v", err)
+			}
+			if len(blockNumbers) != tc.expectedNumberOfBlocks {
+				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.expectedNumberOfBlocks)
+			}
+
+			if blockNumbers[0] != tc.blockNumberRef {
+				t.Fatalf("got %d as first block number, expected %d", blockNumbers[0], tc.numberOfBlocks)
+			}
+			if err := db.DropAll(); err != nil {
+				t.Fatalf("error closing db: %v", err)
+			}
+			if err := db.Close(); err != nil {
+				t.Fatalf("error closing db: %v", err)
+			}
+		})
+	}
+}
+
 func generationBlockKeysInBadger(t *testing.T, tx storage.Tx, num int) {
 	t.Helper()
 	for i := 1; i <= num; i++ {

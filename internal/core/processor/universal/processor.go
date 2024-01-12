@@ -126,13 +126,20 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 			contractTx.Discard()
 			return nil, err
 		}
-		if err := contractTx.Commit(); err != nil {
-			return nil, err // Handle commit error
+		if errCommit := contractTx.Commit(); errCommit != nil {
+			return nil, errCommit // Handle commit error
 		}
 	}
 	// set last ownership block to block without reorg
-	err = tx.SetLastOwnershipBlock(*blockWithoutReorg)
-	if err != nil {
+	if err := tx.SetLastOwnershipBlock(*blockWithoutReorg); err != nil {
+		return nil, err
+	}
+	// deleting all blockhashes after the block without reorg
+	if err := tx.DeleteStoredBlockNumbersNewerThanBlockNumber(blockWithoutReorg.Number); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

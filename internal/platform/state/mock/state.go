@@ -149,6 +149,20 @@ func (mr *MockTxMockRecorder) DeleteRootTag(contract, blockNumber any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTx)(nil).DeleteRootTag), contract, blockNumber)
 }
 
+// DeleteStoredBlockNumbersNewerThanBlockNumber mocks base method.
+func (m *MockTx) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteStoredBlockNumbersNewerThanBlockNumber", blockNumberRef)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteStoredBlockNumbersNewerThanBlockNumber indicates an expected call of DeleteStoredBlockNumbersNewerThanBlockNumber.
+func (mr *MockTxMockRecorder) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStoredBlockNumbersNewerThanBlockNumber", reflect.TypeOf((*MockTx)(nil).DeleteStoredBlockNumbersNewerThanBlockNumber), blockNumberRef)
+}
+
 // Discard mocks base method.
 func (m *MockTx) Discard() {
 	m.ctrl.T.Helper()
@@ -965,6 +979,20 @@ func (m *MockOwnershipSyncState) CleanStoredBlockNumbers() error {
 func (mr *MockOwnershipSyncStateMockRecorder) CleanStoredBlockNumbers() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).CleanStoredBlockNumbers))
+}
+
+// DeleteStoredBlockNumbersNewerThanBlockNumber mocks base method.
+func (m *MockOwnershipSyncState) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteStoredBlockNumbersNewerThanBlockNumber", blockNumberRef)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteStoredBlockNumbersNewerThanBlockNumber indicates an expected call of DeleteStoredBlockNumbersNewerThanBlockNumber.
+func (mr *MockOwnershipSyncStateMockRecorder) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStoredBlockNumbersNewerThanBlockNumber", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteStoredBlockNumbersNewerThanBlockNumber), blockNumberRef)
 }
 
 // GetAllStoredBlockNumbers mocks base method.
