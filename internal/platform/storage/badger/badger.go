@@ -135,6 +135,7 @@ func (t Tx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	opts.Reverse = isReverse
+	opts.PrefetchSize = 100
 	iterator := t.tx.NewIterator(opts)
 	defer iterator.Close()
 

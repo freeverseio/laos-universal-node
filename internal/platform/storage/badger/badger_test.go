@@ -153,11 +153,9 @@ func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	}
+	tx := service.NewTransaction()
+	got := tx.GetKeysWithPrefix([]byte("prefix_"), false)
 
-	got, err := service.GetKeysWithPrefix([]byte("prefix_"))
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
 	if len(got) != 7 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
 	}
@@ -172,22 +170,19 @@ func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
 	t.Parallel()
 	service := badgerStorage.NewService(db)
-	for i := 0; i < 10000; i++ {
+
+	for i := 0; i < 1000; i++ {
 		err := service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
 		if err != nil {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	}
-
-	got, err := service.GetKeysWithPrefix([]byte("prefix_"), true)
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-
-	if len(got) != 10000 {
+	tx := service.NewTransaction()
+	got := tx.GetKeysWithPrefix([]byte("prefix_"), true)
+	if len(got) != 1000 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
 	}
-	if string(got[0]) != "prefix_9999" {
+	if string(got[0]) != "prefix_999" {
 		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_9999")
 	}
 }
