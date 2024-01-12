@@ -15,8 +15,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-const historyLength = 256
-
 type Updater interface {
 	GetModelTransferEvents(
 		ctx context.Context,
