@@ -466,6 +466,25 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, nil, err)
 	})
+
+	t.Run("error when request to parachain fails", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.TODO()
+		stateService, tx, client, scanner, laosRpc := createMocks(t)
+
+		stateService.EXPECT().NewTransaction().Return(tx)
+		tx.EXPECT().Discard()
+
+		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
+		startingBlock := uint64(100)
+
+		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
+		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(nil, errors.New("error converting latest finalized block number")).Times(1)
+
+		p := evolution.NewProcessor(client, stateService, scanner, 0, 0, 0, laosRpc)
+		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
+		assertError(t, errors.New("error converting latest finalized block number"), err)
+	})
 }
 
 func createMocks(t *testing.T) (*mockTx.MockService, *mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner, *mockRPCRequests.MockLaosRPCRequests) {
