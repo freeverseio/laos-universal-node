@@ -18,6 +18,10 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
+const (
+	safeBlockMargin = 250
+)
+
 type ReorgError struct {
 	Block       uint64
 	ChainHash   common.Hash
@@ -307,10 +311,10 @@ func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) e
 
 func getSafeBlock(currentBlockNumber uint64) *model.Block {
 	var safeBlockNumber uint64
-	if currentBlockNumber < 250 {
+	if currentBlockNumber < safeBlockMargin {
 		safeBlockNumber = 0
 	} else {
-		safeBlockNumber = currentBlockNumber - 250
+		safeBlockNumber = currentBlockNumber - safeBlockMargin
 	}
 
 	return &model.Block{

@@ -386,7 +386,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:                     "successful reorg recovery",
+			name:                     "successful reorg recovery with no blocks to checkout",
 			startingBlock:            100,
 			numberOfRecursions:       0,
 			safeBlockNumber:          0,
@@ -397,7 +397,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			expectedError:            nil,
 		},
 		{
-			name:                     "successful reorg recovery",
+			name:                     "successful reorg recovery with 2 recursions",
 			startingBlock:            100,
 			safeBlockNumber:          95,
 			numberOfRecursions:       2,
