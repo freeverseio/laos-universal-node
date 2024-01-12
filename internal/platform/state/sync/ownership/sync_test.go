@@ -135,7 +135,7 @@ func TestGetAllStoredBlockNumbers(t *testing.T) {
 			mockStorageTransaction := mock.NewMockTx(mockCtrl)
 			defer mockCtrl.Finish()
 			mockStorageTransaction.EXPECT().
-				GetKeysWithPrefix([]byte("ownership_block_")).
+				GetKeysWithPrefix([]byte("ownership_block_"), true).
 				Return(convertToByteSliceArray(tc.mockBlockNumbers))
 
 			service := ownership.NewService(mockStorageTransaction)
@@ -229,8 +229,6 @@ func TestSetLastOwnershipBlock(t *testing.T) {
 
 func TestSetAndGetOwnershipBlock(t *testing.T) {
 	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 
 	testCases := []struct {
 		name  string
@@ -258,6 +256,8 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 		tc := tc // Capture range variable.
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
 			mockStorageTransaction := mock.NewMockTx(mockCtrl)
 
@@ -271,7 +271,6 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 			service := ownership.NewService(mockStorageTransaction)
 
 			err := service.SetOwnershipBlock(tc.block.Number, tc.block)
-
 			if err != nil {
 				t.Errorf("got error %s, expecting no error", err.Error())
 			}
@@ -292,7 +291,6 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 			if newBlock.Hash != tc.block.Hash {
 				t.Errorf("got block hash %s, expecting %s", newBlock.Hash.String(), tc.block.Hash.String())
 			}
-
 		})
 	}
 }

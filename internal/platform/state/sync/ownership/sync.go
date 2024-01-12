@@ -68,7 +68,7 @@ func (s *service) GetCurrentEvoEventsIndexForOwnershipContract(contract string) 
 
 func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
 	var blockNumbers []uint64
-	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag))
+	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
 	for i := range keys {
 		blockNumberStr := strings.TrimPrefix(string(keys[i]), ownershipBlockTag)
 		blockNumber, err := strconv.ParseInt(blockNumberStr, 10, 64)
