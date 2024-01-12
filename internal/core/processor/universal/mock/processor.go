@@ -12,6 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	model "github.com/freeverseio/laos-universal-node/internal/platform/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -98,11 +99,12 @@ func (mr *MockProcessorMockRecorder) ProcessUniversalBlockRange(ctx, startingBlo
 }
 
 // RecoverFromReorg mocks base method.
-func (m *MockProcessor) RecoverFromReorg(ctx context.Context, startingBlock uint64) error {
+func (m *MockProcessor) RecoverFromReorg(ctx context.Context, startingBlock uint64) (*model.Block, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecoverFromReorg", ctx, startingBlock)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // RecoverFromReorg indicates an expected call of RecoverFromReorg.

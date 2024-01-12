@@ -455,9 +455,12 @@ func TestRecoverFromReorg(t *testing.T) {
 				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
 			}
 			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
-			err := p.RecoverFromReorg(ctx, tt.startingBlock)
+			block, err := p.RecoverFromReorg(ctx, tt.startingBlock)
 			if (err != nil) != (tt.expectedError != nil) {
 				t.Errorf("RecoverFromReorg() error = %v, wantErr %v", err, tt.expectedError)
+			}
+			if block.Number != tt.safeBlockNumber {
+				t.Errorf("RecoverFromReorg() block = %v, want %v", block, tt.safeBlockNumber)
 			}
 		})
 	}

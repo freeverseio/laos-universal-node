@@ -36,7 +36,7 @@ type Processor interface {
 	GetInitStartingBlock(ctx context.Context) (uint64, error)
 	GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error)
 	VerifyChainConsistency(ctx context.Context, startingBlock uint64) error
-	RecoverFromReorg(ctx context.Context, startingBlock uint64) error
+	RecoverFromReorg(ctx context.Context, startingBlock uint64) (*model.Block, error)
 	IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipBlock uint64) (bool, error)
 
 	ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error
@@ -94,26 +94,25 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 	return p.checkBlockForReorg(ctx, lastBlockDB)
 }
 
-func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) error {
+func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
 	// Start a transaction
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
 
 	storedBlockNumbers, err := tx.GetAllStoredBlockNumbers()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	var saveBlock *model.Block
+	var blockWithoutReorg *model.Block
 	nextBlockNumberToCheck, err := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
 	if err != nil { // no lower block number found
 		// we get a safe block number to start from
-		saveBlock = getSafeBlock(currentBlock)
+		blockWithoutReorg = getSafeBlock(currentBlock)
 	} else {
 		// Check for reorg recursively
-		// TODO rename
-		saveBlock, err = p.checkForReorgRecursive(ctx, tx, nextBlockNumberToCheck, storedBlockNumbers)
+		blockWithoutReorg, err = p.checkForReorgRecursive(ctx, tx, nextBlockNumberToCheck, storedBlockNumbers)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -122,16 +121,22 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) e
 	for _, contract := range contracts {
 		// Handle each contract in its own transaction
 		contractTx := p.stateService.NewTransaction()
-		err = checkout(contractTx, common.HexToAddress(contract), saveBlock.Number)
+		err = checkout(contractTx, common.HexToAddress(contract), blockWithoutReorg.Number)
 		if err != nil {
 			contractTx.Discard()
-			return err
+			return nil, err
 		}
 		if err := contractTx.Commit(); err != nil {
-			return err // Handle commit error
+			return nil, err // Handle commit error
 		}
 	}
-	return nil
+	// set last ownership block to block without reorg
+	err = tx.SetLastOwnershipBlock(*blockWithoutReorg)
+	if err != nil {
+		return nil, err
+	}
+
+	return blockWithoutReorg, nil
 }
 
 func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blockNumberToCheck uint64, storedBlockNumbers []uint64) (*model.Block, error) {

@@ -25,14 +25,24 @@ type worker struct {
 	processor   universal.Processor
 }
 
+type Option func(*worker)
+
+// WithProcessor sets a custom processor for the worker.
+func WithProcessor(p universal.Processor) Option {
+	return func(w *worker) {
+		w.processor = p
+	}
+}
+
 func New(c *config.Config,
 	client blockchain.EthClient,
 	scanner scan.Scanner,
 	stateService state.Service,
 	discoverer contractDiscoverer.Discoverer,
 	updater contractUpdater.Updater,
+	opts ...Option,
 ) Worker {
-	return &worker{
+	w := &worker{
 		waitingTime: c.WaitingTime,
 		processor: universal.NewProcessor(
 			client,
@@ -42,6 +52,12 @@ func New(c *config.Config,
 			discoverer,
 			updater),
 	}
+
+	for _, opt := range opts {
+		opt(w)
+	}
+
+	return w
 }
 
 func (w *worker) Run(ctx context.Context) error {
@@ -69,10 +85,14 @@ func (w *worker) Run(ctx context.Context) error {
 						"blockNumber", reorgErr.Block,
 						"chainHash", reorgErr.ChainHash.String(),
 						"storageHash", reorgErr.StorageHash.String())
-					slog.Info("***************************************************************************************")
-					slog.Info("Please wipe out the database before running the node again.")
-					slog.Info("***************************************************************************************")
-					return reorgErr
+					blockWithouReorg, err := w.processor.RecoverFromReorg(ctx, reorgErr.Block)
+					if err != nil {
+						slog.Error("error occurred while recovering from reorg", "err", err.Error())
+						return err
+					}
+					slog.Info("recovered succesfully from reorg: HURRAY!")
+					startingBlock = blockWithouReorg.Number
+					lastBlock = blockWithouReorg.Number
 				}
 				break
 			}
