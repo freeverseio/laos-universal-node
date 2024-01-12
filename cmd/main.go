@@ -119,6 +119,28 @@ func run() error {
 		}
 	})
 
+	// Ownership delete old block tags
+	group.Go(func() error {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				tx := stateService.NewTransaction()
+				err := tx.CleanStoredBlockNumbers()
+				if err != nil {
+					slog.Error("error occurred while cleaning stored block numbers", "err", err.Error())
+				}
+				err = tx.Commit()
+				if err != nil {
+					slog.Error("error occurred while committing clean stored block numbers", "err", err.Error())
+				}
+			}
+		}
+	})
+
 	// Ownership chain scanner
 	group.Go(func() error {
 		s := scan.NewScanner(ownershipChainClient, c.Contracts...)
