@@ -23,7 +23,7 @@ type worker struct {
 	processor   evolution.Processor
 }
 
-func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, stateService state.Service) Worker {
+func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, stateService state.Service, laosHTTPClient evolution.LaosRPCRequests) Worker {
 	return &worker{
 		waitingTime: c.WaitingTime,
 		processor: evolution.NewProcessor(
@@ -32,7 +32,9 @@ func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, st
 			scanner,
 			c.EvoStartingBlock,
 			uint64(c.EvoBlocksMargin),
-			uint64(c.EvoBlocksRange)),
+			uint64(c.EvoBlocksRange),
+			laosHTTPClient,
+		),
 	}
 }
 

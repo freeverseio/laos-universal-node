@@ -17,6 +17,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
@@ -140,8 +141,9 @@ func run() error {
 			slog.Info("***********************************************************************************************")
 		}
 
+		laosHTTPClient := evolution.NewLaosHTTP(c.EvoRpc)
 		s := scan.NewScanner(evoChainClient)
-		evoWorker := evoworker.New(c, evoChainClient, s, stateService)
+		evoWorker := evoworker.New(c, evoChainClient, s, stateService, laosHTTPClient)
 		return evoWorker.Run(ctx)
 	})
 

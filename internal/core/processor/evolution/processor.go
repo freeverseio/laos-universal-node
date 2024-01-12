@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -38,6 +39,7 @@ type processor struct {
 	configStartingBlock uint64
 	configBlocksRange   uint64
 	configBlocksMargin  uint64
+	laosHTTP            LaosRPCRequests
 }
 
 func NewProcessor(client blockchain.EthClient,
@@ -46,6 +48,7 @@ func NewProcessor(client blockchain.EthClient,
 	configStartingBlock,
 	configBlocksMargin,
 	configBlocksRange uint64,
+	laosHTTP LaosRPCRequests,
 ) *processor {
 	return &processor{
 		client:              client,
@@ -54,6 +57,7 @@ func NewProcessor(client blockchain.EthClient,
 		configStartingBlock: configStartingBlock,
 		configBlocksMargin:  configBlocksMargin,
 		configBlocksRange:   configBlocksRange,
+		laosHTTP:            laosHTTP,
 	}
 }
 
@@ -129,6 +133,21 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error {
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
+
+	for {
+		var ok bool
+		ok, err := p.hasBlockFinalize(big.NewInt(int64(lastBlock)))
+		if err != nil {
+			slog.Error("error occurred while checking latest finalized block", "err", err.Error())
+			return err
+		}
+		if ok {
+			break
+		}
+		slog.Debug("block not finalized, waiting for finality", "block", lastBlock)
+
+		time.Sleep(time.Millisecond * 500)
+	}
 
 	events, err := p.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 	if err != nil {
@@ -220,4 +239,23 @@ func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.
 		}
 	}
 	return groupMintEvents
+}
+
+func (p *processor) hasBlockFinalize(blockNumber *big.Int) (bool, error) {
+	blockHash, err := p.laosHTTP.LatestFinalizedBlockHash()
+	if err != nil {
+		return false, err
+	}
+
+	finalizedBlockNumber, err := p.laosHTTP.BlockNumber(blockHash)
+	if err != nil {
+		return false, err
+	}
+
+	// if blockNumber > finalizedBlockNumber
+	if blockNumber.Cmp(finalizedBlockNumber) == 1 {
+		return false, nil
+	}
+
+	return true, nil
 }
