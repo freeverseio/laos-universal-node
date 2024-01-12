@@ -38,6 +38,20 @@ func (m *MockTx) EXPECT() *MockTxMockRecorder {
 	return m.recorder
 }
 
+// ClearAll mocks base method.
+func (m *MockTx) ClearAll() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClearAll")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ClearAll indicates an expected call of ClearAll.
+func (mr *MockTxMockRecorder) ClearAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearAll", reflect.TypeOf((*MockTx)(nil).ClearAll))
+}
+
 // Commit mocks base method.
 func (m *MockTx) Commit() error {
 	m.ctrl.T.Helper()
@@ -110,6 +124,20 @@ func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any, reverse ...any) *gom
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{prefix}, reverse...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), varargs...)
+}
+
+// Len mocks base method.
+func (m *MockTx) Len() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Len")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Len indicates an expected call of Len.
+func (mr *MockTxMockRecorder) Len() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockTx)(nil).Len))
 }
 
 // Set mocks base method.

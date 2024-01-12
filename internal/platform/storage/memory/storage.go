@@ -100,3 +100,12 @@ func (b *tx) Commit() error {
 	b.s.committed = b.temp
 	return nil
 }
+
+func (b tx) Len() int {
+	return len(b.temp.data)
+}
+
+func (b tx) ClearAll() error {
+	b.temp.data = make(map[string][]byte)
+	return nil
+}

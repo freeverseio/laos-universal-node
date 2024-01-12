@@ -103,6 +103,14 @@ func (t Tx) Set(key, value []byte) error {
 	return t.tx.Set(key, value)
 }
 
+func (t Tx) ClearAll() error {
+	return nil
+}
+
+func (t Tx) Len() int {
+	return 0
+}
+
 // Get returns byte for the key
 func (t Tx) Get(key []byte) ([]byte, error) {
 	// TODO to use t.Discard here we must first give the possibility to have t as read-only (i.e. `NewTransaction(readOnly bool)`)

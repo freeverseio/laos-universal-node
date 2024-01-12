@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
+	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/jellyfish"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
@@ -60,14 +61,23 @@ type tree struct {
 // TODO NewTree should be GetTree (same for enumerated and enumeratedtotal packages)
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
+func NewTree(contract common.Address, store storage.Tx, poktMerkleTree ...bool) (Tree, error) {
 	if contract.Cmp(common.Address{}) == 0 {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
 
-	t, err := sparsemt.New(treeDepth, store, treePrefix+contract.String())
-	if err != nil {
-		return nil, err
+	var t merkletree.MerkleTree
+	var err error
+	if len(poktMerkleTree) > 0 && poktMerkleTree[0] {
+		t, err = jellyfish.New(store, treePrefix+contract.String())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		t, err = sparsemt.New(treeDepth, store, treePrefix+contract.String())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	root, err := headRoot(contract, store)
