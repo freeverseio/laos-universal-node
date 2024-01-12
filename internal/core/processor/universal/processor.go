@@ -90,7 +90,7 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 	return p.checkBlockForReorg(ctx, lastBlockDB)
 }
 
-func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) error {
+func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) error {
 	// Start a transaction
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
@@ -100,13 +100,14 @@ func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) 
 		return err
 	}
 	var saveBlock *model.Block
-	nextBlockToCheck, err := GetNextLowerBlockNumber(startingBlock, storedBlockNumbers)
+	nextBlockNumberToCheck, err := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
 	if err != nil { // no lower block number found
 		// we get a safe block number to start from
-		saveBlock = getSafeBlock(startingBlock)
+		saveBlock = getSafeBlock(currentBlock)
 	} else {
 		// Check for reorg recursively
-		saveBlock, err = p.checkForReorgRecursive(ctx, tx, nextBlockToCheck, storedBlockNumbers)
+		// TODO rename
+		saveBlock, err = p.checkForReorgRecursive(ctx, tx, nextBlockNumberToCheck, storedBlockNumbers)
 		if err != nil {
 			return err
 		}
@@ -143,7 +144,7 @@ func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blo
 		return &blockToCheck, e
 	case ReorgError:
 		// reorg, continue checking the previous blocks
-		nextBlockToCheck, errNextBlockNumber := GetNextLowerBlockNumber(blockNumberToCheck, storedBlockNumbers)
+		nextBlockToCheck, errNextBlockNumber := getNextLowerBlockNumber(blockNumberToCheck, storedBlockNumbers)
 		if errNextBlockNumber != nil { // no lower block number found
 			// we return a safe block number to start from
 			return getSafeBlock(blockNumberToCheck), nil
@@ -155,7 +156,7 @@ func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blo
 	}
 }
 
-func GetNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (uint64, error) {
+func getNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (uint64, error) {
 	var maxLowerBlock uint64
 	found := false
 
