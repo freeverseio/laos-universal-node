@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"reflect"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -334,72 +335,190 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 
 func TestRecoverFromReorg(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
-		name            string
-		startingBlock   uint64
-		checkReorgError error
-		getAllContracts []string
-		checkoutError   error
-		expectedError   error
+		name                     string
+		startingBlock            uint64
+		safeBlockNumber          uint64
+		numberOfRecursions       uint64
+		checkReorgError          error
+		getAllStoredBlockNumbers []uint64
+		getAllContracts          []string
+		getBlockHeadersDB        []*types.Header
+		getBlockHeadersL1        []*types.Header
+		checkoutError            error
+		expectedError            error
 	}{
 		{
-			name:            "successful reorg recovery",
-			startingBlock:   100,
-			checkReorgError: nil,
-			getAllContracts: []string{"contract1", "contract2"},
-			checkoutError:   nil,
-			expectedError:   nil,
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			safeBlockNumber:          99,
+			numberOfRecursions:       1,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 99, 98},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{{
+				Number: big.NewInt(99),
+				Time:   100,
+			}},
+			getBlockHeadersL1: []*types.Header{{
+				Number: big.NewInt(99),
+				Time:   100,
+			}},
+			checkoutError: nil,
+			expectedError: nil,
 		},
-		// {
-		// 	name:            "reorg check error",
-		// 	startingBlock:   100,
-		// 	checkReorgError: errors.New("reorg check error"),
-		// 	getAllContracts: nil,
-		// 	checkoutError:   nil,
-		// 	expectedError:   errors.New("reorg check error"),
-		// },
-		// {
-		// 	name:            "checkout error",
-		// 	startingBlock:   100,
-		// 	checkReorgError: nil,
-		// 	getAllContracts: []string{"contract1"},
-		// 	checkoutError:   errors.New("checkout error"),
-		// 	expectedError:   errors.New("checkout error"),
-		// },
+		{
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			safeBlockNumber:          95,
+			numberOfRecursions:       1,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 95, 94},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{{
+				Number: big.NewInt(95),
+				Time:   100,
+			}},
+			getBlockHeadersL1: []*types.Header{{
+				Number: big.NewInt(95),
+				Time:   100,
+			}},
+			checkoutError: nil,
+			expectedError: nil,
+		},
+		{
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			numberOfRecursions:       0,
+			safeBlockNumber:          0,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100},
+			getAllContracts:          []string{"contract1", "contract2"},
+			checkoutError:            nil,
+			expectedError:            nil,
+		},
+		{
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			safeBlockNumber:          95,
+			numberOfRecursions:       2,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 98, 95},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{
+				{
+					Number: big.NewInt(98),
+					Time:   99,
+					Root:   common.HexToHash("0x123"),
+				}, {
+					Number: big.NewInt(95),
+					Time:   100,
+				},
+			},
+			getBlockHeadersL1: []*types.Header{
+				{
+					Number: big.NewInt(98),
+					Time:   88,
+					Root:   common.HexToHash("0x123"),
+				}, {
+					Number: big.NewInt(95),
+					Time:   100,
+				},
+			},
+			checkoutError: nil,
+			expectedError: nil,
+		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx := context.TODO()
 			stateService, tx, client, _, _, _ := createMocks(t)
-			block := &types.Header{
-				Number: big.NewInt(int64(tt.startingBlock)),
+			for _, header := range tt.getBlockHeadersL1 {
+				client.EXPECT().HeaderByNumber(ctx, header.Number).Return(header, nil).Times(1)
 			}
-
-			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(block, nil)
-
-			stateService.EXPECT().NewTransaction().Return(tx).AnyTimes()
-			tx.EXPECT().Discard().AnyTimes()
-			tx.EXPECT().Commit().AnyTimes()
-			tx.EXPECT().GetOwnershipBlock(tt.startingBlock).Return(model.Block{
-				Number: tt.startingBlock,
-				Hash:   block.Hash(),
-			}, nil)
-
-			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts)
+			stateService.EXPECT().NewTransaction().Return(tx).Times(1 + len(tt.getAllContracts))
+			tx.EXPECT().Discard().Times(1)
+			tx.EXPECT().Commit().Times(len(tt.getAllContracts))
+			tx.EXPECT().GetAllStoredBlockNumbers().Return(tt.getAllStoredBlockNumbers, nil).Times(1)
+			for i := 0; i < int(tt.numberOfRecursions); i++ {
+				block := tt.getBlockHeadersDB[i]
+				tx.EXPECT().GetOwnershipBlock(block.Number.Uint64()).Return(model.Block{
+					Number: block.Number.Uint64(),
+					Hash:   block.Hash(),
+				}, nil).Times(1)
+			}
+			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
 			for _, contract := range tt.getAllContracts {
-				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil)
-				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.startingBlock)).Return(tt.checkoutError)
+				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil).Times(1)
+				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
 			}
-
 			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
 			err := p.RecoverFromReorg(ctx, tt.startingBlock)
+			if (err != nil) != (tt.expectedError != nil) {
+				t.Errorf("RecoverFromReorg() error = %v, wantErr %v", err, tt.expectedError)
+			}
+		})
+	}
+}
 
-			assertError(t, tt.expectedError, err)
+func TestGetNextLowerBlockNumber(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		currentBlock          uint64
+		storedBlockNumbers    []uint64
+		expectedBlockNumber   uint64
+		expectedError         bool
+		expectedModifiedSlice []uint64
+	}{
+		{
+			name:                  "FindLowerBlock",
+			currentBlock:          5,
+			storedBlockNumbers:    []uint64{3, 4, 5, 6, 7},
+			expectedBlockNumber:   4,
+			expectedError:         false,
+			expectedModifiedSlice: []uint64{3, 4, 5, 6, 7},
+		},
+		{
+			name:                  "FindLowerBlock",
+			currentBlock:          7,
+			storedBlockNumbers:    []uint64{3, 4, 5, 6, 7},
+			expectedBlockNumber:   6,
+			expectedError:         false,
+			expectedModifiedSlice: []uint64{3, 4, 5, 6, 7},
+		},
+		{
+			name:                  "FindLowerBlock",
+			currentBlock:          9,
+			storedBlockNumbers:    []uint64{3, 4, 5, 6, 8},
+			expectedBlockNumber:   8,
+			expectedError:         false,
+			expectedModifiedSlice: []uint64{3, 4, 5, 6, 8},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // Capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			gotBlockNumber, err := universal.GetNextLowerBlockNumber(tc.currentBlock, tc.storedBlockNumbers)
+
+			if tc.expectedError {
+				if err == nil {
+					t.Errorf("expected an error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if gotBlockNumber != tc.expectedBlockNumber {
+					t.Errorf("got %v, expected %v", gotBlockNumber, tc.expectedBlockNumber)
+				}
+				if !reflect.DeepEqual(tc.storedBlockNumbers, tc.expectedModifiedSlice) {
+					t.Errorf("slice was modified to %v, expected %v", tc.storedBlockNumbers, tc.expectedModifiedSlice)
+				}
+			}
 		})
 	}
 }

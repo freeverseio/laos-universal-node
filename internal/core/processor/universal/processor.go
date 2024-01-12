@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 
@@ -94,17 +95,27 @@ func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) 
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
 
-	// Check for reorg recursively
-	saveBlock, err := p.checkForReorgRecursive(ctx, tx, startingBlock)
+	storedBlockNumbers, err := tx.GetAllStoredBlockNumbers()
 	if err != nil {
 		return err
 	}
+	var saveBlock *model.Block
+	nextBlockToCheck, err := GetNextLowerBlockNumber(startingBlock, storedBlockNumbers)
+	if err != nil { // no lower block number found
+		// we get a safe block number to start from
+		saveBlock = getSafeBlock(startingBlock)
+	} else {
+		// Check for reorg recursively
+		saveBlock, err = p.checkForReorgRecursive(ctx, tx, nextBlockToCheck, storedBlockNumbers)
+		if err != nil {
+			return err
+		}
+	}
 
-	// Retrieve all contracts
 	contracts := tx.GetAllERC721UniversalContracts()
-
+	// Process each contract
 	for _, contract := range contracts {
-		// Handle each contract in its own transaction to avoid transaction size limits
+		// Handle each contract in its own transaction
 		contractTx := p.stateService.NewTransaction()
 		err = checkout(contractTx, common.HexToAddress(contract), saveBlock.Number)
 		if err != nil {
@@ -112,23 +123,16 @@ func (p *processor) RecoverFromReorg(ctx context.Context, startingBlock uint64) 
 			return err
 		}
 		if err := contractTx.Commit(); err != nil {
-			return err
+			return err // Handle commit error
 		}
 	}
-
 	return nil
 }
 
-func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, currentBlock uint64) (*model.Block, error) {
-	// Base case: If currentBlock goes below the configured range, stop the recursion
-	if currentBlock <= p.configStartingBlock {
-		return nil, fmt.Errorf("unable to recover form reorg, currentBlock %d is below the configured range %d", currentBlock, p.configStartingBlock)
-	}
-
-	// Check for reorg at the current block
-	blockToCheck, err := tx.GetOwnershipBlock(currentBlock)
+func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blockNumberToCheck uint64, storedBlockNumbers []uint64) (*model.Block, error) {
+	blockToCheck, err := tx.GetOwnershipBlock(blockNumberToCheck)
 	if err != nil {
-		slog.Error("error retrieving block data", "blockNumber", currentBlock, "err", err.Error())
+		slog.Error("error retrieving block data", "blockNumber", blockNumberToCheck, "err", err.Error())
 		return nil, err
 	}
 
@@ -139,21 +143,36 @@ func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, cur
 		return &blockToCheck, e
 	case ReorgError:
 		// reorg, continue checking the previous blocks
-		previousBlock := currentBlock - p.configBlocksRange
-		return p.checkForReorgRecursive(ctx, tx, previousBlock)
+		nextBlockToCheck, errNextBlockNumber := GetNextLowerBlockNumber(blockNumberToCheck, storedBlockNumbers)
+		if errNextBlockNumber != nil { // no lower block number found
+			// we return a safe block number to start from
+			return getSafeBlock(blockNumberToCheck), nil
+		}
+		return p.checkForReorgRecursive(ctx, tx, nextBlockToCheck, storedBlockNumbers)
 	default:
 		// Other error occurred
 		return nil, err
 	}
 }
 
-func getNextBlockNumberToCheck(tx state.Tx, currentBlock uint64) (uint64, error) {
-	// blockNumbers, err := tx.GetAllStoredBlockNumbers()
-	// if err != nil {
-	// 	slog.Error("error retrieving all stored block numbers", "err", err.Error())
-	// 	return 0, err
-	// }
-	return 0, nil
+func GetNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (uint64, error) {
+	var maxLowerBlock uint64
+	found := false
+
+	// Finding the maximum number lower than the current block in the copy
+	for _, blockNumber := range storedBlockNumbers {
+		if blockNumber < currentBlock {
+			if !found || blockNumber > maxLowerBlock {
+				maxLowerBlock = blockNumber
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		return 0, fmt.Errorf("no lower block number found")
+	}
+	return maxLowerBlock, nil
 }
 
 func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck model.Block) error {
@@ -283,4 +302,17 @@ func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) e
 	}
 
 	return nil
+}
+
+func getSafeBlock(currentBlockNumber uint64) *model.Block {
+	var safeBlockNumber uint64
+	if currentBlockNumber < 250 {
+		safeBlockNumber = 0
+	} else {
+		safeBlockNumber = currentBlockNumber - 250
+	}
+
+	return &model.Block{
+		Number: safeBlockNumber,
+	}
 }
