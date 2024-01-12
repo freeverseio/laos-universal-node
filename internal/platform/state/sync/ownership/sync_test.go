@@ -349,8 +349,7 @@ func TestCleanStoredBlockNumbers(t *testing.T) {
 }
 
 func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
-	t.Parallel()
-
+	// Do not run this test in parallel
 	testCases := []struct {
 		name                   string
 		numberOfBlocks         int
@@ -374,9 +373,7 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			db, err := badger.Open(
 				badger.DefaultOptions("").
 					WithInMemory(true).
