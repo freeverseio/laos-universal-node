@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
+	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
+	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/mock"
 	"go.uber.org/mock/gomock"
 )
@@ -293,6 +296,149 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 			}
 		})
 	}
+}
+func TestCleanStoredBlockNumbers(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name              string
+		storedBlockKeys   []string
+		expectedDeletions []string
+	}{
+		{
+			name:              "More than 250 blocks",
+			storedBlockKeys:   generateBlockKeys(300, 1),
+			expectedDeletions: generateBlockKeys(50, 251), // Oldest 50 blocks
+		},
+		{
+			name:              "Exactly 250 blocks",
+			storedBlockKeys:   generateBlockKeys(250, 1),
+			expectedDeletions: nil, // No deletions
+		},
+		{
+			name:              "Less than 250 blocks",
+			storedBlockKeys:   generateBlockKeys(200, 1),
+			expectedDeletions: nil, // No deletions
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			mockTx := mock.NewMockTx(mockCtrl)
+			service := ownership.NewService(mockTx)
+
+			mockTx.EXPECT().GetKeysWithPrefix([]byte("ownership_block_"), true).
+				Return(convertToByteSliceArray(tc.storedBlockKeys))
+
+			for _, key := range tc.expectedDeletions {
+				mockTx.EXPECT().Delete([]byte(key)).Return(nil)
+			}
+
+			err := service.CleanStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+			}
+		})
+	}
+}
+
+func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name                   string
+		numberOfBlocks         int
+		expectedNumberOfBlocks int
+	}{
+		{
+			name:                   "More than 250 blocks",
+			numberOfBlocks:         300,
+			expectedNumberOfBlocks: 250,
+		},
+		{
+			name:                   "Exactly 250 blocks",
+			numberOfBlocks:         250,
+			expectedNumberOfBlocks: 250,
+		},
+		{
+			name:                   "Less than 250 blocks",
+			numberOfBlocks:         200,
+			expectedNumberOfBlocks: 200,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, err := badger.Open(
+				badger.DefaultOptions("").
+					WithInMemory(true).
+					WithLoggingLevel(badger.ERROR))
+			if err != nil {
+				t.Fatalf("error initializing storage: %v", err)
+			}
+			badgerService := badgerStorage.NewService(db)
+			tx := badgerService.NewTransaction()
+			service := ownership.NewService(tx)
+			generationBlockKeysInBadger(tx, tc.numberOfBlocks)
+			blockNumbers, err := service.GetAllStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("GetAllStoredBlockNumbers returned an error: %v", err)
+			}
+			if len(blockNumbers) != tc.numberOfBlocks {
+				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.numberOfBlocks)
+			}
+			err = service.CleanStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+			}
+			blockNumbers, err = service.GetAllStoredBlockNumbers()
+			if err != nil {
+				t.Fatalf("GetAllStoredBlockNumbers returned an error: %v", err)
+			}
+			if len(blockNumbers) != tc.expectedNumberOfBlocks {
+				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.expectedNumberOfBlocks)
+			}
+			if blockNumbers[0] != uint64(tc.numberOfBlocks) {
+				t.Fatalf("got %d as first block number, expected %d", blockNumbers[0], tc.numberOfBlocks)
+			}
+			if err := db.Close(); err != nil {
+				t.Fatalf("error closing db: %v", err)
+			}
+		})
+	}
+}
+
+func generationBlockKeysInBadger(tx storage.Tx, num int) error {
+	for i := 1; i <= num; i++ {
+		block := model.Block{
+			Number:    uint64(i),
+			Timestamp: 1,
+			Hash:      common.HexToHash("0x123"),
+		}
+
+		var buf bytes.Buffer
+		encoder := gob.NewEncoder(&buf)
+		_ = encoder.Encode(block) // omit error since block is constant
+
+		err := tx.Set([]byte(fmt.Sprintf("ownership_block_%018d", block.Number)), buf.Bytes())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Helper function to generate mock block keys
+func generateBlockKeys(num int, startingBlock int) []string {
+	var keys []string
+	for i := 1; i <= num; i++ {
+		keys = append(keys, fmt.Sprintf("ownership_block_%018d", startingBlock))
+		startingBlock++
+	}
+	return keys
 }
 
 func convertToByteSliceArray(strs []string) [][]byte {

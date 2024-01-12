@@ -81,6 +81,28 @@ func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
 	return blockNumbers, nil
 }
 
+func (s *service) CleanStoredBlockNumbers() error {
+	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
+
+	// Skip the first 250 keys (newest entries)
+	if len(keys) > 250 {
+		keys = keys[250:]
+	} else {
+		// If there are 250 or fewer keys, nothing needs to be deleted
+		return nil
+	}
+
+	// Delete all keys beyond the newest 250
+	for _, key := range keys {
+		err := s.tx.Delete(key)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func formatBlockNumber(blockNumber uint64, blockNumberDigits uint16) string {
 	// Convert the block number to a string
 	blockNumberString := strconv.FormatUint(blockNumber, 10)

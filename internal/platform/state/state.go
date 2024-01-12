@@ -65,6 +65,7 @@ type OwnershipSyncState interface {
 	GetOwnershipBlock(blockNumber uint64) (model.Block, error)
 	SetOwnershipBlock(blockNumber uint64, block model.Block) error
 	GetAllStoredBlockNumbers() ([]uint64, error)
+	CleanStoredBlockNumbers() error
 }
 
 type EvolutionSyncState interface {

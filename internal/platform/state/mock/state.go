@@ -107,6 +107,20 @@ func (mr *MockTxMockRecorder) Checkout(contract, blockNumber any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTx)(nil).Checkout), contract, blockNumber)
 }
 
+// CleanStoredBlockNumbers mocks base method.
+func (m *MockTx) CleanStoredBlockNumbers() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanStoredBlockNumbers")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CleanStoredBlockNumbers indicates an expected call of CleanStoredBlockNumbers.
+func (mr *MockTxMockRecorder) CleanStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanStoredBlockNumbers", reflect.TypeOf((*MockTx)(nil).CleanStoredBlockNumbers))
+}
+
 // Commit mocks base method.
 func (m *MockTx) Commit() error {
 	m.ctrl.T.Helper()
@@ -937,6 +951,20 @@ func NewMockOwnershipSyncState(ctrl *gomock.Controller) *MockOwnershipSyncState 
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockOwnershipSyncState) EXPECT() *MockOwnershipSyncStateMockRecorder {
 	return m.recorder
+}
+
+// CleanStoredBlockNumbers mocks base method.
+func (m *MockOwnershipSyncState) CleanStoredBlockNumbers() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanStoredBlockNumbers")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CleanStoredBlockNumbers indicates an expected call of CleanStoredBlockNumbers.
+func (mr *MockOwnershipSyncStateMockRecorder) CleanStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).CleanStoredBlockNumbers))
 }
 
 // GetAllStoredBlockNumbers mocks base method.
