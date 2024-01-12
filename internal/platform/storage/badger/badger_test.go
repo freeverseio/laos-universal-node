@@ -136,7 +136,7 @@ func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 }
 
 func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
-	t.Parallel()
+	// DON'T PARALLELIZE THIS TEST
 	service := badgerStorage.NewService(db)
 	keysAndValues := [][]byte{
 		[]byte("prefix_001"), []byte("1"),
@@ -165,10 +165,13 @@ func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 	if string(got[1]) != "prefix_002" {
 		t.Fatalf("got %v, expected %v", string(got[1]), "prefix_002")
 	}
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
 }
 
 func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
-	t.Parallel()
+	// DON'T PARALLELIZE THIS TEST
 	service := badgerStorage.NewService(db)
 
 	for i := 0; i < 1000; i++ {
@@ -180,7 +183,7 @@ func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
 	tx := service.NewTransaction()
 	got := tx.GetKeysWithPrefix([]byte("prefix_"), true)
 	if len(got) != 1000 {
-		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+		t.Fatalf("got %d keys when 1000 keys were expected", len(got))
 	}
 	if string(got[0]) != "prefix_999" {
 		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_9999")
@@ -214,6 +217,9 @@ func setup() error {
 }
 
 func teardown() {
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
 	if err := db.Close(); err != nil {
 		log.Printf("error occurred closing the DB: %s", err.Error())
 	}

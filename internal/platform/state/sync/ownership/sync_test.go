@@ -297,6 +297,7 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 		})
 	}
 }
+
 func TestCleanStoredBlockNumbers(t *testing.T) {
 	t.Parallel()
 
@@ -323,7 +324,9 @@ func TestCleanStoredBlockNumbers(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
@@ -371,7 +374,9 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			db, err := badger.Open(
 				badger.DefaultOptions("").
 					WithInMemory(true).
@@ -382,7 +387,7 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 			badgerService := badgerStorage.NewService(db)
 			tx := badgerService.NewTransaction()
 			service := ownership.NewService(tx)
-			generationBlockKeysInBadger(tx, tc.numberOfBlocks)
+			generationBlockKeysInBadger(t, tx, tc.numberOfBlocks)
 			blockNumbers, err := service.GetAllStoredBlockNumbers()
 			if err != nil {
 				t.Fatalf("GetAllStoredBlockNumbers returned an error: %v", err)
@@ -404,6 +409,9 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 			if blockNumbers[0] != uint64(tc.numberOfBlocks) {
 				t.Fatalf("got %d as first block number, expected %d", blockNumbers[0], tc.numberOfBlocks)
 			}
+			if err := db.DropAll(); err != nil {
+				t.Fatalf("error closing db: %v", err)
+			}
 			if err := db.Close(); err != nil {
 				t.Fatalf("error closing db: %v", err)
 			}
@@ -411,7 +419,8 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	}
 }
 
-func generationBlockKeysInBadger(tx storage.Tx, num int) error {
+func generationBlockKeysInBadger(t *testing.T, tx storage.Tx, num int) {
+	t.Helper()
 	for i := 1; i <= num; i++ {
 		block := model.Block{
 			Number:    uint64(i),
@@ -425,14 +434,13 @@ func generationBlockKeysInBadger(tx storage.Tx, num int) error {
 
 		err := tx.Set([]byte(fmt.Sprintf("ownership_block_%018d", block.Number)), buf.Bytes())
 		if err != nil {
-			return err
+			t.Fatalf("error setting block %d: %v", block.Number, err)
 		}
 	}
-	return nil
 }
 
 // Helper function to generate mock block keys
-func generateBlockKeys(num int, startingBlock int) []string {
+func generateBlockKeys(num, startingBlock int) []string {
 	var keys []string
 	for i := 1; i <= num; i++ {
 		keys = append(keys, fmt.Sprintf("ownership_block_%018d", startingBlock))
