@@ -316,10 +316,8 @@ func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) e
 }
 
 func getSafeBlock(currentBlockNumber uint64) *model.Block {
-	safeBlockNumber := currentBlockNumber
-	if currentBlockNumber >= safeBlockMargin {
-		safeBlockNumber -= safeBlockMargin
+	if currentBlockNumber < safeBlockMargin {
+		return &model.Block{Number: 0}
 	}
-
-	return &model.Block{Number: safeBlockNumber}
+	return &model.Block{Number: currentBlockNumber - safeBlockMargin}
 }
