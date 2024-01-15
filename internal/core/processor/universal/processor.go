@@ -94,6 +94,11 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 	return p.checkBlockForReorg(ctx, lastBlockDB)
 }
 
+// RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
+// It will checkout merkle tree for each contract in its own transaction.
+// It will set the last ownership block to the block without reorg and delete all block hashes after the block without reorg.
+// It will return the block without reorg.
+// It will return an error if any error occurs.
 func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
 	// Start a transaction
 	tx := p.stateService.NewTransaction()
