@@ -140,10 +140,10 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 }
 
 func (p *processor) findBlockWithoutReorg(ctx context.Context, tx state.Tx, currentBlock uint64, storedBlockNumbers []uint64) (*model.Block, error) {
-	blockNumberToCheck, err := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
-	if err != nil { // no lower block number found
+	blockNumberToCheck, found := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
+	if !found { // no lower block number found
 		// we get a safe block number to start from
-		return getSafeBlock(blockNumberToCheck), nil
+		return getSafeBlock(currentBlock), nil
 	}
 
 	blockToCheck, err := tx.GetOwnershipBlock(blockNumberToCheck)
@@ -166,7 +166,7 @@ func (p *processor) findBlockWithoutReorg(ctx context.Context, tx state.Tx, curr
 	}
 }
 
-func getNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (uint64, error) {
+func getNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (blockNumber uint64, exist bool) {
 	var maxLowerBlock uint64
 	found := false
 
@@ -181,9 +181,9 @@ func getNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (
 	}
 
 	if !found {
-		return 0, fmt.Errorf("no lower block number found")
+		return 0, false
 	}
-	return maxLowerBlock, nil
+	return maxLowerBlock, found
 }
 
 func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck model.Block) error {
