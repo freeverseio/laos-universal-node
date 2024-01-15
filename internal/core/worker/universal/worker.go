@@ -8,12 +8,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
-	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
-	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
-	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
-	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 type Worker interface {
@@ -35,26 +30,11 @@ func WithProcessor(p universal.Processor) Option {
 }
 
 func New(c *config.Config,
-	client blockchain.EthClient,
-	scanner scan.Scanner,
-	stateService state.Service,
-	discoverer contractDiscoverer.Discoverer,
-	updater contractUpdater.Updater,
-	opts ...Option,
+	processor universal.Processor,
 ) Worker {
 	w := &worker{
 		waitingTime: c.WaitingTime,
-		processor: universal.NewProcessor(
-			client,
-			stateService,
-			scanner,
-			c,
-			discoverer,
-			updater),
-	}
-
-	for _, opt := range opts {
-		opt(w)
+		processor:   processor,
 	}
 
 	return w

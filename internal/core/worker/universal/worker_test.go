@@ -8,14 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
-	mockDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/mock"
 	mockProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/mock"
-	mockUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater/mock"
 	worker "github.com/freeverseio/laos-universal-node/internal/core/worker/universal"
-	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
-	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
-	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -28,11 +23,6 @@ func TestRun_SuccessfulExecutionWithReorgAndRecovery(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockClientService := mockClient.NewMockEthClient(mockCtrl)
-	mockScanner := mockScan.NewMockScanner(mockCtrl)
-	mockStateService := mockTx.NewMockService(mockCtrl)
-	mockDiscovererService := mockDiscoverer.NewMockDiscoverer(mockCtrl)
-	mockUpdaterService := mockUpdater.NewMockUpdater(mockCtrl)
 	mockProcessorService := mockProcessor.NewMockProcessor(mockCtrl)
 
 	startingBlocks := []uint64{90, 80}
@@ -60,9 +50,7 @@ func TestRun_SuccessfulExecutionWithReorgAndRecovery(t *testing.T) {
 		Number: startingBlocks[1],
 		Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
 	}, nil).Times(1)
-
-	w := worker.New(&config.Config{WaitingTime: 1 * time.Second}, mockClientService, mockScanner, mockStateService, mockDiscovererService, mockUpdaterService,
-		worker.WithProcessor(mockProcessorService))
+	w := worker.New(&config.Config{WaitingTime: 1 * time.Second}, mockProcessorService)
 
 	err := w.Run(ctx)
 	if err != nil {

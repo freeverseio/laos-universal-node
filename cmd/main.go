@@ -17,6 +17,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	universalProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
@@ -148,7 +149,8 @@ func run() error {
 		discoveryValidator := validator.New(c.GlobalConsensus, c.Parachain)
 		discoverer := contractDiscoverer.New(ownershipChainClient, c.Contracts, s, discoveryValidator)
 		updater := contractUpdater.New(ownershipChainClient, s)
-		uWorker := universalWorker.New(c, ownershipChainClient, s, stateService, discoverer, updater)
+		procerssor := universalProcessor.NewProcessor(ownershipChainClient, stateService, s, c, discoverer, updater)
+		uWorker := universalWorker.New(c, procerssor)
 		return uWorker.Run(ctx)
 	})
 

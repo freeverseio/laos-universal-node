@@ -62,7 +62,6 @@ func TestGetNextLowerBlockNumber(t *testing.T) {
 			if !reflect.DeepEqual(tc.storedBlockNumbers, tc.expectedModifiedSlice) {
 				t.Errorf("slice was modified to %v, expected %v", tc.storedBlockNumbers, tc.expectedModifiedSlice)
 			}
-
 		})
 	}
 }
