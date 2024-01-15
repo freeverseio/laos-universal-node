@@ -103,7 +103,7 @@ func (s *service) DeleteOldStoredBlockNumbers() error {
 	return nil
 }
 
-func (s *service) DeleteStoredBlockNumbersNewerThanBlockNumber(blockNumberRef uint64) error {
+func (s *service) DeleteOrphanBlockNumbers(blockNumberRef uint64) error {
 	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
 	// Delete all keys
 	for i, key := range keys {

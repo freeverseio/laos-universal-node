@@ -451,7 +451,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			}
 			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
 			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
-			tx.EXPECT().DeleteStoredBlockNumbersNewerThanBlockNumber(tt.safeBlockNumber).Return(nil).Times(1)
+			tx.EXPECT().DeleteOrphanBlockNumbers(tt.safeBlockNumber).Return(nil).Times(1)
 			for _, contract := range tt.getAllContracts {
 				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil).Times(1)
 				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)

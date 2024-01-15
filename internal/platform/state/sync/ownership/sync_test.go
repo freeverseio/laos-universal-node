@@ -416,7 +416,7 @@ func TestDeleteOldStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	}
 }
 
-func TestDeleteStoredBlockNumbersNewerThanBlockNumberWithBadgerInMemory(t *testing.T) {
+func TestDeleteOrphanBlockNumbersWithBadgerInMemory(t *testing.T) {
 	// Do not run this test in parallel
 	testCases := []struct {
 		name                   string
@@ -464,7 +464,7 @@ func TestDeleteStoredBlockNumbersNewerThanBlockNumberWithBadgerInMemory(t *testi
 			if len(blockNumbers) != tc.numberOfBlocks {
 				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.numberOfBlocks)
 			}
-			err = service.DeleteStoredBlockNumbersNewerThanBlockNumber(tc.blockNumberRef)
+			err = service.DeleteOrphanBlockNumbers(tc.blockNumberRef)
 			if err != nil {
 				t.Fatalf("DeleteOldStoredBlockNumbers returned an error: %v", err)
 			}

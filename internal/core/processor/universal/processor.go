@@ -128,7 +128,7 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		return nil, err
 	}
 	// deleting all block hashes after the block without reorg
-	if err := tx.DeleteStoredBlockNumbersNewerThanBlockNumber(blockWithoutReorg.Number); err != nil {
+	if err := tx.DeleteOrphanBlockNumbers(blockWithoutReorg.Number); err != nil {
 		return nil, err
 	}
 
