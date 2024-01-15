@@ -28,9 +28,9 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
-	formatedOwnerhipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
 	// Saving the block with blocknumber as key
-	return sync.SetBlock(s.tx, ownershipBlockTag+formatedOwnerhipBlockNumber, block)
+	return sync.SetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber, block)
 }
 
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
@@ -48,8 +48,8 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 }
 
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
-	formatedOwnerhipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
-	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnerhipBlockNumber)
+	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
 }
 
 func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {

@@ -103,17 +103,10 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if err != nil {
 		return nil, err
 	}
-	var blockWithoutReorg *model.Block
-	nextBlockNumberToCheck, err := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
-	if err != nil { // no lower block number found
-		// we get a safe block number to start from
-		blockWithoutReorg = getSafeBlock(currentBlock)
-	} else {
-		// Check for reorg recursively
-		blockWithoutReorg, err = p.checkForReorgRecursive(ctx, tx, nextBlockNumberToCheck, storedBlockNumbers)
-		if err != nil {
-			return nil, err
-		}
+	// Check for reorg recursively
+	blockWithoutReorg, err := p.findBlockWithoutReorg(ctx, tx, currentBlock, storedBlockNumbers)
+	if err != nil {
+		return nil, err
 	}
 
 	contracts := tx.GetAllERC721UniversalContracts()
@@ -134,7 +127,7 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if err := tx.SetLastOwnershipBlock(*blockWithoutReorg); err != nil {
 		return nil, err
 	}
-	// deleting all blockhashes after the block without reorg
+	// deleting all block hashes after the block without reorg
 	if err := tx.DeleteStoredBlockNumbersNewerThanBlockNumber(blockWithoutReorg.Number); err != nil {
 		return nil, err
 	}
@@ -146,7 +139,13 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	return blockWithoutReorg, nil
 }
 
-func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blockNumberToCheck uint64, storedBlockNumbers []uint64) (*model.Block, error) {
+func (p *processor) findBlockWithoutReorg(ctx context.Context, tx state.Tx, currentBlock uint64, storedBlockNumbers []uint64) (*model.Block, error) {
+	blockNumberToCheck, err := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
+	if err != nil { // no lower block number found
+		// we get a safe block number to start from
+		return getSafeBlock(blockNumberToCheck), nil
+	}
+
 	blockToCheck, err := tx.GetOwnershipBlock(blockNumberToCheck)
 	if err != nil {
 		slog.Error("error retrieving block data", "blockNumber", blockNumberToCheck, "err", err.Error())
@@ -160,12 +159,7 @@ func (p *processor) checkForReorgRecursive(ctx context.Context, tx state.Tx, blo
 		return &blockToCheck, e
 	case ReorgError:
 		// reorg, continue checking the previous blocks
-		nextBlockToCheck, errNextBlockNumber := getNextLowerBlockNumber(blockNumberToCheck, storedBlockNumbers)
-		if errNextBlockNumber != nil { // no lower block number found
-			// we return a safe block number to start from
-			return getSafeBlock(blockNumberToCheck), nil
-		}
-		return p.checkForReorgRecursive(ctx, tx, nextBlockToCheck, storedBlockNumbers)
+		return p.findBlockWithoutReorg(ctx, tx, blockNumberToCheck, storedBlockNumbers)
 	default:
 		// Other error occurred
 		return nil, err
@@ -322,14 +316,10 @@ func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) e
 }
 
 func getSafeBlock(currentBlockNumber uint64) *model.Block {
-	var safeBlockNumber uint64
-	if currentBlockNumber < safeBlockMargin {
-		safeBlockNumber = 0
-	} else {
-		safeBlockNumber = currentBlockNumber - safeBlockMargin
+	safeBlockNumber := currentBlockNumber
+	if currentBlockNumber >= safeBlockMargin {
+		safeBlockNumber -= safeBlockMargin
 	}
 
-	return &model.Block{
-		Number: safeBlockNumber,
-	}
+	return &model.Block{Number: safeBlockNumber}
 }
