@@ -10,7 +10,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
-	utils "github.com/freeverseio/laos-universal-node/internal/core/worker"
+	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -103,7 +103,7 @@ func (w *worker) executeUniversalBlockRange(ctx context.Context,
 		if lastBlock < startingBlock {
 			slog.Debug("last calculated block is behind starting block, waiting...",
 				"lastBlock", lastBlock, "startingBlock", startingBlock)
-			utils.WaitBeforeNextScan(ctx, w.waitingTime)
+			shared.WaitBeforeNextScan(ctx, w.waitingTime)
 			return startingBlock - 1, true, nil // return lastBlock from previous range to avoid skipping a block
 		}
 	}
@@ -116,7 +116,7 @@ func (w *worker) executeUniversalBlockRange(ctx context.Context,
 
 	if !evoSynced {
 		slog.Debug("evolution chain is not synced with ownership chain, waiting...")
-		utils.WaitBeforeNextScan(ctx, w.waitingTime)
+		shared.WaitBeforeNextScan(ctx, w.waitingTime)
 		return lastBlock, false, nil
 	}
 	err = w.processor.VerifyChainConsistency(ctx, startingBlock)
