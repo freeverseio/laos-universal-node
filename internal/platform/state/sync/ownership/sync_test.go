@@ -298,7 +298,7 @@ func TestSetAndGetOwnershipBlock(t *testing.T) {
 	}
 }
 
-func TestCleanStoredBlockNumbers(t *testing.T) {
+func TestDeleteOldStoredBlockNumbers(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -340,15 +340,15 @@ func TestCleanStoredBlockNumbers(t *testing.T) {
 				mockTx.EXPECT().Delete([]byte(key)).Return(nil)
 			}
 
-			err := service.CleanStoredBlockNumbers()
+			err := service.DeleteOldStoredBlockNumbers()
 			if err != nil {
-				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+				t.Fatalf("DeleteOldStoredBlockNumbers returned an error: %v", err)
 			}
 		})
 	}
 }
 
-func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
+func TestDeleteOldStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 	// Do not run this test in parallel
 	testCases := []struct {
 		name                   string
@@ -392,9 +392,9 @@ func TestCleanStoredBlockNumbersWithBadgerInMemory(t *testing.T) {
 			if len(blockNumbers) != tc.numberOfBlocks {
 				t.Fatalf("got %d block numbers, expected %d", len(blockNumbers), tc.numberOfBlocks)
 			}
-			err = service.CleanStoredBlockNumbers()
+			err = service.DeleteOldStoredBlockNumbers()
 			if err != nil {
-				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+				t.Fatalf("DeleteOldStoredBlockNumbers returned an error: %v", err)
 			}
 			blockNumbers, err = service.GetAllStoredBlockNumbers()
 			if err != nil {
@@ -466,7 +466,7 @@ func TestDeleteStoredBlockNumbersNewerThanBlockNumberWithBadgerInMemory(t *testi
 			}
 			err = service.DeleteStoredBlockNumbersNewerThanBlockNumber(tc.blockNumberRef)
 			if err != nil {
-				t.Fatalf("CleanStoredBlockNumbers returned an error: %v", err)
+				t.Fatalf("DeleteOldStoredBlockNumbers returned an error: %v", err)
 			}
 			blockNumbers, err = service.GetAllStoredBlockNumbers()
 			if err != nil {

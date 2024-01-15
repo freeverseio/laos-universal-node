@@ -82,7 +82,7 @@ func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
 	return blockNumbers, nil
 }
 
-func (s *service) CleanStoredBlockNumbers() error {
+func (s *service) DeleteOldStoredBlockNumbers() error {
 	keys := s.tx.GetKeysWithPrefix([]byte(ownershipBlockTag), true)
 
 	// Skip the first 250 keys (newest entries)

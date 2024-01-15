@@ -129,7 +129,7 @@ func run() error {
 				return nil
 			case <-ticker.C:
 				tx := stateService.NewTransaction()
-				err := tx.CleanStoredBlockNumbers()
+				err := tx.DeleteOldStoredBlockNumbers()
 				if err != nil {
 					slog.Error("error occurred while cleaning stored block numbers", "err", err.Error())
 				}
