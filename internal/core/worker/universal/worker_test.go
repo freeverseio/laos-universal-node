@@ -65,7 +65,6 @@ func TestRun_SuccessfulExecutionWithReorgAndRecovery(t *testing.T) {
 		worker.WithProcessor(mockProcessorService))
 
 	err := w.Run(ctx)
-
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 	}
