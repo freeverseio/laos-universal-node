@@ -17,6 +17,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	evoprocessor "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	universalProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
@@ -164,8 +165,12 @@ func run() error {
 			slog.Info("***********************************************************************************************")
 		}
 
-		s := scan.NewScanner(evoChainClient)
-		evoWorker := evoworker.New(c, evoChainClient, s, stateService)
+		scanner := scan.NewScanner(evoChainClient)
+		processor := evoprocessor.NewProcessor(evoChainClient,
+			stateService,
+			scanner,
+			c)
+		evoWorker := evoworker.New(c, processor)
 		return evoWorker.Run(ctx)
 	})
 

@@ -20,15 +20,6 @@ type worker struct {
 	processor   universal.Processor
 }
 
-type Option func(*worker)
-
-// WithProcessor sets a custom processor for the worker.
-func WithProcessor(p universal.Processor) Option {
-	return func(w *worker) {
-		w.processor = p
-	}
-}
-
 func New(c *config.Config,
 	processor universal.Processor,
 ) Worker {
