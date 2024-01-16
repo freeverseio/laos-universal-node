@@ -8,12 +8,7 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
-	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
-	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
-	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
-	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 type Worker interface {
@@ -26,22 +21,14 @@ type worker struct {
 }
 
 func New(c *config.Config,
-	client blockchain.EthClient,
-	scanner scan.Scanner,
-	stateService state.Service,
-	discoverer contractDiscoverer.Discoverer,
-	updater contractUpdater.Updater,
+	processor universal.Processor,
 ) Worker {
-	return &worker{
+	w := &worker{
 		waitingTime: c.WaitingTime,
-		processor: universal.NewProcessor(
-			client,
-			stateService,
-			scanner,
-			c,
-			discoverer,
-			updater),
+		processor:   processor,
 	}
+
+	return w
 }
 
 func (w *worker) Run(ctx context.Context) error {
@@ -69,10 +56,14 @@ func (w *worker) Run(ctx context.Context) error {
 						"blockNumber", reorgErr.Block,
 						"chainHash", reorgErr.ChainHash.String(),
 						"storageHash", reorgErr.StorageHash.String())
-					slog.Info("***************************************************************************************")
-					slog.Info("Please wipe out the database before running the node again.")
-					slog.Info("***************************************************************************************")
-					return reorgErr
+					blockWithouReorg, err := w.processor.RecoverFromReorg(ctx, reorgErr.Block)
+					if err != nil {
+						slog.Error("error occurred while recovering from reorg", "err", err.Error())
+						return err
+					}
+					slog.Info("recovered successfully from reorg: HURRAY!")
+					startingBlock = blockWithouReorg.Number
+					lastBlock = blockWithouReorg.Number
 				}
 				break
 			}

@@ -22,10 +22,7 @@ func TestLatestFinalizedBlockHash(t *testing.T) {
 
 		mockHTTPClient := mock.NewMockHTTPClient(ctrl)
 
-		laosHTTP := evolution.LaosHTTP{
-			Client: mockHTTPClient,
-			Url:    "http://caladan.com/own",
-		}
+		laosHTTP := evolution.NewLaosHTTP(mockHTTPClient, "http://caladan.com/own")
 
 		// Create a sample JSON payload
 		payload := []byte(`{"jsonrpc":"2.0","result":"sample-result","id":1}`)
@@ -63,10 +60,7 @@ func TestLatestFinalizedBlockHash(t *testing.T) {
 
 		url := "http://caladan.com/own"
 
-		laosHTTP := evolution.LaosHTTP{
-			Client: mockHTTPClient,
-			Url:    url,
-		}
+		laosHTTP := evolution.NewLaosHTTP(mockHTTPClient, "http://caladan.com/own")
 
 		// Create a sample JSON payload
 
@@ -104,10 +98,7 @@ func TestBlockNumber(t *testing.T) {
 
 		mockHTTPClient := mock.NewMockHTTPClient(ctrl)
 
-		laosHTTP := evolution.LaosHTTP{
-			Client: mockHTTPClient,
-			Url:    "http://caladan.com/own",
-		}
+		laosHTTP := evolution.NewLaosHTTP(mockHTTPClient, "http://caladan.com/own")
 
 		body := evolution.ChainGetBlock{
 			JSONRPC: "2.0",

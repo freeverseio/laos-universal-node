@@ -191,20 +191,25 @@ func TestVerifyChainConsistency(t *testing.T) {
 			lastBlockDBError: errors.New("error from storage"),
 			expectedError:    errors.New("error from storage"),
 		},
-
 		{
-			name:              "Previous block hash matches",
-			startingBlock:     100,
-			lastBlockDB:       model.Block{Hash: common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e")},
+			name:          "Previous block hash matches",
+			startingBlock: 100,
+			lastBlockDB: model.Block{
+				Number: 99,
+				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+			},
 			lastBlockDBError:  nil,
 			previousBlockData: &types.Header{ParentHash: common.HexToHash("0x123")},
 			expectedError:     nil,
 		},
 
 		{
-			name:                   "error when trying to obtain previous block from chain",
-			startingBlock:          100,
-			lastBlockDB:            model.Block{Hash: common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e")},
+			name:          "error when trying to obtain previous block from chain",
+			startingBlock: 100,
+			lastBlockDB: model.Block{
+				Number: 99,
+				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+			},
 			lastBlockDBError:       nil,
 			previousBlockData:      nil,
 			previousBlockDataError: errors.New("error retrieving previous block from chain"),
@@ -212,9 +217,12 @@ func TestVerifyChainConsistency(t *testing.T) {
 		},
 
 		{
-			name:                   "Previous block hash does not match",
-			startingBlock:          100,
-			lastBlockDB:            model.Block{Hash: common.HexToHash("0x123")},
+			name:          "Previous block hash does not match",
+			startingBlock: 100,
+			lastBlockDB: model.Block{
+				Number: 99,
+				Hash:   common.HexToHash("0x123"),
+			},
 			lastBlockDBError:       nil,
 			previousBlockData:      &types.Header{ParentHash: common.HexToHash("0x123")},
 			previousBlockDataError: nil,
@@ -310,6 +318,7 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.TimeOwnership))).
 				Return(&types.Header{Number: big.NewInt(100), Time: tt.TimeOwnership}, nil)
+
 			stateService.EXPECT().NewTransaction().Return(tx)
 			tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: tt.TimeEvo, Timestamp: tt.TimeEvo}, nil)
 			tx.EXPECT().Discard()
@@ -323,7 +332,143 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 	}
 }
 
-// nolint:gocritic // many return values in function bug it is ok
+func TestRecoverFromReorg(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                     string
+		startingBlock            uint64
+		safeBlockNumber          uint64
+		numberOfRecursions       uint64
+		checkReorgError          error
+		getAllStoredBlockNumbers []uint64
+		getAllContracts          []string
+		getBlockHeadersDB        []*types.Header
+		getBlockHeadersL1        []*types.Header
+		checkoutError            error
+		expectedError            error
+	}{
+		{
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			safeBlockNumber:          99,
+			numberOfRecursions:       1,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 99, 98},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{{
+				Number: big.NewInt(99),
+				Time:   100,
+			}},
+			getBlockHeadersL1: []*types.Header{{
+				Number: big.NewInt(99),
+				Time:   100,
+			}},
+			checkoutError: nil,
+			expectedError: nil,
+		},
+		{
+			name:                     "successful reorg recovery",
+			startingBlock:            100,
+			safeBlockNumber:          95,
+			numberOfRecursions:       1,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 95, 94},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{{
+				Number: big.NewInt(95),
+				Time:   100,
+			}},
+			getBlockHeadersL1: []*types.Header{{
+				Number: big.NewInt(95),
+				Time:   100,
+			}},
+			checkoutError: nil,
+			expectedError: nil,
+		},
+		{
+			name:                     "successful reorg recovery with no blocks to checkout",
+			startingBlock:            100,
+			numberOfRecursions:       0,
+			safeBlockNumber:          0,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100},
+			getAllContracts:          []string{"contract1", "contract2"},
+			checkoutError:            nil,
+			expectedError:            nil,
+		},
+		{
+			name:                     "successful reorg recovery with 2 recursions",
+			startingBlock:            100,
+			safeBlockNumber:          95,
+			numberOfRecursions:       2,
+			checkReorgError:          nil,
+			getAllStoredBlockNumbers: []uint64{100, 98, 95},
+			getAllContracts:          []string{"contract1", "contract2"},
+			getBlockHeadersDB: []*types.Header{
+				{
+					Number: big.NewInt(98),
+					Time:   99,
+					Root:   common.HexToHash("0x123"),
+				}, {
+					Number: big.NewInt(95),
+					Time:   100,
+				},
+			},
+			getBlockHeadersL1: []*types.Header{
+				{
+					Number: big.NewInt(98),
+					Time:   88,
+					Root:   common.HexToHash("0x123"),
+				}, {
+					Number: big.NewInt(95),
+					Time:   100,
+				},
+			},
+			checkoutError: nil,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.TODO()
+			stateService, tx, client, _, _, _ := createMocks(t)
+			for _, header := range tt.getBlockHeadersL1 {
+				client.EXPECT().HeaderByNumber(ctx, header.Number).Return(header, nil).Times(1)
+			}
+			stateService.EXPECT().NewTransaction().Return(tx).Times(1 + len(tt.getAllContracts))
+			tx.EXPECT().Discard().Times(1)
+			tx.EXPECT().Commit().Times(len(tt.getAllContracts) + 1)
+			tx.EXPECT().GetAllStoredBlockNumbers().Return(tt.getAllStoredBlockNumbers, nil).Times(1)
+			for i := 0; i < int(tt.numberOfRecursions); i++ {
+				block := tt.getBlockHeadersDB[i]
+				tx.EXPECT().GetOwnershipBlock(block.Number.Uint64()).Return(model.Block{
+					Number: block.Number.Uint64(),
+					Hash:   block.Hash(),
+				}, nil).Times(1)
+			}
+			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
+			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
+			tx.EXPECT().DeleteOrphanBlockNumbers(tt.safeBlockNumber).Return(nil).Times(1)
+			for _, contract := range tt.getAllContracts {
+				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil).Times(1)
+				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
+			}
+			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
+			block, err := p.RecoverFromReorg(ctx, tt.startingBlock)
+			if (err != nil) != (tt.expectedError != nil) {
+				t.Errorf("RecoverFromReorg() error = %v, wantErr %v", err, tt.expectedError)
+			}
+			if block.Number != tt.safeBlockNumber {
+				t.Errorf("RecoverFromReorg() block = %v, want %v", block, tt.safeBlockNumber)
+			}
+		})
+	}
+}
+
+// nolint:gocritic // many return values in function => we accept this for this test helper
 func createMocks(t *testing.T) (
 	*mockTx.MockService,
 	*mockTx.MockTx,
@@ -339,7 +484,7 @@ func createMocks(t *testing.T) (
 func assertError(t *testing.T, expectedError, err error) {
 	t.Helper()
 	if expectedError != nil {
-		if err.Error() != expectedError.Error() {
+		if err == nil || err.Error() != expectedError.Error() {
 			t.Fatalf(`got error "%v", expected error: "%v"`, err, expectedError)
 		}
 	} else {

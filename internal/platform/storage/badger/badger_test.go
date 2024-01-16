@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/dgraph-io/badger/v4"
@@ -134,6 +135,61 @@ func TestStorageGetNoKeysWithPrefix(t *testing.T) {
 	}
 }
 
+func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
+	// DON'T PARALLELIZE THIS TEST
+	service := badgerStorage.NewService(db)
+	keysAndValues := [][]byte{
+		[]byte("prefix_001"), []byte("1"),
+		[]byte("prefix_002"), []byte("2"),
+		[]byte("prefix_003"), []byte("3"),
+		[]byte("prefix_004"), []byte("4"),
+		[]byte("prefix_005"), []byte("5"),
+		[]byte("prefix_010"), []byte("10"),
+		[]byte("prefix_123654487745555421516551151615165151155165515165"), []byte("111"),
+	}
+
+	for i := 0; i < len(keysAndValues); i += 2 {
+		if err := service.Set(keysAndValues[i], keysAndValues[i+1]); err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
+	tx := service.NewTransaction()
+	got := tx.GetKeysWithPrefix([]byte("prefix_"), false)
+
+	if len(got) != 7 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+	if string(got[0]) != "prefix_001" {
+		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_001")
+	}
+	if string(got[1]) != "prefix_002" {
+		t.Fatalf("got %v, expected %v", string(got[1]), "prefix_002")
+	}
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
+}
+
+func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
+	// DON'T PARALLELIZE THIS TEST
+	service := badgerStorage.NewService(db)
+
+	for i := 0; i < 1000; i++ {
+		err := service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
+		if err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
+	tx := service.NewTransaction()
+	got := tx.GetKeysWithPrefix([]byte("prefix_"), true)
+	if len(got) != 1000 {
+		t.Fatalf("got %d keys when 1000 keys were expected", len(got))
+	}
+	if string(got[0]) != "prefix_999" {
+		t.Fatalf("got %v, expected %v", string(got[0]), "prefix_9999")
+	}
+}
+
 func performTransaction(t *testing.T, key, val []byte, service storage.Service) {
 	t.Helper()
 	tx := service.NewTransaction()
@@ -161,6 +217,9 @@ func setup() error {
 }
 
 func teardown() {
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
 	if err := db.Close(); err != nil {
 		log.Printf("error occurred closing the DB: %s", err.Error())
 	}

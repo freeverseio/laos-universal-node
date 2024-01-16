@@ -38,6 +38,7 @@ type processor struct {
 	stateService state.Service
 	scanner      scan.Scanner
 	laosHTTP     LaosRPCRequests
+	waitingTime  time.Duration
 	*shared.BlockHelper
 }
 
@@ -52,6 +53,7 @@ func NewProcessor(client blockchain.EthClient,
 		stateService: stateService,
 		scanner:      scanner,
 		laosHTTP:     laosHTTP,
+		waitingTime:  c.WaitingRPCRequestTime,
 		BlockHelper: shared.NewBlockHelper(
 			client,
 			stateService,
@@ -114,7 +116,7 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 		}
 		slog.Debug("block not finalized, waiting for finality", "block", lastBlock)
 
-		time.Sleep(time.Millisecond * 500)
+		shared.WaitBeforeNextRequest(ctx, p.waitingTime)
 	}
 
 	events, err := p.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)

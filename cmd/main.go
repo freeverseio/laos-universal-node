@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -17,7 +18,8 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
+	evoprocessor "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
+	universalProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
@@ -120,6 +122,28 @@ func run() error {
 		}
 	})
 
+	// Ownership delete old block tags
+	group.Go(func() error {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				tx := stateService.NewTransaction()
+				err := tx.DeleteOldStoredBlockNumbers()
+				if err != nil {
+					slog.Error("error occurred while cleaning stored block numbers", "err", err.Error())
+				}
+				err = tx.Commit()
+				if err != nil {
+					slog.Error("error occurred while committing clean stored block numbers", "err", err.Error())
+				}
+			}
+		}
+	})
+
 	// Ownership chain scanner
 	group.Go(func() error {
 		s := scan.NewScanner(ownershipChainClient, c.Contracts...)
@@ -127,7 +151,8 @@ func run() error {
 		discoveryValidator := validator.New(c.GlobalConsensus, c.Parachain)
 		discoverer := contractDiscoverer.New(ownershipChainClient, c.Contracts, s, discoveryValidator)
 		updater := contractUpdater.New(ownershipChainClient, s)
-		uWorker := universalWorker.New(c, ownershipChainClient, s, stateService, discoverer, updater)
+		processor := universalProcessor.NewProcessor(ownershipChainClient, stateService, s, c, discoverer, updater)
+		uWorker := universalWorker.New(c, processor)
 		return uWorker.Run(ctx)
 	})
 
@@ -141,9 +166,16 @@ func run() error {
 			slog.Info("***********************************************************************************************")
 		}
 
-		laosHTTPClient := evolution.NewLaosHTTP(c.EvoRpc)
-		s := scan.NewScanner(evoChainClient)
-		evoWorker := evoworker.New(c, evoChainClient, s, stateService, laosHTTPClient)
+		laosHTTPClient := evoprocessor.NewLaosHTTP(&http.Client{}, c.EvoRpc)
+		scanner := scan.NewScanner(evoChainClient)
+		processor := evoprocessor.NewProcessor(evoChainClient,
+			stateService,
+			scanner,
+			laosHTTPClient,
+			c)
+
+		evoWorker := evoworker.New(c, processor)
+
 		return evoWorker.Run(ctx)
 	})
 

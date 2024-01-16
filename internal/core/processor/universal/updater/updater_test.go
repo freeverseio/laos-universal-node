@@ -61,19 +61,16 @@ func TestUpdateState(t *testing.T) {
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.lastTagBlockBeforeMint+2))).Return(&types.Header{Time: tt.lastTagBlockBeforeMint + 2}, nil)
 			tx.EXPECT().GetLastTaggedBlock(common.HexToAddress(tt.contract)).Return(int64(tt.lastTagBlockBeforeMint), nil)
 			tx.EXPECT().TagRoot(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+1)).Return(nil)
-			tx.EXPECT().DeleteRootTag(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+1-256)).Return(nil)
 
 			tx.EXPECT().Mint(common.HexToAddress(tt.contract), &tt.mintEvents[0]).Return(nil)
 
 			tx.EXPECT().GetLastTaggedBlock(common.HexToAddress(tt.contract)).Return(int64(tt.lastTagBlockBeforeMint+1), nil)
 			tx.EXPECT().TagRoot(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+2)).Return(nil)
-			tx.EXPECT().DeleteRootTag(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+2-256)).Return(nil)
 			tx.EXPECT().Transfer(common.HexToAddress(tt.contract), &tt.transferEvents[0]).Return(nil)
 
 			tx.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(tt.contract, uint64(1))
 			tx.EXPECT().GetLastTaggedBlock(common.HexToAddress(tt.contract)).Return(int64(tt.lastTagBlockBeforeMint+2), nil)
 			tx.EXPECT().TagRoot(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+3)).Return(nil)
-			tx.EXPECT().DeleteRootTag(common.HexToAddress(tt.contract), int64(tt.lastTagBlockBeforeMint+3-256)).Return(nil)
 
 			err := updater.UpdateState(ctx,
 				tx,

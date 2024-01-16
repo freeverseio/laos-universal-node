@@ -26,14 +26,14 @@ type HTTPClient interface {
 }
 
 type LaosHTTP struct {
-	Client HTTPClient
-	Url    string
+	client HTTPClient
+	url    string
 }
 
-func NewLaosHTTP(url string) LaosRPCRequests {
+func NewLaosHTTP(client HTTPClient, url string) LaosRPCRequests {
 	return LaosHTTP{
-		Client: &http.Client{},
-		Url:    url,
+		client: client,
+		url:    url,
 	}
 }
 
@@ -67,16 +67,16 @@ type ChainGetFinalizedHead struct {
 }
 
 func (l LaosHTTP) makeRequest(payload []byte, result interface{}) error {
-	req, err := http.NewRequest(postMethod, l.Url, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(postMethod, l.url, bytes.NewBuffer(payload))
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", jsonContentType)
 
-	resp, err := l.Client.Do(req)
+	resp, err := l.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error making request to %s: %w", l.Url, err)
+		return fmt.Errorf("error making request to %s: %w", l.url, err)
 	}
 
 	defer func() {
@@ -87,10 +87,11 @@ func (l LaosHTTP) makeRequest(payload []byte, result interface{}) error {
 	}()
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("error in request to %s, got status code: %d", l.Url, resp.StatusCode)
+		return fmt.Errorf("error in request to %s, got status code: %d", l.url, resp.StatusCode)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		slog.Debug("error deocing response body", "err", err, "response body", resp.Body)
 		return fmt.Errorf("error decoding JSON: %w", err)
 	}
 

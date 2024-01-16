@@ -9,9 +9,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
-	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
-	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 type Worker interface {
@@ -23,15 +20,10 @@ type worker struct {
 	processor   evolution.Processor
 }
 
-func New(c *config.Config, client blockchain.EthClient, scanner scan.Scanner, stateService state.Service, laosHTTPClient evolution.LaosRPCRequests) Worker {
+func New(c *config.Config, processor evolution.Processor) Worker {
 	return &worker{
 		waitingTime: c.WaitingTime,
-		processor: evolution.NewProcessor(
-			client,
-			stateService,
-			scanner,
-			laosHTTPClient,
-			c),
+		processor:   processor,
 	}
 }
 
