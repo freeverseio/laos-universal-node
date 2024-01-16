@@ -6,7 +6,7 @@ networks:
     startingBlock: '0'
     blocksMargin: 15
     blocksRange: 10
-    evoRpc: https://caladan.gorengine.com/own
+    evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: '0'
     evoBlocksMargin: 1
     evoBlocksRange: 1
@@ -17,7 +17,7 @@ networks:
     startingBlock: '0'
     blocksMargin: 15
     blocksRange: 10
-    evoRpc: https://caladan.gorengine.com/own
+    evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: '0'
     evoBlocksMargin: 1
     evoBlocksRange: 1
