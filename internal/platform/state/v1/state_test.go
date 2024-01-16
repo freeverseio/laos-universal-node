@@ -57,6 +57,7 @@ func TestLoadMerkleTrees(t *testing.T) {
 }
 
 func TestDeleteOrphanRootTags(t *testing.T) {
+	// Do not run this test in parallel as it uses bager in memory
 	t.Run("successfully deletes orphan root tags", func(t *testing.T) {
 		tx := createBadgerTransaction(t)
 		contract := common.HexToAddress("0x500")
@@ -79,10 +80,21 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
+		// we can checkout the contract at block 100
+		err = tx.Checkout(contract, 100)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
 		err = tx.DeleteOrphanRootTags(int64(100), int64(105))
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
+		// we can not checkout the contract at block 100 anymore
+		err = tx.Checkout(contract, 100)
+		if err == nil {
+			t.Errorf(`got no error when an error was expected`)
+		}
+
 	})
 }
 
