@@ -36,7 +36,7 @@ commands:
           command: |
             COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{ print $3 }' | sed 's/%//g')
             echo "Total coverage: $COVERAGE%"
-            THRESHOLD=71
+            THRESHOLD=75
             if [[ ${COVERAGE%.*} -lt ${THRESHOLD%.*} ]]; then
               echo "Code coverage is less than $THRESHOLD%"
               exit 1

@@ -147,7 +147,6 @@ func run() error {
 	// Ownership chain scanner
 	group.Go(func() error {
 		s := scan.NewScanner(ownershipChainClient, c.Contracts...)
-
 		discoveryValidator := validator.New(c.GlobalConsensus, c.Parachain)
 		discoverer := contractDiscoverer.New(ownershipChainClient, c.Contracts, s, discoveryValidator)
 		updater := contractUpdater.New(ownershipChainClient, s)
