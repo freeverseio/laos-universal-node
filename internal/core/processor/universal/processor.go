@@ -113,7 +113,6 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if err != nil {
 		return nil, err
 	}
-
 	// set last ownership block to block without reorg
 	if errLastOwnership := tx.SetLastOwnershipBlock(*blockWithoutReorg); errLastOwnership != nil {
 		return nil, errLastOwnership

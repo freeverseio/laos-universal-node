@@ -94,7 +94,6 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 		if err == nil {
 			t.Errorf(`got no error when an error was expected`)
 		}
-
 	})
 }
 
