@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -36,18 +37,23 @@ type processor struct {
 	client       blockchain.EthClient
 	stateService state.Service
 	scanner      scan.Scanner
+	laosHTTP     LaosRPCRequests
+	waitingTime  time.Duration
 	*shared.BlockHelper
 }
 
 func NewProcessor(client blockchain.EthClient,
 	stateService state.Service,
 	scanner scan.Scanner,
+	laosHTTP LaosRPCRequests,
 	c *config.Config,
 ) *processor {
 	return &processor{
 		client:       client,
 		stateService: stateService,
 		scanner:      scanner,
+		laosHTTP:     laosHTTP,
+		waitingTime:  c.WaitingRPCRequestTime,
 		BlockHelper: shared.NewBlockHelper(
 			client,
 			stateService,
@@ -97,6 +103,21 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error {
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
+
+	for {
+		var ok bool
+		ok, err := p.hasBlockFinalize(big.NewInt(int64(lastBlock)))
+		if err != nil {
+			slog.Error("error occurred while checking latest finalized block", "err", err.Error())
+			return err
+		}
+		if ok {
+			break
+		}
+		slog.Debug("block not finalized, waiting for finality", "block", lastBlock)
+
+		shared.WaitBeforeNextRequest(ctx, p.waitingTime)
+	}
 
 	events, err := p.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
 	if err != nil {
@@ -188,4 +209,23 @@ func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.
 		}
 	}
 	return groupMintEvents
+}
+
+func (p *processor) hasBlockFinalize(blockNumber *big.Int) (bool, error) {
+	blockHash, err := p.laosHTTP.LatestFinalizedBlockHash()
+	if err != nil {
+		return false, err
+	}
+
+	finalizedBlockNumber, err := p.laosHTTP.BlockNumber(blockHash)
+	if err != nil {
+		return false, err
+	}
+
+	// if blockNumber > finalizedBlockNumber
+	if blockNumber.Cmp(finalizedBlockNumber) == 1 {
+		return false, nil
+	}
+
+	return true, nil
 }

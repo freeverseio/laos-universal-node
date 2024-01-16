@@ -21,21 +21,22 @@ const (
 )
 
 type Config struct {
-	WaitingTime      time.Duration
-	StartingBlock    uint64
-	EvoStartingBlock uint64
-	Parachain        uint64
-	Contracts        []string
-	Rpc              string
-	EvoRpc           string
-	Path             string
-	GlobalConsensus  string
-	BlocksMargin     uint
-	BlocksRange      uint
-	EvoBlocksMargin  uint
-	EvoBlocksRange   uint
-	Port             uint
-	Debug            bool
+	WaitingTime           time.Duration
+	WaitingRPCRequestTime time.Duration
+	StartingBlock         uint64
+	EvoStartingBlock      uint64
+	Parachain             uint64
+	Contracts             []string
+	Rpc                   string
+	EvoRpc                string
+	Path                  string
+	GlobalConsensus       string
+	BlocksMargin          uint
+	BlocksRange           uint
+	EvoBlocksMargin       uint
+	EvoBlocksRange        uint
+	Port                  uint
+	Debug                 bool
 }
 
 func Load() *Config {
@@ -53,23 +54,25 @@ func Load() *Config {
 	startingBlock := flag.Uint64("starting_block", 0, "Initial block where the scanning process should start from")
 	evoStartingBlock := flag.Uint64("evo_starting_block", 0, "Initial block where the scanning process should start from on the evolution chain")
 	waitingTime := flag.Duration("wait", 5*time.Second, "Waiting time between scans when scanning reaches the last block")
+	waitingRPCRequestTime := flag.Duration("wait_rpc", 5*time.Second, "Waiting time between block finality requests to the LAOS parachain")
 	storagePath := flag.String("storage_path", defaultStoragePath, "Path to the storage folder")
 
 	flag.Parse()
 
 	c := &Config{
-		BlocksMargin:     *blocksMargin,
-		BlocksRange:      *blocksRange,
-		EvoBlocksMargin:  *evoBlocksMargin,
-		EvoBlocksRange:   *evoBlocksRange,
-		Debug:            *debug,
-		Rpc:              *rpc,
-		EvoRpc:           *evoRpc,
-		StartingBlock:    *startingBlock,
-		EvoStartingBlock: *evoStartingBlock,
-		WaitingTime:      *waitingTime,
-		Port:             *port,
-		Path:             *storagePath,
+		BlocksMargin:          *blocksMargin,
+		BlocksRange:           *blocksRange,
+		EvoBlocksMargin:       *evoBlocksMargin,
+		EvoBlocksRange:        *evoBlocksRange,
+		Debug:                 *debug,
+		Rpc:                   *rpc,
+		EvoRpc:                *evoRpc,
+		StartingBlock:         *startingBlock,
+		EvoStartingBlock:      *evoStartingBlock,
+		WaitingTime:           *waitingTime,
+		WaitingRPCRequestTime: *waitingRPCRequestTime,
+		Port:                  *port,
+		Path:                  *storagePath,
 	}
 
 	if *contracts != "" {
@@ -83,7 +86,7 @@ func (c *Config) LogFields() {
 	slog.Debug("config loaded", slog.Group("config", "rpc", c.Rpc, "evo_rpc", c.EvoRpc, "contracts", c.Contracts, "starting_block", c.StartingBlock,
 		"evo_starting_block", c.EvoStartingBlock, "blocks_margin", c.BlocksMargin, "evo_blocks_margin", c.EvoBlocksMargin, "blocks_range", c.BlocksRange,
 		"evo_blocks_range", c.EvoBlocksRange, "evo_global_consensus", c.GlobalConsensus, "evo_parachain", c.Parachain, "debug", c.Debug,
-		"wait", c.WaitingTime, "port", c.Port, "storage_path", c.Path))
+		"wait", c.WaitingTime, "wait_rpc", c.WaitingRPCRequestTime, "port", c.Port, "storage_path", c.Path))
 }
 
 func getDefaultStoragePath() string {
