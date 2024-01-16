@@ -114,6 +114,19 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		return nil, err
 	}
 
+	// set last ownership block to block without reorg
+	if errLastOwnership := tx.SetLastOwnershipBlock(*blockWithoutReorg); errLastOwnership != nil {
+		return nil, errLastOwnership
+	}
+	// deleting all block hashes after the block without reorg
+	if errDeleteOrphanBlocknumbers := tx.DeleteOrphanBlockNumbers(blockWithoutReorg.Number); errDeleteOrphanBlocknumbers != nil {
+		return nil, errDeleteOrphanBlocknumbers
+	}
+	// // deleting all root tags after the block without reorg
+	if errDeleteOrphanRootTags := tx.DeleteOrphanRootTags(int64(blockWithoutReorg.Number)+1, int64(currentBlock)); errDeleteOrphanRootTags != nil {
+		return nil, errDeleteOrphanRootTags
+	}
+
 	contracts := tx.GetAllERC721UniversalContracts()
 	// Process each contract
 	for _, contract := range contracts {
@@ -127,14 +140,6 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		if errCommit := contractTx.Commit(); errCommit != nil {
 			return nil, errCommit // Handle commit error
 		}
-	}
-	// set last ownership block to block without reorg
-	if err := tx.SetLastOwnershipBlock(*blockWithoutReorg); err != nil {
-		return nil, err
-	}
-	// deleting all block hashes after the block without reorg
-	if err := tx.DeleteOrphanBlockNumbers(blockWithoutReorg.Number); err != nil {
-		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {

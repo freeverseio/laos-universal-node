@@ -149,6 +149,20 @@ func (mr *MockTxMockRecorder) DeleteOrphanBlockNumbers(blockNumberRef any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockNumbers", reflect.TypeOf((*MockTx)(nil).DeleteOrphanBlockNumbers), blockNumberRef)
 }
 
+// DeleteOrphanRootTags mocks base method.
+func (m *MockTx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrphanRootTags", formBlock, toBlock)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrphanRootTags indicates an expected call of DeleteOrphanRootTags.
+func (mr *MockTxMockRecorder) DeleteOrphanRootTags(formBlock, toBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanRootTags", reflect.TypeOf((*MockTx)(nil).DeleteOrphanRootTags), formBlock, toBlock)
+}
+
 // DeleteRootTag mocks base method.
 func (m *MockTx) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -619,6 +633,20 @@ func (m *MockState) Checkout(contract common.Address, blockNumber int64) error {
 func (mr *MockStateMockRecorder) Checkout(contract, blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockState)(nil).Checkout), contract, blockNumber)
+}
+
+// DeleteOrphanRootTags mocks base method.
+func (m *MockState) DeleteOrphanRootTags(formBlock, toBlock int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrphanRootTags", formBlock, toBlock)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrphanRootTags indicates an expected call of DeleteOrphanRootTags.
+func (mr *MockStateMockRecorder) DeleteOrphanRootTags(formBlock, toBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanRootTags", reflect.TypeOf((*MockState)(nil).DeleteOrphanRootTags), formBlock, toBlock)
 }
 
 // DeleteRootTag mocks base method.

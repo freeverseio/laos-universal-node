@@ -382,6 +382,23 @@ func (t *tx) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	return ownershipTree.DeleteRootTag(blockNumber)
 }
 
+// DeleteOrphanRootTag deletes the root tags from all 3 merkle trees
+// starting from the blockNumber until the most recent tagged block
+// for all contracts
+func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
+	contracts := t.GetAllERC721UniversalContracts()
+	// Process each contract
+	for _, contract := range contracts {
+		for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
+			err := t.DeleteRootTag(common.HexToAddress(contract), blockNumber)
+			if err != nil {
+				return fmt.Errorf("error deleting root tag for contract %s at block %d: %s", contract, blockNumber, err.Error())
+			}
+		}
+	}
+	return nil
+}
+
 // Checkout sets the current roots to those tagged for the block
 // If no tag for the block exists, it searches for the first block in the past that has the tag.
 func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
