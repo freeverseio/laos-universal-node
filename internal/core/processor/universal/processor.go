@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
+)
+
+const (
+	safeBlockMargin = 250
 )
 
 type ReorgError struct {
@@ -31,6 +36,7 @@ type Processor interface {
 	GetInitStartingBlock(ctx context.Context) (uint64, error)
 	GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error)
 	VerifyChainConsistency(ctx context.Context, startingBlock uint64) error
+	RecoverFromReorg(ctx context.Context, startingBlock uint64) (*model.Block, error)
 	IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipBlock uint64) (bool, error)
 
 	ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error
@@ -81,24 +87,127 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
 		return err
 	}
-
 	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
 	if (lastBlockDB.Hash == common.Hash{}) {
 		return nil
 	}
+	return p.checkBlockForReorg(ctx, lastBlockDB)
+}
 
+// RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
+// It will checkout merkle tree for each contract in its own transaction.
+// It will set the last ownership block to the block without reorg and delete all block hashes after the block without reorg.
+// It will return the block without reorg.
+// It will return an error if any error occurs.
+func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
+	// Start a transaction
+	tx := p.stateService.NewTransaction()
+	defer tx.Discard()
+
+	storedBlockNumbers, err := tx.GetAllStoredBlockNumbers()
+	if err != nil {
+		return nil, err
+	}
+	// Check for reorg recursively
+	blockWithoutReorg, err := p.findBlockWithoutReorg(ctx, tx, currentBlock, storedBlockNumbers)
+	if err != nil {
+		return nil, err
+	}
+
+	contracts := tx.GetAllERC721UniversalContracts()
+	// Process each contract
+	for _, contract := range contracts {
+		// Handle each contract in its own transaction
+		contractTx := p.stateService.NewTransaction()
+		err = checkout(contractTx, common.HexToAddress(contract), blockWithoutReorg.Number)
+		if err != nil {
+			contractTx.Discard()
+			return nil, err
+		}
+		if errCommit := contractTx.Commit(); errCommit != nil {
+			return nil, errCommit // Handle commit error
+		}
+	}
+	// set last ownership block to block without reorg
+	if err := tx.SetLastOwnershipBlock(*blockWithoutReorg); err != nil {
+		return nil, err
+	}
+	// deleting all block hashes after the block without reorg
+	if err := tx.DeleteOrphanBlockNumbers(blockWithoutReorg.Number); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return blockWithoutReorg, nil
+}
+
+func (p *processor) findBlockWithoutReorg(ctx context.Context, tx state.Tx, currentBlock uint64, storedBlockNumbers []uint64) (*model.Block, error) {
+	blockNumberToCheck, found := getNextLowerBlockNumber(currentBlock, storedBlockNumbers)
+	if !found { // no lower block number found
+		// we get a safe block number to start from
+		return getSafeBlock(currentBlock), nil
+	}
+
+	blockToCheck, err := tx.GetOwnershipBlock(blockNumberToCheck)
+	if err != nil {
+		slog.Error("error retrieving block data", "blockNumber", blockNumberToCheck, "err", err.Error())
+		return nil, err
+	}
+
+	err = p.checkBlockForReorg(ctx, blockToCheck)
+	switch e := err.(type) {
+	case nil:
+		// no Reorg detected
+		return &blockToCheck, e
+	case ReorgError:
+		// reorg, continue checking the previous blocks
+		return p.findBlockWithoutReorg(ctx, tx, blockNumberToCheck, storedBlockNumbers)
+	default:
+		// Other error occurred
+		return nil, err
+	}
+}
+
+func getNextLowerBlockNumber(currentBlock uint64, storedBlockNumbers []uint64) (blockNumber uint64, exist bool) {
+	var maxLowerBlock uint64
+	found := false
+
+	// Finding the maximum number lower than the current block in the copy
+	for _, blockNumber := range storedBlockNumbers {
+		if blockNumber < currentBlock {
+			if !found || blockNumber > maxLowerBlock {
+				maxLowerBlock = blockNumber
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		return 0, false
+	}
+	return maxLowerBlock, found
+}
+
+func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck model.Block) error {
+	if (lastBlockToCheck.Hash == common.Hash{}) {
+		return fmt.Errorf("no hash stored in the database for block %d", lastBlockToCheck.Number)
+	}
 	// Verify whether the hash of the last block from the previous iteration remains unchanged;
 	// if it differs, it indicates a reorganization has taken place.
-	previousLastBlock := startingBlock - 1
-	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousLastBlock)
-	previousLastBlockData, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(previousLastBlock)))
+	previousStoredBlock := lastBlockToCheck.Number
+	slog.Debug("verifying chain consistency on block number", "previousLastBlock", previousStoredBlock)
+	previousLastBlockData, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(previousStoredBlock)))
 	if err != nil {
 		slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 		return err
 	}
 
-	if previousLastBlockData.Hash().Cmp(lastBlockDB.Hash) != 0 {
-		return ReorgError{Block: previousLastBlock, ChainHash: previousLastBlockData.Hash(), StorageHash: lastBlockDB.Hash}
+	// If the hash is the same, it means there was no reorganization
+	if previousLastBlockData.Hash().Cmp(lastBlockToCheck.Hash) != 0 {
+		return ReorgError{Block: previousStoredBlock, ChainHash: previousLastBlockData.Hash(), StorageHash: lastBlockToCheck.Hash}
 	}
 
 	return nil
@@ -167,6 +276,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 
 	slog.Debug("setting ownership end range block hash for block number",
 		"blockNumber", lastBlockData.Number, "blockHash", lastBlockData.Hash, "timestamp", lastBlockData.Timestamp)
+
 	if err = tx.SetLastOwnershipBlock(lastBlockData); err != nil {
 		slog.Error("error occurred while storing end range block hash", "err", err.Error())
 		return err
@@ -192,4 +302,27 @@ func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBloc
 		Timestamp: header.Time,
 		Hash:      header.Hash(),
 	}, nil
+}
+
+func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) error {
+	err := tx.LoadMerkleTrees(contractAddress)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Checkout(contractAddress, int64(blockNumber))
+	if err != nil {
+		slog.Error("error occurred checking out merkle tree at block number", "block_number", blockNumber,
+			"contract_address", contractAddress, "err", err)
+		return err
+	}
+
+	return nil
+}
+
+func getSafeBlock(currentBlockNumber uint64) *model.Block {
+	if currentBlockNumber < safeBlockMargin {
+		return &model.Block{Number: 0}
+	}
+	return &model.Block{Number: currentBlockNumber - safeBlockMargin}
 }

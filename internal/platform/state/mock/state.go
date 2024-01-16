@@ -121,6 +121,34 @@ func (mr *MockTxMockRecorder) Commit() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockTx)(nil).Commit))
 }
 
+// DeleteOldStoredBlockNumbers mocks base method.
+func (m *MockTx) DeleteOldStoredBlockNumbers() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOldStoredBlockNumbers")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOldStoredBlockNumbers indicates an expected call of DeleteOldStoredBlockNumbers.
+func (mr *MockTxMockRecorder) DeleteOldStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOldStoredBlockNumbers", reflect.TypeOf((*MockTx)(nil).DeleteOldStoredBlockNumbers))
+}
+
+// DeleteOrphanBlockNumbers mocks base method.
+func (m *MockTx) DeleteOrphanBlockNumbers(blockNumberRef uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrphanBlockNumbers", blockNumberRef)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrphanBlockNumbers indicates an expected call of DeleteOrphanBlockNumbers.
+func (mr *MockTxMockRecorder) DeleteOrphanBlockNumbers(blockNumberRef any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockNumbers", reflect.TypeOf((*MockTx)(nil).DeleteOrphanBlockNumbers), blockNumberRef)
+}
+
 // DeleteRootTag mocks base method.
 func (m *MockTx) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -174,6 +202,21 @@ func (m *MockTx) GetAllERC721UniversalContracts() []string {
 func (mr *MockTxMockRecorder) GetAllERC721UniversalContracts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllERC721UniversalContracts", reflect.TypeOf((*MockTx)(nil).GetAllERC721UniversalContracts))
+}
+
+// GetAllStoredBlockNumbers mocks base method.
+func (m *MockTx) GetAllStoredBlockNumbers() ([]uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
+	ret0, _ := ret[0].([]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
+func (mr *MockTxMockRecorder) GetAllStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStoredBlockNumbers", reflect.TypeOf((*MockTx)(nil).GetAllStoredBlockNumbers))
 }
 
 // GetCollectionAddress mocks base method.
@@ -281,6 +324,21 @@ func (mr *MockTxMockRecorder) GetMintedWithExternalURIEvents(contract any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMintedWithExternalURIEvents", reflect.TypeOf((*MockTx)(nil).GetMintedWithExternalURIEvents), contract)
 }
 
+// GetOwnershipBlock mocks base method.
+func (m *MockTx) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipBlock", blockNumber)
+	ret0, _ := ret[0].(model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipBlock indicates an expected call of GetOwnershipBlock.
+func (mr *MockTxMockRecorder) GetOwnershipBlock(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetOwnershipBlock), blockNumber)
+}
+
 // HasERC721UniversalContract mocks base method.
 func (m *MockTx) HasERC721UniversalContract(contract string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -379,6 +437,20 @@ func (m *MockTx) SetLastOwnershipBlock(block model.Block) error {
 func (mr *MockTxMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetLastOwnershipBlock), block)
+}
+
+// SetOwnershipBlock mocks base method.
+func (m *MockTx) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipBlock", blockNumber, block)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipBlock indicates an expected call of SetOwnershipBlock.
+func (mr *MockTxMockRecorder) SetOwnershipBlock(blockNumber, block any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetOwnershipBlock), blockNumber, block)
 }
 
 // StoreERC721UniversalContracts mocks base method.
@@ -895,6 +967,49 @@ func (m *MockOwnershipSyncState) EXPECT() *MockOwnershipSyncStateMockRecorder {
 	return m.recorder
 }
 
+// DeleteOldStoredBlockNumbers mocks base method.
+func (m *MockOwnershipSyncState) DeleteOldStoredBlockNumbers() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOldStoredBlockNumbers")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOldStoredBlockNumbers indicates an expected call of DeleteOldStoredBlockNumbers.
+func (mr *MockOwnershipSyncStateMockRecorder) DeleteOldStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOldStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteOldStoredBlockNumbers))
+}
+
+// DeleteOrphanBlockNumbers mocks base method.
+func (m *MockOwnershipSyncState) DeleteOrphanBlockNumbers(blockNumberRef uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrphanBlockNumbers", blockNumberRef)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrphanBlockNumbers indicates an expected call of DeleteOrphanBlockNumbers.
+func (mr *MockOwnershipSyncStateMockRecorder) DeleteOrphanBlockNumbers(blockNumberRef any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteOrphanBlockNumbers), blockNumberRef)
+}
+
+// GetAllStoredBlockNumbers mocks base method.
+func (m *MockOwnershipSyncState) GetAllStoredBlockNumbers() ([]uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStoredBlockNumbers")
+	ret0, _ := ret[0].([]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllStoredBlockNumbers indicates an expected call of GetAllStoredBlockNumbers.
+func (mr *MockOwnershipSyncStateMockRecorder) GetAllStoredBlockNumbers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetAllStoredBlockNumbers))
+}
+
 // GetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockOwnershipSyncState) GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -925,6 +1040,21 @@ func (mr *MockOwnershipSyncStateMockRecorder) GetLastOwnershipBlock() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetLastOwnershipBlock))
 }
 
+// GetOwnershipBlock mocks base method.
+func (m *MockOwnershipSyncState) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnershipBlock", blockNumber)
+	ret0, _ := ret[0].(model.Block)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOwnershipBlock indicates an expected call of GetOwnershipBlock.
+func (mr *MockOwnershipSyncStateMockRecorder) GetOwnershipBlock(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetOwnershipBlock), blockNumber)
+}
+
 // SetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockOwnershipSyncState) SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error {
 	m.ctrl.T.Helper()
@@ -951,6 +1081,20 @@ func (m *MockOwnershipSyncState) SetLastOwnershipBlock(block model.Block) error 
 func (mr *MockOwnershipSyncStateMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetLastOwnershipBlock), block)
+}
+
+// SetOwnershipBlock mocks base method.
+func (m *MockOwnershipSyncState) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipBlock", blockNumber, block)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipBlock indicates an expected call of SetOwnershipBlock.
+func (mr *MockOwnershipSyncStateMockRecorder) SetOwnershipBlock(blockNumber, block any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetOwnershipBlock), blockNumber, block)
 }
 
 // MockEvolutionSyncState is a mock of EvolutionSyncState interface.

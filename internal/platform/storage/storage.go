@@ -6,12 +6,12 @@ type Tx interface {
 	Set(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
-	GetKeysWithPrefix(prefix []byte) [][]byte
+	GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte
 }
 
 type Service interface {
 	NewTransaction() Tx
 	Get(key []byte) ([]byte, error)
 	Set(key []byte, value []byte) error
-	GetKeysWithPrefix(prefix []byte) ([][]byte, error)
+	GetKeysWithPrefix(prefix []byte, reverse ...bool) ([][]byte, error)
 }

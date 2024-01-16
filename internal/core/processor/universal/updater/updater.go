@@ -15,8 +15,6 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-const historyLength = 256
-
 type Updater interface {
 	GetModelTransferEvents(
 		ctx context.Context,
@@ -229,9 +227,6 @@ func tagRootsUntilBlock(tx state.Tx, contractAddress string, blockNumber uint64)
 
 	for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
 		if err := tx.TagRoot(common.HexToAddress(contractAddress), block); err != nil {
-			return err
-		}
-		if err := tx.DeleteRootTag(common.HexToAddress(contractAddress), block-historyLength); err != nil {
 			return err
 		}
 	}
