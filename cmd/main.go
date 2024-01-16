@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -149,8 +150,8 @@ func run() error {
 		discoveryValidator := validator.New(c.GlobalConsensus, c.Parachain)
 		discoverer := contractDiscoverer.New(ownershipChainClient, c.Contracts, s, discoveryValidator)
 		updater := contractUpdater.New(ownershipChainClient, s)
-		procerssor := universalProcessor.NewProcessor(ownershipChainClient, stateService, s, c, discoverer, updater)
-		uWorker := universalWorker.New(c, procerssor)
+		processor := universalProcessor.NewProcessor(ownershipChainClient, stateService, s, c, discoverer, updater)
+		uWorker := universalWorker.New(c, processor)
 		return uWorker.Run(ctx)
 	})
 
@@ -164,12 +165,16 @@ func run() error {
 			slog.Info("***********************************************************************************************")
 		}
 
+		laosHTTPClient := evoprocessor.NewLaosHTTP(&http.Client{}, c.EvoRpc)
 		scanner := scan.NewScanner(evoChainClient)
 		processor := evoprocessor.NewProcessor(evoChainClient,
 			stateService,
 			scanner,
+			laosHTTPClient,
 			c)
+
 		evoWorker := evoworker.New(c, processor)
+
 		return evoWorker.Run(ctx)
 	})
 
