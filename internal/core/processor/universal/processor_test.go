@@ -167,121 +167,133 @@ func TestGetLastBlock(t *testing.T) {
 	}
 }
 
-func TestVerifyChainConsistency(t *testing.T) {
+func TestProcessUniversalBlockRange(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.TODO()
 	tests := []struct {
-		name                   string
-		startingBlock          uint64
-		lastBlockDB            model.Block
-		lastBlockDBError       error
-		previousBlockData      *types.Header
-		previousBlockDataError error
-		expectedError          error
+		name                       string
+		startingBlock              uint64
+		previousBlockHeader        *types.Header
+		previousBlockData          model.Block
+		blockHeader                *types.Header
+		blockData                  model.Block
+		discoverReturn             bool
+		updateReturn               map[string][]model.ERC721Transfer
+		expectedError              error
+		expectedTxCommit           int
+		expectedNumberOfReorgCheck int
 	}{
 		{
-			name:             "No previous block hash in database",
-			startingBlock:    100,
-			lastBlockDB:      model.Block{},
-			lastBlockDBError: nil,
-		},
-		{
-			name:             "error when reading database",
-			startingBlock:    100,
-			lastBlockDB:      model.Block{},
-			lastBlockDBError: errors.New("error from storage"),
-			expectedError:    errors.New("error from storage"),
-		},
-		{
-			name:          "Previous block hash matches",
+			name:          "successful processing with discovery and update",
 			startingBlock: 100,
-			lastBlockDB: model.Block{
-				Number: 99,
-				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+			previousBlockHeader: &types.Header{
+				Number: big.NewInt(90),
 			},
-			lastBlockDBError:  nil,
-			previousBlockData: &types.Header{ParentHash: common.HexToHash("0x123")},
-			expectedError:     nil,
-		},
-
-		{
-			name:          "error when trying to obtain previous block from chain",
-			startingBlock: 100,
-			lastBlockDB: model.Block{
-				Number: 99,
-				Hash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+			previousBlockData: model.Block{
+				Number: 90,
+				Hash:   common.HexToHash("0x62055b9639cbed71604205301891afe40ae0fe4f57ceadbf35d9a476361c48ed"),
 			},
-			lastBlockDBError:       nil,
-			previousBlockData:      nil,
-			previousBlockDataError: errors.New("error retrieving previous block from chain"),
-			expectedError:          errors.New("error retrieving previous block from chain"),
+			blockHeader: &types.Header{
+				Number: big.NewInt(100),
+			},
+			blockData: model.Block{
+				Number: 100,
+				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
+			},
+			discoverReturn: false,
+			updateReturn: map[string][]model.ERC721Transfer{
+				"contract": {},
+			},
+			expectedError:              nil,
+			expectedTxCommit:           1,
+			expectedNumberOfReorgCheck: 1,
 		},
-
 		{
-			name:          "Previous block hash does not match",
+			name:          "processing with reorg",
 			startingBlock: 100,
-			lastBlockDB: model.Block{
-				Number: 99,
+			previousBlockHeader: &types.Header{
+				Number: big.NewInt(90),
+			},
+			previousBlockData: model.Block{
+				Number: 90,
 				Hash:   common.HexToHash("0x123"),
 			},
-			lastBlockDBError:       nil,
-			previousBlockData:      &types.Header{ParentHash: common.HexToHash("0x123")},
-			previousBlockDataError: nil,
+			blockHeader: &types.Header{
+				Number: big.NewInt(100),
+			},
+			blockData: model.Block{
+				Number: 100,
+				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
+			},
+			discoverReturn: false,
+			updateReturn: map[string][]model.ERC721Transfer{
+				"contract": {},
+			},
 			expectedError: universal.ReorgError{
-				Block:       99,
-				ChainHash:   common.HexToHash("0x558af54aec2a3b01640511cfc1d2b5772373b7b73ff621225031de3cae9a2c3e"),
+				Block:       90,
+				ChainHash:   common.HexToHash("0x62055b9639cbed71604205301891afe40ae0fe4f57ceadbf35d9a476361c48ed"),
 				StorageHash: common.HexToHash("0x123"),
 			},
+			expectedTxCommit:           0,
+			expectedNumberOfReorgCheck: 1,
+		},
+		{
+			name:          "successful processing with no hash in storage",
+			startingBlock: 100,
+			previousBlockHeader: &types.Header{
+				Number: big.NewInt(90),
+			},
+			previousBlockData: model.Block{
+				Number: 90,
+			},
+			blockHeader: &types.Header{
+				Number: big.NewInt(100),
+			},
+			blockData: model.Block{
+				Number: 100,
+				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
+			},
+			discoverReturn: false,
+			updateReturn: map[string][]model.ERC721Transfer{
+				"contract": {},
+			},
+			expectedError:              nil,
+			expectedTxCommit:           1,
+			expectedNumberOfReorgCheck: 0,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
+		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.TODO()
-			stateService, tx, client, _, _, _ := createMocks(t)
+
+			stateService, tx, client, scanner, discoverer, updater := createMocks(t)
+			p := universal.NewProcessor(client, stateService, scanner, &config.Config{}, discoverer, updater)
 
 			stateService.EXPECT().NewTransaction().Return(tx)
-			tx.EXPECT().GetLastOwnershipBlock().Return(tt.lastBlockDB, tt.lastBlockDBError)
+
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(tt.blockHeader, nil)
+
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.previousBlockData.Number))).Return(tt.previousBlockHeader, nil).Times(tt.expectedNumberOfReorgCheck)
+
+			tx.EXPECT().SetLastOwnershipBlock(tt.blockData).Return(nil)
+			// the last saved OwnershipBlock
+			tx.EXPECT().GetLastOwnershipBlock().Return(tt.previousBlockData, nil)
+			discoverer.EXPECT().ShouldDiscover(tx, tt.startingBlock, tt.blockData.Number).Return(tt.discoverReturn, nil)
+			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
+
+			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockData.Number, []string{"contract"}).Return(tt.updateReturn, nil)
+			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, tt.updateReturn, tt.blockData).Return(nil)
+
+			tx.EXPECT().Commit().Return(nil).Times(tt.expectedTxCommit)
 			tx.EXPECT().Discard()
 
-			if tt.lastBlockDBError == nil && tt.lastBlockDB.Hash != (common.Hash{}) {
-				client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock-1))).
-					Return(tt.previousBlockData, tt.previousBlockDataError)
-			}
-
-			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
-			err := p.VerifyChainConsistency(ctx, tt.startingBlock)
+			err := p.ProcessUniversalBlockRange(ctx, tt.startingBlock, tt.blockData.Number)
 			assertError(t, tt.expectedError, err)
 		})
 	}
-}
-
-func TestProcessUniversalBlockRange(t *testing.T) {
-	t.Parallel()
-	ctx := context.TODO()
-	stateService, tx, client, scanner, discoverer, updater := createMocks(t)
-
-	p := universal.NewProcessor(client, stateService, scanner, &config.Config{}, discoverer, updater)
-
-	startingBlock := uint64(100)
-	stateService.EXPECT().NewTransaction().Return(tx)
-
-	blockHeader := &types.Header{Number: big.NewInt(100)}
-	blockData := model.Block{Number: 100, Hash: common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c")}
-
-	client.EXPECT().HeaderByNumber(ctx, big.NewInt(100)).Return(blockHeader, nil)
-	tx.EXPECT().SetLastOwnershipBlock(blockData).Return(nil)
-	discoverer.EXPECT().ShouldDiscover(tx, startingBlock, blockData.Number).Return(false, nil)
-	discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
-
-	updater.EXPECT().GetModelTransferEvents(ctx, startingBlock, blockData.Number, []string{"contract"}).Return(map[string][]model.ERC721Transfer{"contract": {}}, nil)
-	updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, map[string][]model.ERC721Transfer{"contract": {}}, blockData).Return(nil)
-
-	tx.EXPECT().Commit().Return(nil)
-	tx.EXPECT().Discard()
-	err := p.ProcessUniversalBlockRange(ctx, startingBlock, blockData.Number)
-	assertError(t, nil, err)
 }
 
 func TestIsEvoSyncedWithOwnership(t *testing.T) {

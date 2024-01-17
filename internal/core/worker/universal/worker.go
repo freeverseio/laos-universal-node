@@ -110,10 +110,6 @@ func (w *worker) executeUniversalBlockRange(ctx context.Context,
 		shared.WaitBeforeNextScan(ctx, w.waitingTime)
 		return lastBlock, false, nil
 	}
-	err = w.processor.VerifyChainConsistency(ctx, startingBlock)
-	if err != nil {
-		return 0, false, err
-	}
 
 	err = w.processor.ProcessUniversalBlockRange(ctx, startingBlock, lastBlock)
 	if err != nil {

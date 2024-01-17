@@ -32,19 +32,17 @@ func TestRun_SuccessfulExecutionWithReorgAndRecovery(t *testing.T) {
 	}
 
 	mockProcessorService.EXPECT().GetInitStartingBlock(gomock.Any()).Return(startingBlocks[0], nil)
-	mockProcessorService.EXPECT().ProcessUniversalBlockRange(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, startingBlock, lastBlock uint64) error {
-		cancel()
-		return nil
-	})
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < len(startingBlocks); i++ {
 		mockProcessorService.EXPECT().GetLastBlock(ctx, startingBlocks[i]).Return(startingBlocks[i], nil)
 		mockProcessorService.EXPECT().IsEvoSyncedWithOwnership(ctx, startingBlocks[i]).Return(true, nil)
-		mockProcessorService.EXPECT().VerifyChainConsistency(ctx, startingBlocks[i]).Return(verifyReorgErrors[i]).Do(func(ctx context.Context, block uint64) {
-			if block == startingBlocks[len(startingBlocks)-1] {
-				cancel()
-			}
-		})
+		mockProcessorService.EXPECT().ProcessUniversalBlockRange(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(verifyReorgErrors[i]).
+			Do(func(ctx context.Context, startingBlock, lastBlock uint64) {
+				if startingBlock == startingBlocks[len(startingBlocks)-1] {
+					cancel()
+				}
+			})
 	}
 	mockProcessorService.EXPECT().RecoverFromReorg(ctx, startingBlocks[0]).Return(&model.Block{
 		Number: startingBlocks[1],

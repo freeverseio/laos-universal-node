@@ -101,27 +101,6 @@ func TestExecuteUniversalBlockRange(t *testing.T) {
 		}
 	})
 
-	t.Run("chains are synced error on verifying chain consistency", func(t *testing.T) {
-		t.Parallel()
-
-		waitingTimeMillisecond := 100 * time.Millisecond
-		startingBlock := uint64(100)
-		lastBlock := uint64(100)
-		calculatedLastBlock := uint64(150)
-		evoSynced := true
-
-		ctx := context.TODO()
-		processor := processMock.NewMockProcessor(gomock.NewController(t))
-		w := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
-
-		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(calculatedLastBlock, nil)
-		processor.EXPECT().IsEvoSyncedWithOwnership(ctx, calculatedLastBlock).Return(true, nil)
-		processor.EXPECT().VerifyChainConsistency(ctx, startingBlock).Return(errors.New("error on verifying chain consistency"))
-
-		_, _, err := w.executeUniversalBlockRange(ctx, evoSynced, startingBlock, lastBlock)
-		assertError(t, errors.New("error on verifying chain consistency"), err)
-	})
-
 	t.Run("chains are synced and chain consistency is verified", func(t *testing.T) {
 		t.Parallel()
 
@@ -137,7 +116,6 @@ func TestExecuteUniversalBlockRange(t *testing.T) {
 
 		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(calculatedLastBlock, nil)
 		processor.EXPECT().IsEvoSyncedWithOwnership(ctx, calculatedLastBlock).Return(true, nil)
-		processor.EXPECT().VerifyChainConsistency(ctx, startingBlock).Return(nil)
 		processor.EXPECT().ProcessUniversalBlockRange(ctx, startingBlock, calculatedLastBlock).Return(nil)
 
 		lastBlock, evoSynced, err := w.executeUniversalBlockRange(ctx, evoSynced, startingBlock, lastBlock)
