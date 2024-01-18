@@ -172,32 +172,32 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 
 	ctx := context.TODO()
 	tests := []struct {
-		name                       string
-		startingBlock              uint64
-		previousBlockHeader        *types.Header
-		previousBlockData          model.Block
-		blockHeader                *types.Header
-		blockData                  model.Block
-		discoverReturn             bool
-		updateReturn               map[string][]model.ERC721Transfer
-		expectedError              error
-		expectedTxCommit           int
-		expectedNumberOfReorgCheck int
+		name                         string
+		startingBlock                uint64
+		previousBlockHeaderFromChain *types.Header
+		previousBlockDataFromDB      model.Block
+		blockHeaderFromChain         *types.Header
+		blockDataFromDB              model.Block
+		discoverReturn               bool
+		updateReturn                 map[string][]model.ERC721Transfer
+		expectedError                error
+		expectedTxCommit             int
+		expectedNumberOfReorgCheck   int
 	}{
 		{
 			name:          "successful processing with discovery and update",
 			startingBlock: 100,
-			previousBlockHeader: &types.Header{
+			previousBlockHeaderFromChain: &types.Header{
 				Number: big.NewInt(90),
 			},
-			previousBlockData: model.Block{
+			previousBlockDataFromDB: model.Block{
 				Number: 90,
 				Hash:   common.HexToHash("0x62055b9639cbed71604205301891afe40ae0fe4f57ceadbf35d9a476361c48ed"),
 			},
-			blockHeader: &types.Header{
+			blockHeaderFromChain: &types.Header{
 				Number: big.NewInt(100),
 			},
-			blockData: model.Block{
+			blockDataFromDB: model.Block{
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
@@ -212,17 +212,17 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 		{
 			name:          "processing with reorg",
 			startingBlock: 100,
-			previousBlockHeader: &types.Header{
+			previousBlockHeaderFromChain: &types.Header{
 				Number: big.NewInt(90),
 			},
-			previousBlockData: model.Block{
+			previousBlockDataFromDB: model.Block{
 				Number: 90,
 				Hash:   common.HexToHash("0x123"),
 			},
-			blockHeader: &types.Header{
+			blockHeaderFromChain: &types.Header{
 				Number: big.NewInt(100),
 			},
-			blockData: model.Block{
+			blockDataFromDB: model.Block{
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
@@ -241,16 +241,16 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 		{
 			name:          "successful processing with no hash in storage",
 			startingBlock: 100,
-			previousBlockHeader: &types.Header{
+			previousBlockHeaderFromChain: &types.Header{
 				Number: big.NewInt(90),
 			},
-			previousBlockData: model.Block{
+			previousBlockDataFromDB: model.Block{
 				Number: 90,
 			},
-			blockHeader: &types.Header{
+			blockHeaderFromChain: &types.Header{
 				Number: big.NewInt(100),
 			},
-			blockData: model.Block{
+			blockDataFromDB: model.Block{
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
@@ -274,23 +274,23 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 
 			stateService.EXPECT().NewTransaction().Return(tx)
 
-			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(tt.blockHeader, nil)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(tt.blockHeaderFromChain, nil)
 
-			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.previousBlockData.Number))).Return(tt.previousBlockHeader, nil).Times(tt.expectedNumberOfReorgCheck)
+			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.previousBlockDataFromDB.Number))).Return(tt.previousBlockHeaderFromChain, nil).Times(tt.expectedNumberOfReorgCheck)
 
-			tx.EXPECT().SetLastOwnershipBlock(tt.blockData).Return(nil)
+			tx.EXPECT().SetLastOwnershipBlock(tt.blockDataFromDB).Return(nil)
 			// the last saved OwnershipBlock
-			tx.EXPECT().GetLastOwnershipBlock().Return(tt.previousBlockData, nil)
-			discoverer.EXPECT().ShouldDiscover(tx, tt.startingBlock, tt.blockData.Number).Return(tt.discoverReturn, nil)
+			tx.EXPECT().GetLastOwnershipBlock().Return(tt.previousBlockDataFromDB, nil)
+			discoverer.EXPECT().ShouldDiscover(tx, tt.startingBlock, tt.blockDataFromDB.Number).Return(tt.discoverReturn, nil)
 			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
 
-			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockData.Number, []string{"contract"}).Return(tt.updateReturn, nil)
-			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, tt.updateReturn, tt.blockData).Return(nil)
+			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(tt.updateReturn, nil)
+			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, tt.updateReturn, tt.blockDataFromDB).Return(nil)
 
 			tx.EXPECT().Commit().Return(nil).Times(tt.expectedTxCommit)
 			tx.EXPECT().Discard()
 
-			err := p.ProcessUniversalBlockRange(ctx, tt.startingBlock, tt.blockData.Number)
+			err := p.ProcessUniversalBlockRange(ctx, tt.startingBlock, tt.blockDataFromDB.Number)
 			assertError(t, tt.expectedError, err)
 		})
 	}
