@@ -35,10 +35,8 @@ func (e ReorgError) Error() string {
 type Processor interface {
 	GetInitStartingBlock(ctx context.Context) (uint64, error)
 	GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error)
-	VerifyChainConsistency(ctx context.Context, startingBlock uint64) error
 	RecoverFromReorg(ctx context.Context, startingBlock uint64) (*model.Block, error)
 	IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipBlock uint64) (bool, error)
-
 	ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error
 }
 
@@ -76,22 +74,6 @@ func NewProcessor(client blockchain.EthClient,
 
 func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 	return p.GetOwnershipInitStartingBlock(ctx)
-}
-
-func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock uint64) error {
-	tx := p.stateService.NewTransaction()
-	defer tx.Discard()
-
-	lastBlockDB, err := tx.GetLastOwnershipBlock()
-	if err != nil {
-		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
-		return err
-	}
-	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
-	if (lastBlockDB.Hash == common.Hash{}) {
-		return nil
-	}
-	return p.checkBlockForReorg(ctx, lastBlockDB)
 }
 
 // RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
@@ -208,7 +190,8 @@ func (p *processor) checkBlockForReorg(ctx context.Context, lastBlockToCheck mod
 		slog.Error("error occurred while retrieving new start range block", "err", err.Error())
 		return err
 	}
-
+	h := previousLastBlockData.Hash()
+	fmt.Println("previousLastBlockData.Hash()", h)
 	// If the hash is the same, it means there was no reorganization
 	if previousLastBlockData.Hash().Cmp(lastBlockToCheck.Hash) != 0 {
 		return ReorgError{Block: previousStoredBlock, ChainHash: previousLastBlockData.Hash(), StorageHash: lastBlockToCheck.Hash}
@@ -244,6 +227,13 @@ func (p *processor) IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipB
 func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error {
 	tx := p.stateService.NewTransaction()
 	defer tx.Discard()
+
+	// Get the last stored block number from the database
+	previousLastBlockDB, err := tx.GetLastOwnershipBlock()
+	if err != nil {
+		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
+		return err
+	}
 
 	lastBlockData, err := getLastBlockData(ctx, p.client, lastBlock)
 	if err != nil {
@@ -284,6 +274,17 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	if err = tx.SetLastOwnershipBlock(lastBlockData); err != nil {
 		slog.Error("error occurred while storing end range block hash", "err", err.Error())
 		return err
+	}
+
+	// check for reorgs
+	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
+	if (previousLastBlockDB.Hash != common.Hash{}) {
+		// we check the previously stored last block and check if it is still on the same branch as the current last block
+		// othwerwise we return an reorg error
+		err = p.checkBlockForReorg(ctx, previousLastBlockDB)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

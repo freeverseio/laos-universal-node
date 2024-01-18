@@ -112,17 +112,3 @@ func (mr *MockProcessorMockRecorder) RecoverFromReorg(ctx, startingBlock any) *g
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecoverFromReorg", reflect.TypeOf((*MockProcessor)(nil).RecoverFromReorg), ctx, startingBlock)
 }
-
-// VerifyChainConsistency mocks base method.
-func (m *MockProcessor) VerifyChainConsistency(ctx context.Context, startingBlock uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyChainConsistency", ctx, startingBlock)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// VerifyChainConsistency indicates an expected call of VerifyChainConsistency.
-func (mr *MockProcessorMockRecorder) VerifyChainConsistency(ctx, startingBlock any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyChainConsistency", reflect.TypeOf((*MockProcessor)(nil).VerifyChainConsistency), ctx, startingBlock)
-}
