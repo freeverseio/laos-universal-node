@@ -72,17 +72,17 @@ func (t *tx) createTreesForContract(contract common.Address) (
 ) {
 	slog.Debug("creating trees for contract", "contract", contract.String())
 
-	ownershipTree, err = ownership.NewTree(contract, t.tx)
+	ownershipTree, err = ownership.NewTree(contract, t.tx, true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTree, err = enumerated.NewTree(contract, t.tx)
+	enumeratedTree, err = enumerated.NewTree(contract, t.tx, true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, t.tx)
+	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, t.tx, true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
