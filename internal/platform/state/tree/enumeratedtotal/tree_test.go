@@ -290,3 +290,33 @@ func TestTag(t *testing.T) {
 		assert.Error(t, err, "no tag found for this block number 1")
 	})
 }
+
+func TestDeleteRootTag(t *testing.T) {
+	t.Parallel()
+	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(1)
+		assert.NilError(t, err)
+
+		err = tr.TagRoot(2)
+		assert.NilError(t, err)
+		err = tx.Commit()
+		assert.NilError(t, err)
+		tx = service.NewTransaction()
+		err = enumeratedtotal.DeleteRootTag(tx, common.HexToAddress("0x500").Hex(), 1)
+		assert.NilError(t, err)
+		err = tx.Commit()
+		assert.NilError(t, err)
+		tx = service.NewTransaction()
+		tr, err = enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+		err = tr.Checkout(1)
+		assert.Error(t, err, "no tag found for this block number 1")
+	})
+}

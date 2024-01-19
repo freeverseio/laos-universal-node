@@ -108,6 +108,10 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		return nil, errDeleteOrphanRootTags
 	}
 
+	if errCommit := tx.Commit(); errCommit != nil {
+		return nil, errCommit
+	}
+
 	contracts := tx.GetAllERC721UniversalContracts()
 	// Process each contract
 	for _, contract := range contracts {
@@ -121,10 +125,6 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		if errCommit := contractTx.Commit(); errCommit != nil {
 			return nil, errCommit // Handle commit error
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	return blockWithoutReorg, nil

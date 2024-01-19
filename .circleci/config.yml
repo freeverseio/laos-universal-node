@@ -133,10 +133,10 @@ workflows:
             tags:
               only: /.*/
       - deploy_to_development:
-          # filters:
-          #   branches:
-          #     only:
-          #       - main
+          filters:
+            branches:
+              only:
+                - main
           requires:
             - lint
             - go_test

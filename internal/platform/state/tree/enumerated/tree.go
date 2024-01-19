@@ -3,6 +3,7 @@ package enumerated
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"strconv"
@@ -209,7 +210,15 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 // DeleteRootTag deletes root tag
 func (b *tree) DeleteRootTag(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	fmt.Println(tagKey)
 	return b.store.Delete([]byte(tagKey))
+}
+
+// DeleteRootTag deletes root tag without loading the tree
+func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
+	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
+	fmt.Println(tagKey)
+	return tx.Delete([]byte(tagKey))
 }
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.
