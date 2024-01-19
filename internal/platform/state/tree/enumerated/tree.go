@@ -3,7 +3,6 @@ package enumerated
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"strconv"
@@ -226,6 +225,5 @@ func (b *tree) Checkout(blockNumber int64) error {
 // DeleteRootTag deletes root tag without loading the tree
 func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
 	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	fmt.Println(tagKey)
 	return tx.Delete([]byte(tagKey))
 }
