@@ -4,20 +4,20 @@ networks:
     host: polygon-mumbai.unode.gorengine.com
     debug: true
     startingBlock: "0"
-    blocksMargin: 15
+    blocksMargin: 0
     blocksRange: 10
     evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: "0"
-    evoBlocksMargin: 1
+    evoBlocksMargin: 0
     evoBlocksRange: 1
   - name: polygon-mainnet
     rpc: https://rpc-mainnet.maticvigil.com/
     host: polygon-mainnet.unode.gorengine.com
     debug: true
     startingBlock: "0"
-    blocksMargin: 15
+    blocksMargin: 0
     blocksRange: 10
     evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: "0"
-    evoBlocksMargin: 1
+    evoBlocksMargin: 0
     evoBlocksRange: 1

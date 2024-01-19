@@ -33,7 +33,6 @@ type Tree interface {
 	TokensOf(owner common.Address) ([]big.Int, error)
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
-	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 }
 
@@ -206,12 +205,6 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 	return strconv.ParseInt(string(buf), 10, 64)
 }
 
-// DeleteRootTag deletes root tag
-func (b *tree) DeleteRootTag(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	return b.store.Delete([]byte(tagKey))
-}
-
 // Checkout sets the current root to the one that is tagged for a blockNumber.
 func (b *tree) Checkout(blockNumber int64) error {
 	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
@@ -227,4 +220,10 @@ func (b *tree) Checkout(blockNumber int64) error {
 	newRoot := common.BytesToHash(buf)
 	b.mt.SetRoot(newRoot)
 	return setHeadRoot(b.contract, b.store, newRoot)
+}
+
+// DeleteRootTag deletes root tag without loading the tree
+func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
+	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
+	return tx.Delete([]byte(tagKey))
 }

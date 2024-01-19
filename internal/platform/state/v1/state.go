@@ -354,32 +354,17 @@ func (t *tx) GetLastTaggedBlock(contract common.Address) (int64, error) {
 
 func (t *tx) DeleteRootTag(contract common.Address, blockNumber int64) error {
 	slog.Debug("DeleteRootTag", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
-	enumeratedTree, ok := t.enumeratedTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	err := enumeratedTree.DeleteRootTag(blockNumber)
+	err := enumerated.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
 	if err != nil {
 		return err
 	}
 
-	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	err = enumeratedTotalTree.DeleteRootTag(blockNumber)
+	err = enumeratedtotal.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
 	if err != nil {
 		return err
 	}
 
-	ownershipTree, ok := t.ownershipTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	return ownershipTree.DeleteRootTag(blockNumber)
+	return ownership.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
 }
 
 // DeleteOrphanRootTag deletes the root tags from all 3 merkle trees

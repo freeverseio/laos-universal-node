@@ -463,7 +463,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			}
 			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
 			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
-			tx.EXPECT().DeleteOrphanBlockNumbers(tt.safeBlockNumber).Return(nil).Times(1)
+			tx.EXPECT().DeleteOrphanBlockData(tt.safeBlockNumber).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanRootTags(int64(tt.safeBlockNumber)+1, int64(tt.startingBlock)).Return(nil).Times(1)
 
 			for _, contract := range tt.getAllContracts {

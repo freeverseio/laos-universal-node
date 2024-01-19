@@ -135,18 +135,18 @@ func (mr *MockTxMockRecorder) DeleteOldStoredBlockNumbers() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOldStoredBlockNumbers", reflect.TypeOf((*MockTx)(nil).DeleteOldStoredBlockNumbers))
 }
 
-// DeleteOrphanBlockNumbers mocks base method.
-func (m *MockTx) DeleteOrphanBlockNumbers(blockNumberRef uint64) error {
+// DeleteOrphanBlockData mocks base method.
+func (m *MockTx) DeleteOrphanBlockData(blockNumberRef uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteOrphanBlockNumbers", blockNumberRef)
+	ret := m.ctrl.Call(m, "DeleteOrphanBlockData", blockNumberRef)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteOrphanBlockNumbers indicates an expected call of DeleteOrphanBlockNumbers.
-func (mr *MockTxMockRecorder) DeleteOrphanBlockNumbers(blockNumberRef any) *gomock.Call {
+// DeleteOrphanBlockData indicates an expected call of DeleteOrphanBlockData.
+func (mr *MockTxMockRecorder) DeleteOrphanBlockData(blockNumberRef any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockNumbers", reflect.TypeOf((*MockTx)(nil).DeleteOrphanBlockNumbers), blockNumberRef)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockData", reflect.TypeOf((*MockTx)(nil).DeleteOrphanBlockData), blockNumberRef)
 }
 
 // DeleteOrphanRootTags mocks base method.
@@ -1009,18 +1009,18 @@ func (mr *MockOwnershipSyncStateMockRecorder) DeleteOldStoredBlockNumbers() *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOldStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteOldStoredBlockNumbers))
 }
 
-// DeleteOrphanBlockNumbers mocks base method.
-func (m *MockOwnershipSyncState) DeleteOrphanBlockNumbers(blockNumberRef uint64) error {
+// DeleteOrphanBlockData mocks base method.
+func (m *MockOwnershipSyncState) DeleteOrphanBlockData(blockNumberRef uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteOrphanBlockNumbers", blockNumberRef)
+	ret := m.ctrl.Call(m, "DeleteOrphanBlockData", blockNumberRef)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteOrphanBlockNumbers indicates an expected call of DeleteOrphanBlockNumbers.
-func (mr *MockOwnershipSyncStateMockRecorder) DeleteOrphanBlockNumbers(blockNumberRef any) *gomock.Call {
+// DeleteOrphanBlockData indicates an expected call of DeleteOrphanBlockData.
+func (mr *MockOwnershipSyncStateMockRecorder) DeleteOrphanBlockData(blockNumberRef any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteOrphanBlockNumbers), blockNumberRef)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanBlockData", reflect.TypeOf((*MockOwnershipSyncState)(nil).DeleteOrphanBlockData), blockNumberRef)
 }
 
 // GetAllStoredBlockNumbers mocks base method.
