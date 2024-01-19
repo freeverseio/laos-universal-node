@@ -107,6 +107,7 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 			t.Errorf(`got no error when an error was expected`)
 		}
 	})
+
 }
 
 func createTransaction() state.Tx {

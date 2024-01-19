@@ -377,8 +377,7 @@ func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
 		for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
 			err := t.DeleteRootTag(common.HexToAddress(contract), blockNumber)
 			if err != nil {
-				slog.Error("Error DeleteOrphanRootTags", "contract", contract, "blockNumber", blockNumber, "err", err)
-				return err
+				return fmt.Errorf("error deleting root tag for contract %s at block %d: %s", contract, blockNumber, err.Error())
 			}
 		}
 	}
