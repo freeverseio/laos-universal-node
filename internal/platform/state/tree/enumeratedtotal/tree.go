@@ -35,7 +35,6 @@ type Tree interface {
 	TotalSupply() (int64, error)
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
-	DeleteRootTag(blockNumber int64) error
 	Checkout(blockNumber int64) error
 }
 
@@ -249,29 +248,6 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 	return strconv.ParseInt(string(buf), 10, 64)
 }
 
-// DeleteRootTag deletes root tag
-func (b *tree) DeleteRootTag(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	err := b.store.Delete([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-
-	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	return b.store.Delete([]byte(tagTotalSupplyKey))
-}
-
-// DeleteRootTag deletes root tag without loading the tree
-func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
-	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	err := tx.Delete([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-	tagTotalSupplyKey := totalSupplyTagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	return tx.Delete([]byte(tagTotalSupplyKey))
-}
-
 // Checkout sets the current root to the one that is tagged for a blockNumber.
 // TODO: check is it possible to put some repetitive code in all trees in some separate file (utils)
 func (b *tree) Checkout(blockNumber int64) error {
@@ -299,4 +275,15 @@ func (b *tree) Checkout(blockNumber int64) error {
 	}
 
 	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), buf)
+}
+
+// DeleteRootTag deletes root tag without loading the tree
+func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
+	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
+	err := tx.Delete([]byte(tagKey))
+	if err != nil {
+		return err
+	}
+	tagTotalSupplyKey := totalSupplyTagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
+	return tx.Delete([]byte(tagTotalSupplyKey))
 }
