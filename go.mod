@@ -6,6 +6,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.12.2
 	github.com/gorilla/mux v1.8.0
+	github.com/lazyledger/smt v0.2.0
 	go.uber.org/mock v0.3.0
 	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad
 	golang.org/x/sync v0.4.0
@@ -41,11 +42,11 @@ require (
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	go.opencensus.io v0.22.5 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
-	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/jellyfish"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
@@ -23,7 +23,6 @@ const (
 	tagPrefix            = prefix + "tags/"
 	totalSupplyTagPrefix = prefix + "tags/totalsupply"
 	lastTagPrefix        = prefix + "lasttag/"
-	treeDepth            = 64
 )
 
 // Tree defines interface for enumerated total tree
@@ -52,7 +51,7 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
 
-	t, err := sparsemt.New(treeDepth, store, treePrefix+contract.String())
+	t, err := jellyfish.New(store, treePrefix+contract.String())
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +172,7 @@ func (b *tree) TokenByIndex(idx int) (*big.Int, error) {
 		return nil, err
 	}
 
-	if leaf.String() == sparsemt.Null {
+	if leaf.String() == jellyfish.Null {
 		return nil, nil
 	}
 
