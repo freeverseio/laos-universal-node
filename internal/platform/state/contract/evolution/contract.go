@@ -28,16 +28,13 @@ func (s *service) StoreMintedWithExternalURIEvents(contract string, events []mod
 	for _, event := range events {
 		var buf bytes.Buffer
 		encoder := gob.NewEncoder(&buf)
-
 		if err := encoder.Encode(event); err != nil {
 			return err
 		}
-
 		if errSet := s.tx.Set([]byte(eventsPrefix+strings.ToLower(contract)+"_"+fmt.Sprint(event.BlockNumber)+"_"+fmt.Sprint(event.TxIndex)), buf.Bytes()); errSet != nil {
 			return errSet
 		}
 	}
-
 	return nil
 }
 

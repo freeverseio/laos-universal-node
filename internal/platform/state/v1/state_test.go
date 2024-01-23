@@ -55,6 +55,35 @@ func TestLoadMerkleTrees(t *testing.T) {
 	})
 }
 
+func TestStoreMintedWithExternalURIEvents(t *testing.T) {
+	t.Parallel()
+	t.Run("stores minte events", func(t *testing.T) {
+		t.Parallel()
+		tx := createTransaction()
+		err := tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
+			{
+				Slot:        big.NewInt(1),
+				To:          common.HexToAddress("0x3"),
+				TokenURI:    "tokenURI",
+				TokenId:     big.NewInt(1),
+				BlockNumber: 100,
+				Timestamp:   1000,
+				TxIndex:     1,
+			},
+		})
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		val, err := tx.Get("evo_events_" + common.HexToAddress("0x500").Hex() + "_100_1")
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		if val == nil {
+			t.Errorf(`got nil value when a value was expected`)
+		}
+	})
+}
+
 func createTransaction() state.Tx {
 	mem := memory.New()
 	stateService := v1.NewStateService(mem)
