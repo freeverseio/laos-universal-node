@@ -66,7 +66,7 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 	})
 }
 
-func TestProcessEvoBlockRangeWithBadger2(t *testing.T) {
+func TestProcessEvoBlockRangeWithBadger100Events(t *testing.T) {
 	t.Run("obtained 100 events, each event processed and last block updated successfully with badger", func(t *testing.T) {
 		ctx := context.TODO()
 		_, _, client, scanner, laosRpc := createMocks(t)
