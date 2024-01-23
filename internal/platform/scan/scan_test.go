@@ -80,6 +80,7 @@ func TestParseEvents(t *testing.T) {
 					},
 					Data:        common.Hex2Bytes("00000000000000000000000000000000000000003d5b1313de887a00000000003d5b1313de887a0000000000c112bde959080c5b46e73749e3e170f47123e85a0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002e516d4e5247426d7272724862754b4558375354544d326f68325077324d757438674863537048706a367a7a637375000000000000000000000000000000000000"),
 					BlockNumber: 100,
+					TxIndex:     1,
 				},
 			},
 			headerByNumberTimes: 1,
@@ -137,10 +138,14 @@ func TestParseEvents(t *testing.T) {
 					t.Fatal("error parsing event to EventNewCollection type")
 				}
 			case scan.EventMintedWithExternalURI:
-				_, ok := events[0].(scan.EventMintedWithExternalURI)
+				event, ok := events[0].(scan.EventMintedWithExternalURI)
 				if !ok {
 					t.Fatal("error parsing event to EventMintedWithExternalURI type")
 				}
+				if event.TxIndex != uint64(tt.eventLogs[0].TxIndex) {
+					t.Fatalf("got tx index %d, expected %d", event.TxIndex, tt.eventLogs[0].TxIndex)
+				}
+
 			case scan.EventEvolvedWithExternalURI:
 				_, ok := events[0].(scan.EventEvolvedWithExternalURI)
 				if !ok {
