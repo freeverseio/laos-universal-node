@@ -151,6 +151,12 @@ func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 		if events[0].Slot.Cmp(big.NewInt(1)) != 0 {
 			t.Errorf(`got slot %d when 1 was expected`, events[0].Slot)
 		}
+		if errDrop := db.DropAll(); errDrop != nil {
+			t.Errorf(`got error "%v" when no error was expected`, errDrop)
+		}
+		if errClose := db.Close(); errClose != nil {
+			t.Errorf(`got error "%v" when no error was expected`, errClose)
+		}
 
 	})
 }
