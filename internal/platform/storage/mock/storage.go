@@ -78,6 +78,20 @@ func (mr *MockTxMockRecorder) Discard() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discard", reflect.TypeOf((*MockTx)(nil).Discard))
 }
 
+// FilterKeysWithPrefix mocks base method.
+func (m *MockTx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterKeysWithPrefix", prefix, from, to)
+	ret0, _ := ret[0].([][]byte)
+	return ret0
+}
+
+// FilterKeysWithPrefix indicates an expected call of FilterKeysWithPrefix.
+func (mr *MockTxMockRecorder) FilterKeysWithPrefix(prefix, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).FilterKeysWithPrefix), prefix, from, to)
+}
+
 // Get mocks base method.
 func (m *MockTx) Get(key []byte) ([]byte, error) {
 	m.ctrl.T.Helper()
@@ -110,6 +124,25 @@ func (mr *MockTxMockRecorder) GetKeysWithPrefix(prefix any, reverse ...any) *gom
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{prefix}, reverse...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).GetKeysWithPrefix), varargs...)
+}
+
+// GetValuesWithPrefix mocks base method.
+func (m *MockTx) GetValuesWithPrefix(prefix []byte, reverse ...bool) [][]byte {
+	m.ctrl.T.Helper()
+	varargs := []any{prefix}
+	for _, a := range reverse {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetValuesWithPrefix", varargs...)
+	ret0, _ := ret[0].([][]byte)
+	return ret0
+}
+
+// GetValuesWithPrefix indicates an expected call of GetValuesWithPrefix.
+func (mr *MockTxMockRecorder) GetValuesWithPrefix(prefix any, reverse ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{prefix}, reverse...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValuesWithPrefix", reflect.TypeOf((*MockTx)(nil).GetValuesWithPrefix), varargs...)
 }
 
 // Set mocks base method.

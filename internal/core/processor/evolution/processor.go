@@ -205,6 +205,7 @@ func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.
 				TokenId:     e.TokenId,
 				BlockNumber: e.BlockNumber,
 				Timestamp:   e.Timestamp,
+				TxIndex:     e.TxIndex,
 			})
 		}
 	}
