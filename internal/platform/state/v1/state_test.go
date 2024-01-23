@@ -46,6 +46,7 @@ func TestLoadMerkleTrees(t *testing.T) {
 			TokenId:     big.NewInt(1),
 			BlockNumber: 100,
 			Timestamp:   1000,
+			TxIndex:     1,
 		}
 		err = tx.Mint(contract, &mintEvent)
 		if err != nil {

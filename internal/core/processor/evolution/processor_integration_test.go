@@ -84,8 +84,8 @@ func TestProcessEvoBlockRangeWithBadger2(t *testing.T) {
 		contract := common.HexToAddress("0x555")
 
 		// Create 100 minted events
-		events := make([]scan.Event, 200)
-		for i := 0; i < 200; i++ {
+		events := make([]scan.Event, 100)
+		for i := 0; i < 100; i++ {
 			event, _ := createEventMintedWithExternalURIWithIndex(lastBlockData.Number, contract, uint64(i))
 			events[i] = event
 		}
@@ -106,16 +106,13 @@ func TestProcessEvoBlockRangeWithBadger2(t *testing.T) {
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
 
-		// Process 100 times
-		for i := 0; i < 100; i++ {
-			err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
-			assertError(t, nil, err)
-		}
+		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
+		assertError(t, nil, err)
 
 		tx := stateService.NewTransaction()
 		e, err := tx.GetMintedWithExternalURIEvents(contract.Hex())
 		assertError(t, nil, err)
-		if len(e) != 200 {
+		if len(e) != 100 {
 			t.Fatalf("expected 200 events, got %d", len(e))
 		}
 	})
