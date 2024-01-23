@@ -65,7 +65,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x9f53960be4404d6d4308044e6631b2764a120a15ea7c8f2026a6afe290e907e8")
+		assert.Equal(t, tr.Root().String(), "0x27427fdf247f6ee7ffccdb61f480fe56235f48d2c8ff798b99113e4b69e8c797")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
@@ -94,7 +94,7 @@ func TestTree(t *testing.T) {
 		}
 		err = tr.Mint(&firstMintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
 		tokenData, err := tr.TokenData(firstMintEvent.TokenId)
 		assert.NilError(t, err)
@@ -111,7 +111,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(&secondMintEvent, 1)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x342911e2cba943dbcb5f0076d9a752fff74121d7b9be8ddf8554c782a323984e")
+		assert.Equal(t, tr.Root().String(), "0x7070510f5faefe9a8c20a7897b579753c4a2d3a5d08332a3fce27a96a48110a0")
 
 		tokenData, err = tr.TokenData(secondMintEvent.TokenId)
 		assert.NilError(t, err)
@@ -137,7 +137,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
 		tokenData, err := tr.TokenData(mintEvent.TokenId)
 		assert.NilError(t, err)
@@ -151,7 +151,7 @@ func TestTree(t *testing.T) {
 
 		err = tr1.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr1.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+		assert.Equal(t, tr1.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
 		tokenData, err = tr1.TokenData(mintEvent.TokenId)
 		assert.NilError(t, err)
@@ -177,7 +177,7 @@ func TestTree(t *testing.T) {
 		})
 		assert.NilError(t, err)
 
-		assert.Equal(t, tr.Root().String(), "0x4138780c2f786a1b6b5c9b5c58dcc47ca3a0e338a756a96daf7f7fa69300cbb2")
+		assert.Equal(t, tr.Root().String(), "0x28992c39a19a0af63b5787393dfe40691fee4a023065a8901e7aced8114940c9")
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
@@ -196,7 +196,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
+		assert.Equal(t, tr.Root().String(), "0x02d716d8efa798c67be692351475fbeb8025fad04ccf08308191628897aaf2fe")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
@@ -226,7 +226,7 @@ func TestTree(t *testing.T) {
 		}
 		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
 		tokenData, err := tr.TokenData(tokenId)
 		assert.NilError(t, err)
@@ -245,7 +245,7 @@ func TestTree(t *testing.T) {
 			TokenId: tokenId,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
+		assert.Equal(t, tr.Root().String(), "0x02d716d8efa798c67be692351475fbeb8025fad04ccf08308191628897aaf2fe")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
@@ -278,7 +278,7 @@ func TestTag(t *testing.T) {
 		}
 		err = tr.Mint(&mintEvent, 0)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x6a4dec92176ba3e77f3f92bb8ad68fbb40470448900d833c6e71cf98d1479682")
+		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
 		err = tr.TagRoot(1)
 		assert.NilError(t, err)
@@ -298,7 +298,7 @@ func TestTag(t *testing.T) {
 		})
 
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x3c9a06f4499054d9ca5a56f415c38c78c7a896feea00b029fd5b41b4008764c9")
+		assert.Equal(t, tr.Root().String(), "0x02d716d8efa798c67be692351475fbeb8025fad04ccf08308191628897aaf2fe")
 
 		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)

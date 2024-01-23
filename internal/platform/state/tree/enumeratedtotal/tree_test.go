@@ -45,7 +45,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 		totalSupply, err := tr.TotalSupply()
 		assert.NilError(t, err)
@@ -70,7 +70,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 		totalSupply, err := tr.TotalSupply()
 		assert.NilError(t, err)
@@ -93,13 +93,13 @@ func TestTree(t *testing.T) {
 		{
 			name:        "mint two tokens, burn the first token",
 			idxOfBurned: 0,
-			root:        "0xeb02a552dc267cac289d88ba4b08d19824225c900f86b62adeea2e02f32c702d",
+			root:        "0xa7a87cf365b9a7452c155dd084bc0f7d38b3ab1929f9c010166f97e68906b0c9",
 			tokenLeft:   big.NewInt(2),
 		},
 		{
 			name:        "mint two tokens, burn the second token",
 			idxOfBurned: 1,
-			root:        "0xed7fe87ee842f9b6e525b8ea274ad9c333724b3ec0df12acc6026d8adbf31e45",
+			root:        "0x71db8e96fee6f61f4d680e123b6b8f7ac068a478ec50bced4eb2bb37d0cf32f8",
 			tokenLeft:   big.NewInt(1),
 		},
 	}
@@ -117,7 +117,7 @@ func TestTree(t *testing.T) {
 
 			err = tr.Mint(big.NewInt(1))
 			assert.NilError(t, err)
-			assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+			assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 			totalSupply, err := tr.TotalSupply()
 			assert.NilError(t, err)
@@ -129,7 +129,7 @@ func TestTree(t *testing.T) {
 
 			err = tr.Mint(big.NewInt(2))
 			assert.NilError(t, err)
-			assert.Equal(t, tr.Root().String(), "0x50e3465f546649f773f1a167ae56adb65b37f4653b6e7002ef8d9862ca4d05a0")
+			assert.Equal(t, tr.Root().String(), "0x3505457d4944236492ccb69056852e218f55eba5aed2adad48e5309f9339fcef")
 
 			totalSupply, err = tr.TotalSupply()
 			assert.NilError(t, err)
@@ -167,7 +167,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 		totalSupply, err := tr.TotalSupply()
 		assert.NilError(t, err)
@@ -182,7 +182,7 @@ func TestTree(t *testing.T) {
 
 		err = tr1.Mint(big.NewInt(2))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 		totalSupply, err = tr1.TotalSupply()
 		assert.NilError(t, err)
@@ -214,7 +214,7 @@ func TestTag(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xe902c0f34ea698481366f630f7a5aec332a37562d546c340d110c8a52a62c017")
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
 		totalSupply, err := tr.TotalSupply()
 		assert.NilError(t, err)
@@ -225,7 +225,7 @@ func TestTag(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(2))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x50e3465f546649f773f1a167ae56adb65b37f4653b6e7002ef8d9862ca4d05a0")
+		assert.Equal(t, tr.Root().String(), "0x3505457d4944236492ccb69056852e218f55eba5aed2adad48e5309f9339fcef")
 
 		err = tr.TagRoot(2)
 		assert.NilError(t, err)

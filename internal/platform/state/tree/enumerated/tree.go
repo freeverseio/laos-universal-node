@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
-	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/sparsemt"
+	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/jellyfish"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
@@ -22,7 +22,6 @@ const (
 	tokensPrefix      = prefix + "tokens/"
 	tagPrefix         = prefix + "tags/"
 	lastTagPrefix     = prefix + "lasttag/"
-	treeDepth         = 160
 )
 
 // Tree is used to store enumerated tokens of each owner
@@ -49,7 +48,7 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
 
-	t, err := sparsemt.New(treeDepth, store, treePrefix+contract.String())
+	t, err := jellyfish.New(store, treePrefix+contract.String())
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,7 @@ func (b *tree) TokensOf(owner common.Address) ([]big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	if leaf.String() == sparsemt.Null {
+	if leaf.String() == jellyfish.Null {
 		return nil, nil
 	}
 

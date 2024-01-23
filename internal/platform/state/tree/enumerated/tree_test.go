@@ -61,7 +61,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x2"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xd2c0580ba1c042026990043e8c9c4191e0e41b3893d6d1fd2fe8192c8e5b8dbb")
+		assert.Equal(t, tr.Root().String(), "0x2869b4a1411aa86d60d937c481cb6b4843432fc6342efef13fbc82d1b2bd9db5")
 
 		tokens1, err = tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
@@ -77,7 +77,7 @@ func TestTree(t *testing.T) {
 		})
 
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xd2c0580ba1c042026990043e8c9c4191e0e41b3893d6d1fd2fe8192c8e5b8dbb")
+		assert.Equal(t, tr.Root().String(), "0x2869b4a1411aa86d60d937c481cb6b4843432fc6342efef13fbc82d1b2bd9db5")
 		tokens1, err = tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
 		assert.Equal(t, len(tokens1), 0)
@@ -96,7 +96,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0390a835b13dc7d39fac829657704b2b93fad32bdd80643debfcd1726a8dd166")
+		assert.Equal(t, tr.Root().String(), "0xd2776ed971a71a483a279ade441a20cb67374963ba95fef6874ab6f7cfa8a63a")
 
 		tokens, err := tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
@@ -105,7 +105,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(2), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0xd16d265b662c771be40c2bb76db2f3e7520d42c203594369f7dcd516a2b18743")
+		assert.Equal(t, tr.Root().String(), "0xe89b5bd33d239dde2e9d298c7ffea488eb63a0bd44b9fa39cba3deb383d470ec")
 
 		tokens, err = tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
@@ -124,14 +124,14 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0390a835b13dc7d39fac829657704b2b93fad32bdd80643debfcd1726a8dd166")
+		assert.Equal(t, tr.Root().String(), "0xd2776ed971a71a483a279ade441a20cb67374963ba95fef6874ab6f7cfa8a63a")
 
 		tr1, err := enumerated.NewTree(common.HexToAddress("0x501"), tx)
 		assert.NilError(t, err)
 
 		err = tr1.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr1.Root().String(), "0x0390a835b13dc7d39fac829657704b2b93fad32bdd80643debfcd1726a8dd166")
+		assert.Equal(t, tr1.Root().String(), "0xd2776ed971a71a483a279ade441a20cb67374963ba95fef6874ab6f7cfa8a63a")
 	})
 
 	t.Run(`transfer token  works correctly`, func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestTree(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0390a835b13dc7d39fac829657704b2b93fad32bdd80643debfcd1726a8dd166")
+		assert.Equal(t, tr.Root().String(), "0xd2776ed971a71a483a279ade441a20cb67374963ba95fef6874ab6f7cfa8a63a")
 
 		tokens1, err := tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
@@ -161,7 +161,7 @@ func TestTree(t *testing.T) {
 			TokenId: big.NewInt(1),
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x7b0a894e5d132e9c6d0f09fc9ff8bf67d280335be2d298dd918294e3ae76f213")
+		assert.Equal(t, tr.Root().String(), "0xb899cb3fcae2117e1eaffa7652259f348844200f51d1b00712ff677869d8f5ca")
 
 		tokens1, err = tr.TokensOf(common.HexToAddress("0x1"))
 		assert.NilError(t, err)
@@ -186,7 +186,7 @@ func TestTag(t *testing.T) {
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0390a835b13dc7d39fac829657704b2b93fad32bdd80643debfcd1726a8dd166")
+		assert.Equal(t, tr.Root().String(), "0xd2776ed971a71a483a279ade441a20cb67374963ba95fef6874ab6f7cfa8a63a")
 
 		err = tr.TagRoot(1)
 		assert.NilError(t, err)
@@ -206,7 +206,7 @@ func TestTag(t *testing.T) {
 			TokenId: big.NewInt(1),
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x7b0a894e5d132e9c6d0f09fc9ff8bf67d280335be2d298dd918294e3ae76f213")
+		assert.Equal(t, tr.Root().String(), "0xb899cb3fcae2117e1eaffa7652259f348844200f51d1b00712ff677869d8f5ca")
 		err = tr.TagRoot(2)
 		assert.NilError(t, err)
 
