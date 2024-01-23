@@ -113,7 +113,7 @@ func TestProcessEvoBlockRangeWithBadger100Events(t *testing.T) {
 		e, err := tx.GetMintedWithExternalURIEvents(contract.Hex())
 		assertError(t, nil, err)
 		if len(e) != 100 {
-			t.Fatalf("expected 200 events, got %d", len(e))
+			t.Fatalf("expected 100 events, got %d", len(e))
 		}
 	})
 }
