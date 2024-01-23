@@ -125,6 +125,17 @@ type EventNewCollecion struct {
 	Owner             common.Address
 }
 
+type ERC721Event struct {
+	Address   common.Address
+	Data      []byte
+	Topics    []common.Hash
+	BlockHash common.Hash
+	TxHash    common.Hash
+	TxIndex   uint
+	Index     uint
+	Removed   bool
+}
+
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
 	Slot        *big.Int
@@ -134,12 +145,14 @@ type EventMintedWithExternalURI struct {
 	Contract    common.Address
 	BlockNumber uint64
 	Timestamp   uint64
+	ERC721Event
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
 type EventEvolvedWithExternalURI struct {
 	TokenId  *big.Int
 	TokenURI string
+	ERC721Event
 }
 
 func generateEventSignatureHash(event string, params ...string) string {
@@ -281,6 +294,11 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				ev.Contract = eventLogs[i].Address
 				ev.BlockNumber = blockNum
 				ev.Timestamp = h.Time
+				ev.BlockHash = eventLogs[i].BlockHash
+				ev.TxHash = eventLogs[i].TxHash
+				ev.TxIndex = eventLogs[i].TxIndex
+				ev.Index = eventLogs[i].Index
+				ev.Removed = eventLogs[i].Removed
 
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventMintedWithExternalURI, ev)

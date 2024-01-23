@@ -205,6 +205,16 @@ func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.
 				TokenId:     e.TokenId,
 				BlockNumber: e.BlockNumber,
 				Timestamp:   e.Timestamp,
+				ERC721Event: model.ERC721Event{
+					Address:   e.To,
+					Data:      e.Data,
+					Topics:    e.Topics,
+					BlockHash: e.BlockHash,
+					TxHash:    e.TxHash,
+					TxIndex:   e.TxIndex,
+					Index:     e.Index,
+					Removed:   e.Removed,
+				},
 			})
 		}
 	}

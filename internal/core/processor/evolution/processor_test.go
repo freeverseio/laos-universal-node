@@ -490,7 +490,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 
 func createMocks(t *testing.T) (*mockTx.MockService, *mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner, *mockRPCRequests.MockLaosRPCRequests) {
 	ctrl := gomock.NewController(t)
-
 	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockRPCRequests.NewMockLaosRPCRequests(ctrl)
 }
 
@@ -516,6 +515,16 @@ func createEventMintedWithExternalURI(blockNumber uint64, contract common.Addres
 		Contract:    contract,
 		BlockNumber: blockNumber,
 		Timestamp:   100,
+		ERC721Event: scan.ERC721Event{
+			Address:   common.HexToAddress("0x123"),
+			Data:      []byte("data"),
+			Topics:    []common.Hash{common.HexToHash("0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348")},
+			BlockHash: common.HexToHash("0x5bbe9e9fb27242bb7dfb3489ffbfa9de9e46c5d3e59fbee7307e41c5e6bc1c46"),
+			TxHash:    common.HexToHash("0x03571675f5e661821c40258d0756c4a04de6b8c2885814f58dbc6750deadb08c"),
+			TxIndex:   1,
+			Index:     1,
+			Removed:   false,
+		},
 	}
 
 	adjustedEvent := model.MintedWithExternalURI{
@@ -525,6 +534,16 @@ func createEventMintedWithExternalURI(blockNumber uint64, contract common.Addres
 		TokenId:     big.NewInt(10),
 		BlockNumber: blockNumber,
 		Timestamp:   100,
+		ERC721Event: model.ERC721Event{
+			Address:   common.HexToAddress("0x123"),
+			Data:      []byte("data"),
+			Topics:    []common.Hash{common.HexToHash("0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348")},
+			BlockHash: common.HexToHash("0x5bbe9e9fb27242bb7dfb3489ffbfa9de9e46c5d3e59fbee7307e41c5e6bc1c46"),
+			TxHash:    common.HexToHash("0x03571675f5e661821c40258d0756c4a04de6b8c2885814f58dbc6750deadb08c"),
+			TxIndex:   1,
+			Index:     1,
+			Removed:   false,
+		},
 	}
 	return event, adjustedEvent
 }
