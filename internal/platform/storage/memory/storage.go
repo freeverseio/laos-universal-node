@@ -85,6 +85,11 @@ func (b tx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	return nil
 }
 
+func (b tx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
+	// TODO implement this if we have to use it for testing purposes
+	return nil
+}
+
 // Delete deletes a key.
 func (b tx) Delete(key []byte) error {
 	delete(b.temp.data, string(key))

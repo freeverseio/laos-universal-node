@@ -1,6 +1,8 @@
 package badger
 
 import (
+	"bytes"
+
 	"github.com/dgraph-io/badger/v4"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
@@ -151,6 +153,32 @@ func (t Tx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	for iterator.Seek(seekPrefix); iterator.ValidForPrefix(prefix); iterator.Next() {
 		item := iterator.Item()
 		key := item.KeyCopy(nil)
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+func (t Tx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
+	var keys [][]byte
+
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	opts.PrefetchSize = 100
+	iterator := t.tx.NewIterator(opts)
+	defer iterator.Close()
+
+	startKey := append([]byte(nil), prefix...)
+	startKey = append(startKey, []byte(from)...)
+	endKey := append([]byte(nil), prefix...)
+	endKey = append(endKey, []byte(to)...)
+
+	for iterator.Seek(startKey); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		key := item.KeyCopy(nil)
+		if bytes.Compare(key, []byte(endKey)) > 0 {
+			break
+		}
 		keys = append(keys, key)
 	}
 

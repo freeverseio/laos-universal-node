@@ -78,6 +78,20 @@ func (mr *MockTxMockRecorder) Discard() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discard", reflect.TypeOf((*MockTx)(nil).Discard))
 }
 
+// FilterKeysWithPrefix mocks base method.
+func (m *MockTx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterKeysWithPrefix", prefix, from, to)
+	ret0, _ := ret[0].([][]byte)
+	return ret0
+}
+
+// FilterKeysWithPrefix indicates an expected call of FilterKeysWithPrefix.
+func (mr *MockTxMockRecorder) FilterKeysWithPrefix(prefix, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterKeysWithPrefix", reflect.TypeOf((*MockTx)(nil).FilterKeysWithPrefix), prefix, from, to)
+}
+
 // Get mocks base method.
 func (m *MockTx) Get(key []byte) ([]byte, error) {
 	m.ctrl.T.Helper()
