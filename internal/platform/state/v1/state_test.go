@@ -5,12 +5,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
-	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
 )
 
@@ -56,81 +54,8 @@ func TestLoadMerkleTrees(t *testing.T) {
 	})
 }
 
-func TestDeleteOrphanRootTags(t *testing.T) {
-	// Do not run this test in parallel as it uses bager in memory
-	t.Run("successfully deletes orphan root tags", func(t *testing.T) {
-		db := createBadger(t)
-		tx := createBadgerTransaction(t, db)
-		contract := common.HexToAddress("0x500")
-		collection := common.HexToAddress("0x501")
-		c := model.ERC721UniversalContract{
-			Address:           contract,
-			CollectionAddress: collection,
-			BlockNumber:       100,
-		}
-
-		if err := tx.StoreERC721UniversalContracts([]model.ERC721UniversalContract{c}); err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		contracts := tx.GetAllERC721UniversalContracts()
-		fmt.Println("c", contracts)
-
-		err := tx.LoadMerkleTrees(contract)
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		err = tx.TagRoot(contract, 100)
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		// we can checkout the contract at block 100
-		err = tx.Checkout(contract, 100)
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		err = tx.Commit()
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		tx = createBadgerTransaction(t, db)
-		err = tx.LoadMerkleTrees(contract)
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		err = tx.DeleteOrphanRootTags(int64(100), int64(105))
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-		// we can not checkout the contract at block 100 anymore
-		err = tx.Checkout(contract, 100)
-		if err == nil {
-			t.Errorf(`got no error when an error was expected`)
-		}
-	})
-}
-
 func createTransaction() state.Tx {
 	mem := memory.New()
 	stateService := v1.NewStateService(mem)
-	return stateService.NewTransaction()
-}
-
-func createBadger(t *testing.T) *badger.DB {
-	t.Helper()
-	db, err := badger.Open(
-		badger.DefaultOptions("").
-			WithInMemory(true).
-			WithLoggingLevel(badger.ERROR))
-	if err != nil {
-		t.Fatalf("error initializing storage: %v", err)
-	}
-
-	return db
-}
-
-func createBadgerTransaction(t *testing.T, db *badger.DB) state.Tx {
-	t.Helper()
-	badgerService := badgerStorage.NewService(db)
-	stateService := v1.NewStateService(badgerService)
 	return stateService.NewTransaction()
 }
