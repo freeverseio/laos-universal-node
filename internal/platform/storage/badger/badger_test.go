@@ -259,8 +259,8 @@ func performTransaction(t *testing.T, key, val []byte, service storage.Service) 
 func setup() error {
 	var err error
 	db, err = badger.Open(
-		badger.DefaultOptions(".").
-			WithInMemory(false).
+		badger.DefaultOptions("").
+			WithInMemory(true).
 			WithLoggingLevel(badger.ERROR))
 	if err != nil {
 		return err

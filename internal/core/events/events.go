@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
-	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
@@ -63,7 +62,6 @@ func (s events) FilterEventLogs(ctx context.Context, firstBlock, lastBlock *big.
 }
 
 func getEvoEvents(stateService state.Service, firstBlockTimeStamp, lastBlockTimeStamp uint64, contracts ...common.Address) ([]types.Log, error) {
-	// tx.GetMintedWithExternalURIEvents()
 	return nil, nil
 }
 
@@ -86,18 +84,4 @@ func getBlockTimestamp(client blockchain.EthClient, ctx context.Context, blockNu
 		return 0, err
 	}
 	return block.Time(), nil
-}
-
-func mapMintedEventToLog(mintedEvent *model.MintedWithExternalURI) types.Log {
-	return types.Log{
-		Address:     mintedEvent.Address,
-		Topics:      mintedEvent.Topics,
-		Data:        mintedEvent.Data,
-		BlockNumber: mintedEvent.BlockNumber,
-		TxHash:      mintedEvent.TxHash,
-		TxIndex:     mintedEvent.TxIndex,
-		BlockHash:   mintedEvent.BlockHash,
-		Index:       mintedEvent.Index,
-		Removed:     mintedEvent.Removed,
-	}
 }

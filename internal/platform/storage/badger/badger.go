@@ -176,7 +176,7 @@ func (t Tx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
 	for iterator.Seek(startKey); iterator.ValidForPrefix(prefix); iterator.Next() {
 		item := iterator.Item()
 		key := item.KeyCopy(nil)
-		if bytes.Compare(key, []byte(endKey)) > 0 {
+		if bytes.Compare(key, endKey) > 0 {
 			break
 		}
 		keys = append(keys, key)

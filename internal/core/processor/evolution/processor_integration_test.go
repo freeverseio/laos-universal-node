@@ -13,14 +13,12 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 )
 
 func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 	t.Run("obtained one event, event processed and last block updated successfully with badger", func(t *testing.T) {
-		t.Parallel()
 		ctx := context.TODO()
 		_, _, client, scanner, laosRpc := createMocks(t)
 
@@ -69,7 +67,6 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 			t.Fatalf("expected block hash %s, got %s", event.BlockHash, events[0].BlockHash)
 		}
 	})
-
 }
 
 func createBadger(t *testing.T) *badger.DB {
@@ -83,11 +80,4 @@ func createBadger(t *testing.T) *badger.DB {
 	}
 
 	return db
-}
-
-func createBadgerTransaction(t *testing.T, db *badger.DB) state.Tx {
-	t.Helper()
-	badgerService := badgerStorage.NewService(db)
-	stateService := v1.NewStateService(badgerService)
-	return stateService.NewTransaction()
 }
