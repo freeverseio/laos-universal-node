@@ -18,10 +18,8 @@ const (
 	prefix               = "enumeratedtotal/"
 	treePrefix           = prefix + "tree/"
 	headRootKeyPrefix    = prefix + "head/"
-	totalSupplyPrefix    = prefix + "totalsupply/"
 	tokensPrefix         = prefix + "tokens/"
 	tagPrefix            = prefix + "tags/"
-	totalSupplyTagPrefix = prefix + "tags/totalsupply"
 	lastTagPrefix        = prefix + "lasttag/"
 )
 
@@ -99,7 +97,7 @@ func (b *tree) Burn(idx int) error {
 		return errors.New("index out of totalSupply range")
 	}
 
-	tokenId, err := b.TokenByIndex(int(totalSupply - 1))
+	tokenId, err := b.TokenByIndex(int(totalSupply-1))
 	if err != nil {
 		return err
 	}
@@ -109,7 +107,7 @@ func (b *tree) Burn(idx int) error {
 		return err
 	}
 
-	err = b.SetTokenToIndex(int(totalSupply)-1, big.NewInt(0))
+	err = b.SetTokenToIndex(int(totalSupply-1), big.NewInt(0))
 	if err != nil {
 		return err
 	}
@@ -125,17 +123,29 @@ func (b *tree) Burn(idx int) error {
 
 // SetTotalSupply sets to total number of token in the contract
 func (b *tree) SetTotalSupply(totalSupply int64) error {
-	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), []byte(strconv.FormatInt(totalSupply, 10)))
+	buf := []byte(strconv.FormatInt(totalSupply, 10))
+
+	hash := crypto.Keccak256Hash(buf)
+	if err := b.store.Set([]byte(tokensPrefix+b.contract.String()+"/"+hash.String()), buf); err != nil {
+		return err
+	}
+
+	return b.mt.SetLeaf(big.NewInt(0), hash)
 }
 
 func (b *tree) TotalSupply() (int64, error) {
-	buf, err := b.store.Get([]byte(totalSupplyPrefix + b.contract.String()))
+	leaf, err := b.mt.Leaf(big.NewInt(0))
 	if err != nil {
 		return 0, err
 	}
 
-	if len(buf) == 0 {
+	if leaf.String() == jellyfish.Null {
 		return 0, nil
+	}
+
+	buf, err := b.store.Get([]byte(tokensPrefix + b.contract.String() + "/" + leaf.String()))
+	if err != nil {
+		return 0, err
 	}
 
 	return strconv.ParseInt(string(buf), 10, 64)
@@ -143,6 +153,7 @@ func (b *tree) TotalSupply() (int64, error) {
 
 // SetTokenIndex sets the token index
 func (b *tree) SetTokenToIndex(idx int, token *big.Int) error {
+	idx++ // index is incremented because of the totalSupply leaf is set on position 0
 	buf, err := json.Marshal(token)
 	if err != nil {
 		return err
@@ -158,12 +169,13 @@ func (b *tree) SetTokenToIndex(idx int, token *big.Int) error {
 
 // TokenByIndex returns the token by index
 func (b *tree) TokenByIndex(idx int) (*big.Int, error) {
+	idx++ // index is incremented because of the totalSupply leaf is set on position 0
 	totalSupply, err := b.TotalSupply()
 	if err != nil {
 		return nil, err
 	}
 
-	if idx >= int(totalSupply) {
+	if idx > int(totalSupply) {
 		return big.NewInt(0), errors.New("index out of totalSupply range")
 	}
 
@@ -220,16 +232,6 @@ func (b *tree) TagRoot(blockNumber int64) error {
 		return err
 	}
 
-	totalSupply, err := b.TotalSupply()
-	if err != nil {
-		return err
-	}
-	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	err = b.store.Set([]byte(tagTotalSupplyKey), []byte(strconv.FormatInt(totalSupply, 10)))
-	if err != nil {
-		return err
-	}
-
 	lastTagKey := lastTagPrefix + b.contract.String()
 	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
 }
@@ -262,27 +264,11 @@ func (b *tree) Checkout(blockNumber int64) error {
 
 	newRoot := common.BytesToHash(buf)
 	b.mt.SetRoot(newRoot)
-	err = setHeadRoot(b.contract, b.store, newRoot)
-	if err != nil {
-		return err
-	}
-
-	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	buf, err = b.store.Get([]byte(tagTotalSupplyKey))
-	if err != nil {
-		return err
-	}
-
-	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), buf)
+	return setHeadRoot(b.contract, b.store, newRoot)
 }
 
 // DeleteRootTag deletes root tag without loading the tree
 func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
 	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	err := tx.Delete([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-	tagTotalSupplyKey := totalSupplyTagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	return tx.Delete([]byte(tagTotalSupplyKey))
+	return tx.Delete([]byte(tagKey))
 }
