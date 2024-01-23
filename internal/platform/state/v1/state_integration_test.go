@@ -15,7 +15,6 @@ import (
 )
 
 func TestDeleteOrphanRootTags(t *testing.T) {
-	// Do not run this test in parallel as it uses bager in memory
 	t.Run("successfully deletes orphan root tags", func(t *testing.T) {
 		db := createBadger(t)
 		tx := createBadgerTransaction(t, db)
@@ -81,8 +80,10 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 			t.Fatalf(`got error "%s", expected "%s"`, err.Error(), expectedErr)
 		}
 	})
-	t.Run("successfully loads merkle trees in memory and mints 1400 asstes", func(t *testing.T) {
-		t.Parallel()
+	t.Run("successfully loads merkle trees in memory and mints 1400 assets", func(t *testing.T) {
+		// the test can run for 1400 assets and it fails for 1500 for this table size
+		// for the table size of 1 << 30 the test can successfully run for 18000 assets
+		// but that test is slower so I am not putting it for such big number
 		db := createBadger(t)
 		tx := createBadgerTransaction(t, db)
 		contract := common.HexToAddress("0x500")
@@ -92,7 +93,7 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 
-		for i := 1; i < 1000; i++ {
+		for i := 1; i < 1400; i++ {
 			mintEvent := model.MintedWithExternalURI{
 				Slot:        big.NewInt(int64(i)),
 				To:          common.HexToAddress("0x3"),
@@ -119,7 +120,6 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 		if errClose != nil {
 			t.Errorf(`got error "%v" when no error was expected`, errClose)
 		}
-
 	})
 }
 
