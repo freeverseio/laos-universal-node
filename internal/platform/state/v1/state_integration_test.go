@@ -123,6 +123,38 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 	})
 }
 
+func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
+	t.Run("stores and gets mint events", func(t *testing.T) {
+		db := createBadger(t)
+		tx := createBadgerTransaction(t, db)
+		err := tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
+			{
+				Slot:        big.NewInt(1),
+				To:          common.HexToAddress("0x3"),
+				TokenURI:    "tokenURI",
+				TokenId:     big.NewInt(1),
+				BlockNumber: 100,
+				Timestamp:   1000,
+				TxIndex:     1,
+			},
+		})
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		events, err := tx.GetMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex())
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		if len(events) != 1 {
+			t.Errorf(`got %d events when 1 was expected`, len(events))
+		}
+		if events[0].Slot.Cmp(big.NewInt(1)) != 0 {
+			t.Errorf(`got slot %d when 1 was expected`, events[0].Slot)
+		}
+
+	})
+}
+
 func createBadger(t *testing.T) *badger.DB {
 	t.Helper()
 	db, err := badger.Open(
