@@ -58,7 +58,7 @@ type tree struct {
 // TODO NewTree should be GetTree (same for enumerated and enumeratedtotal packages)
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx, celestiaTree ...bool) (Tree, error) {
+func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 	if contract.Cmp(common.Address{}) == 0 {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
