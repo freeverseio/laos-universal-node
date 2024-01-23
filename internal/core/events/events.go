@@ -9,16 +9,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
+	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
 type Events interface {
 	FilterEventLogs(ctx context.Context, firstBlock, lastBlock *big.Int, topics [][]common.Hash, contracts ...common.Address) ([]types.Log, error)
 }
 
-func NewEvents(ownershipChainClient blockchain.EthClient, evoChainClient blockchain.EthClient, contract common.Address) Events {
+func NewEvents(ownershipChainClient, evoChainClient blockchain.EthClient, stateService state.Service, contract common.Address) Events {
 	return events{
 		ownershipChainClient: ownershipChainClient,
 		evoChainClient:       evoChainClient,
+		stateService:         stateService,
 		contract:             contract,
 	}
 }
@@ -26,6 +29,7 @@ func NewEvents(ownershipChainClient blockchain.EthClient, evoChainClient blockch
 type events struct {
 	ownershipChainClient blockchain.EthClient
 	evoChainClient       blockchain.EthClient
+	stateService         state.Service
 	contract             common.Address
 }
 
@@ -35,14 +39,32 @@ func (s events) FilterEventLogs(ctx context.Context, firstBlock, lastBlock *big.
 		return nil, err
 	}
 	slog.Info("ownershipLogs", "ownershipLogs", ownershipLogs)
+	firstBlockTimeStamp, err := getBlockTimestamp(s.ownershipChainClient, ctx, firstBlock)
+	if err != nil {
+		return nil, err
+	}
+	var lastBlockTimeStamp uint64
+	if lastBlock != firstBlock {
+		lastBlockTimeStamp, err = getBlockTimestamp(s.ownershipChainClient, ctx, lastBlock)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		lastBlockTimeStamp = firstBlockTimeStamp
+	}
 
-	evoChainLogs, err := filterEventLogs(s.evoChainClient, ctx, firstBlock, lastBlock, topics, contracts...)
+	evoChainLogs, err := getEvoEvents(s.stateService, firstBlockTimeStamp, lastBlockTimeStamp, contracts...)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("evoChainLogs", "evoChainLogs", evoChainLogs)
 
 	return mergeEventLogs(ownershipLogs, evoChainLogs), nil
+}
+
+func getEvoEvents(stateService state.Service, firstBlockTimeStamp, lastBlockTimeStamp uint64, contracts ...common.Address) ([]types.Log, error) {
+	// tx.GetMintedWithExternalURIEvents()
+	return nil, nil
 }
 
 func mergeEventLogs(ownershipLogs, evoChainLogs []types.Log) []types.Log {
@@ -56,4 +78,26 @@ func filterEventLogs(client blockchain.EthClient, ctx context.Context, firstBloc
 		Addresses: contracts,
 		Topics:    topics,
 	})
+}
+
+func getBlockTimestamp(client blockchain.EthClient, ctx context.Context, blockNumber *big.Int) (uint64, error) {
+	block, err := client.BlockByNumber(ctx, blockNumber)
+	if err != nil {
+		return 0, err
+	}
+	return block.Time(), nil
+}
+
+func mapMintedEventToLog(mintedEvent *model.MintedWithExternalURI) types.Log {
+	return types.Log{
+		Address:     mintedEvent.Address,
+		Topics:      mintedEvent.Topics,
+		Data:        mintedEvent.Data,
+		BlockNumber: mintedEvent.BlockNumber,
+		TxHash:      mintedEvent.TxHash,
+		TxIndex:     mintedEvent.TxIndex,
+		BlockHash:   mintedEvent.BlockHash,
+		Index:       mintedEvent.Index,
+		Removed:     mintedEvent.Removed,
+	}
 }
