@@ -157,7 +157,6 @@ func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 		if errClose := db.Close(); errClose != nil {
 			t.Errorf(`got error "%v" when no error was expected`, errClose)
 		}
-
 	})
 }
 
