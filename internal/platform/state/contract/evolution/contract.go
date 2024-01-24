@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -11,7 +12,9 @@ import (
 )
 
 const (
-	eventsPrefix = "evo_events_"
+	eventsPrefix      = "evo_events_"
+	blockNumberDigits = 18
+	txIndexDigits     = 8
 )
 
 type service struct {
@@ -31,7 +34,11 @@ func (s *service) StoreMintedWithExternalURIEvents(contract string, events []mod
 		if err := encoder.Encode(event); err != nil {
 			return err
 		}
-		if errSet := s.tx.Set([]byte(eventsPrefix+strings.ToLower(contract)+"_"+fmt.Sprint(event.BlockNumber)+"_"+fmt.Sprint(event.TxIndex)), buf.Bytes()); errSet != nil {
+		key := fmt.Sprintf("%s%s_%s_%s", eventsPrefix,
+			strings.ToLower(contract),
+			formatNumberForSorting(event.BlockNumber, blockNumberDigits),
+			formatNumberForSorting(event.TxIndex, txIndexDigits))
+		if errSet := s.tx.Set([]byte(key), buf.Bytes()); errSet != nil {
 			return errSet
 		}
 	}
@@ -54,4 +61,16 @@ func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.Minte
 		mintedEvents = append(mintedEvents, mintedEvent)
 	}
 	return mintedEvents, nil
+}
+
+// we add digits to the block number and tx index to make sure the keys are sorted correctly
+// since badger sorts the keys lexicographically
+func formatNumberForSorting(blockNumber uint64, blockNumberDigits uint16) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(blockNumberDigits) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }

@@ -3,6 +3,7 @@ package v1_test
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -74,7 +75,10 @@ func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		val, err := tx.Get("evo_events_" + common.HexToAddress("0x500").Hex() + "_100_1")
+		val, err := tx.Get("evo_events_" +
+			common.HexToAddress("0x500").Hex() +
+			"_" + formatNumberForSorting(100, 18) +
+			"_" + formatNumberForSorting(1, 8))
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
@@ -88,4 +92,14 @@ func createTransaction() state.Tx {
 	mem := memory.New()
 	stateService := v1.NewStateService(mem)
 	return stateService.NewTransaction()
+}
+
+func formatNumberForSorting(blockNumber uint64, blockNumberDigits uint16) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(blockNumberDigits) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }
