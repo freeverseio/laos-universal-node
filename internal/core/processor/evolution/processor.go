@@ -172,18 +172,8 @@ func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.Eth
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
 	groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
-
 	for contract, scannedEvents := range groupedMintEvents {
-		// fetch current storedEvents stored for this specific contract address
-		storedEvents, err := tx.GetMintedWithExternalURIEvents(contract.String())
-		if err != nil {
-			return err
-		}
-
 		ev := make([]model.MintedWithExternalURI, 0)
-		if storedEvents != nil {
-			ev = append(ev, storedEvents...)
-		}
 		ev = append(ev, scannedEvents...)
 		if err := tx.StoreMintedWithExternalURIEvents(contract.String(), ev); err != nil {
 			return err

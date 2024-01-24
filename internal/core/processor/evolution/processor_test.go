@@ -276,35 +276,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		assertError(t, errors.New("error scanning events"), err)
 	})
 
-	t.Run("obtained one event, error on getting events from db ", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.TODO()
-		stateService, tx, client, scanner, laosRpc := createMocks(t)
-
-		stateService.EXPECT().NewTransaction().Return(tx)
-		tx.EXPECT().Discard()
-
-		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
-		startingBlock := uint64(100)
-		contract := common.HexToAddress("0x555")
-		event, _ := createEventMintedWithExternalURI(lastBlockData.Number, contract)
-
-		laosRpc.EXPECT().LatestFinalizedBlockHash().Return(latestFinalizedBlockHash, nil).Times(1)
-		laosRpc.EXPECT().BlockNumber(latestFinalizedBlockHash).Return(big.NewInt(125), nil).Times(1)
-
-		scanner.EXPECT().
-			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
-			Return([]scan.Event{event}, nil)
-
-		tx.EXPECT().
-			GetMintedWithExternalURIEvents(contract.String()).
-			Return(nil, errors.New("error getting events from db"))
-
-		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
-		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
-		assertError(t, errors.New("error getting events from db"), err)
-	})
-
 	t.Run("obtained one event, error on storing events in db", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.TODO()
@@ -324,10 +295,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
-
-		tx.EXPECT().
-			GetMintedWithExternalURIEvents(contract.String()).
-			Return(nil, nil)
 
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
@@ -357,10 +324,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
-
-		tx.EXPECT().
-			GetMintedWithExternalURIEvents(contract.String()).
-			Return(nil, nil)
 
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
@@ -398,10 +361,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
-
-		tx.EXPECT().
-			GetMintedWithExternalURIEvents(contract.String()).
-			Return(nil, nil)
 
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
@@ -444,10 +403,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		scanner.EXPECT().
 			ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlockData.Number)), nil).
 			Return([]scan.Event{event}, nil)
-
-		tx.EXPECT().
-			GetMintedWithExternalURIEvents(contract.String()).
-			Return(nil, nil)
 
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
