@@ -3,6 +3,7 @@ package enumerated
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"strconv"
@@ -29,7 +30,10 @@ type Tree interface {
 	Root() common.Hash
 	Transfer(minted bool, eventTransfer *model.ERC721Transfer) error
 	Mint(tokenId *big.Int, owner common.Address) error
-	TokensOf(owner common.Address) ([]big.Int, error)
+	TokenOfOwnerByIndex(owner common.Address, idx uint64) (*big.Int, error)
+	SetTokenToOwnerToIndex(owner common.Address, idx uint64, token *big.Int) error
+	SetBalanceToOwner(owner common.Address, balance uint64) error
+	BalanceOfOwner(owner common.Address) (uint64, error)
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
 	Checkout(blockNumber int64) error
@@ -66,17 +70,15 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 
 // Mint creates a new token
 func (b *tree) Mint(tokenId *big.Int, owner common.Address) error {
-	tokens, err := b.TokensOf(owner)
+	balance, err := b.BalanceOfOwner(owner)
 	if err != nil {
 		return err
 	}
-
-	tokens = append(tokens, *tokenId)
-	if err := b.SetTokensToOwner(owner, tokens); err != nil {
+	if err := b.SetTokenToOwnerToIndex(owner, balance, tokenId); err != nil {
 		return err
 	}
 
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return b.SetBalanceToOwner(owner, balance+1)
 }
 
 // Transfer adds TokenId to the new owner and removes it from the previous owner
@@ -84,42 +86,58 @@ func (b *tree) Transfer(minted bool, eventTransfer *model.ERC721Transfer) error 
 	if !minted {
 		return nil
 	}
+
 	if eventTransfer.From.Cmp(common.Address{}) != 0 {
-		fromTokens, err := b.TokensOf(eventTransfer.From)
+		fromBalance, err := b.BalanceOfOwner(eventTransfer.From)
 		if err != nil {
 			return err
 		}
+		for i := uint64(0); i < fromBalance; i++ {
+			fromToken, err := b.TokenOfOwnerByIndex(eventTransfer.From, i)
+			if err != nil {
+				return err
+			}
 
-		for i, fromToken := range fromTokens {
 			if fromToken.Cmp(eventTransfer.TokenId) == 0 {
-				fromTokens[i] = fromTokens[len(fromTokens)-1]
-				fromTokens = fromTokens[:len(fromTokens)-1]
+				lastToken, err := b.TokenOfOwnerByIndex(eventTransfer.From, fromBalance-1)
+				if err != nil {
+					return err
+				}
+
+				if err := b.SetTokenToOwnerToIndex(eventTransfer.From, i, lastToken); err != nil {
+					return err
+				}
+
+				if err := b.SetBalanceToOwner(eventTransfer.From, fromBalance-1); err != nil {
+					return err
+				}
+
 				break
 			}
-		}
-
-		if err := b.SetTokensToOwner(eventTransfer.From, fromTokens); err != nil {
-			return err
 		}
 	}
 
 	if eventTransfer.To.Cmp(common.Address{}) != 0 {
-		toTokens, err := b.TokensOf(eventTransfer.To)
+		toBalance, err := b.BalanceOfOwner(eventTransfer.To)
 		if err != nil {
 			return err
 		}
-		toTokens = append(toTokens, *eventTransfer.TokenId)
-		if err := b.SetTokensToOwner(eventTransfer.To, toTokens); err != nil {
+
+		if err := b.SetTokenToOwnerToIndex(eventTransfer.To, toBalance, eventTransfer.TokenId); err != nil {
+			return err
+		}
+
+		if err := b.SetBalanceToOwner(eventTransfer.To, toBalance+1); err != nil {
 			return err
 		}
 	}
 
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return nil
 }
 
 // SetTokensToOwner sets the tokens of an owner
-func (b *tree) SetTokensToOwner(owner common.Address, tokens []big.Int) error {
-	buf, err := json.Marshal(tokens)
+func (b *tree) SetTokenToOwnerToIndex(owner common.Address, idx uint64, token *big.Int) error {
+	buf, err := json.Marshal(token)
 	if err != nil {
 		return err
 	}
@@ -129,30 +147,87 @@ func (b *tree) SetTokensToOwner(owner common.Address, tokens []big.Int) error {
 		return err
 	}
 
-	return b.mt.SetLeaf(owner.Big(), hash)
+	position := owner.Big()
+	position = position.Lsh(position, 64)
+	position = position.Add(position, big.NewInt(int64(idx+1))) // +1 because balance is stored at index 0
+
+	if err := b.mt.SetLeaf(position, hash); err != nil {
+		return err
+	}
+
+	return setHeadRoot(b.contract, b.store, b.Root())
 }
 
 // TokensOf returns the tokens of an owner
-func (b *tree) TokensOf(owner common.Address) ([]big.Int, error) {
-	leaf, err := b.mt.Leaf(owner.Big())
+func (b *tree) TokenOfOwnerByIndex(owner common.Address, idx uint64) (*big.Int, error) {
+	balance, err := b.BalanceOfOwner(owner)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), err
+	}
+
+	if idx >= balance {
+		return big.NewInt(0), fmt.Errorf("index %d out of range", idx)
+	}
+
+	position := owner.Big()
+	position = position.Lsh(position, 64)
+	position = position.Add(position, big.NewInt(int64(idx+1))) // +1 because balance is stored at index 0
+	leaf, err := b.mt.Leaf(position)
+	if err != nil {
+		return big.NewInt(0), err
 	}
 	if leaf.String() == jellyfish.Null {
-		return nil, nil
+		return big.NewInt(0), nil
 	}
 
 	buf, err := b.store.Get([]byte(tokensPrefix + b.contract.String() + "/" + leaf.String()))
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), err
 	}
 
-	var tokens []big.Int
-	if err := json.Unmarshal(buf, &tokens); err != nil {
-		return nil, err
+	var token big.Int
+	if err := json.Unmarshal(buf, &token); err != nil {
+		return big.NewInt(0), err
 	}
 
-	return tokens, nil
+	return &token, nil
+}
+
+// SetTokensToOwner sets the tokens of an owner
+func (b *tree) SetBalanceToOwner(owner common.Address, balance uint64) error {
+	buf := []byte(strconv.FormatUint(balance, 10))
+
+	hash := crypto.Keccak256Hash(buf)
+	if err := b.store.Set([]byte(tokensPrefix+b.contract.String()+"/"+hash.String()), buf); err != nil {
+		return err
+	}
+
+	position := owner.Big()
+	position = position.Lsh(position, 64)
+	if err := b.mt.SetLeaf(position, hash); err != nil {
+		return err
+	}
+
+	return setHeadRoot(b.contract, b.store, b.Root())
+}
+
+func (b *tree) BalanceOfOwner(owner common.Address) (uint64, error) {
+	position := owner.Big()
+	position = position.Lsh(position, 64)
+	leaf, err := b.mt.Leaf(position)
+	if err != nil {
+		return 0, err
+	}
+	if leaf.String() == jellyfish.Null {
+		return 0, nil
+	}
+
+	buf, err := b.store.Get([]byte(tokensPrefix + b.contract.String() + "/" + leaf.String()))
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseUint(string(buf), 10, 64)
 }
 
 // Root returns the root of the tree

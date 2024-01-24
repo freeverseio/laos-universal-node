@@ -134,12 +134,12 @@ func (t *tx) BalanceOf(contract, owner common.Address) (*big.Int, error) {
 		return big.NewInt(0), fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	tokens, err := enumeratedTree.TokensOf(owner)
+	balance, err := enumeratedTree.BalanceOfOwner(owner)
 	if err != nil {
 		return big.NewInt(0), err
 	}
 
-	return big.NewInt(int64(len(tokens))), nil
+	return big.NewInt(int64(balance)), nil
 }
 
 // TokenOfOwnerByIndex returns the token of the owner by index
@@ -150,14 +150,7 @@ func (t *tx) TokenOfOwnerByIndex(contract, owner common.Address, idx int) (*big.
 		return big.NewInt(0), fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	tokens, err := enumeratedTree.TokensOf(owner)
-	if err != nil {
-		return big.NewInt(0), err
-	}
-	if idx >= len(tokens) {
-		return big.NewInt(0), fmt.Errorf("index %d out of range", idx)
-	}
-	return &tokens[idx], nil
+	return enumeratedTree.TokenOfOwnerByIndex(owner, uint64(idx))
 }
 
 // Transfer transfers ownership of the token. From, To, and TokenID are set in event
@@ -267,7 +260,6 @@ func (t *tx) Mint(contract common.Address, mintEvent *model.MintedWithExternalUR
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
-
 	return enumeratedTree.Mint(mintEvent.TokenId, tokenData.SlotOwner)
 }
 

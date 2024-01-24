@@ -100,6 +100,10 @@ func (b *tree) Mint(mintEvent *model.MintedWithExternalURI, idx int) error {
 		return err
 	}
 
+	if tokenData.Minted {
+		return errors.New("token " + mintEvent.TokenId.String() + " already minted")
+	}
+
 	tokenData.Minted = true
 	tokenData.Idx = idx
 	tokenData.TokenURI = mintEvent.TokenURI
