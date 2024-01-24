@@ -248,6 +248,21 @@ func (mr *MockTxMockRecorder) GetCollectionAddress(contract any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCollectionAddress", reflect.TypeOf((*MockTx)(nil).GetCollectionAddress), contract)
 }
 
+// GetCorrespondingEvoBlockNumber mocks base method.
+func (m *MockTx) GetCorrespondingEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCorrespondingEvoBlockNumber", ownershipBlockNumber)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCorrespondingEvoBlockNumber indicates an expected call of GetCorrespondingEvoBlockNumber.
+func (mr *MockTxMockRecorder) GetCorrespondingEvoBlockNumber(ownershipBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCorrespondingEvoBlockNumber", reflect.TypeOf((*MockTx)(nil).GetCorrespondingEvoBlockNumber), ownershipBlockNumber)
+}
+
 // GetCurrentEvoEventsIndexForOwnershipContract mocks base method.
 func (m *MockTx) GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -409,6 +424,20 @@ func (m *MockTx) OwnerOf(contract common.Address, tokenId *big.Int) (common.Addr
 func (mr *MockTxMockRecorder) OwnerOf(contract, tokenId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerOf", reflect.TypeOf((*MockTx)(nil).OwnerOf), contract, tokenId)
+}
+
+// SetCorrespondingEvoBlockNumber mocks base method.
+func (m *MockTx) SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCorrespondingEvoBlockNumber", ownershipBlockNumber, evoBlockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCorrespondingEvoBlockNumber indicates an expected call of SetCorrespondingEvoBlockNumber.
+func (mr *MockTxMockRecorder) SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCorrespondingEvoBlockNumber", reflect.TypeOf((*MockTx)(nil).SetCorrespondingEvoBlockNumber), ownershipBlockNumber, evoBlockNumber)
 }
 
 // SetCurrentEvoEventsIndexForOwnershipContract mocks base method.
@@ -1148,6 +1177,21 @@ func (m *MockEvolutionSyncState) EXPECT() *MockEvolutionSyncStateMockRecorder {
 	return m.recorder
 }
 
+// GetCorrespondingEvoBlockNumber mocks base method.
+func (m *MockEvolutionSyncState) GetCorrespondingEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCorrespondingEvoBlockNumber", ownershipBlockNumber)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCorrespondingEvoBlockNumber indicates an expected call of GetCorrespondingEvoBlockNumber.
+func (mr *MockEvolutionSyncStateMockRecorder) GetCorrespondingEvoBlockNumber(ownershipBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCorrespondingEvoBlockNumber", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetCorrespondingEvoBlockNumber), ownershipBlockNumber)
+}
+
 // GetLastEvoBlock mocks base method.
 func (m *MockEvolutionSyncState) GetLastEvoBlock() (model.Block, error) {
 	m.ctrl.T.Helper()
@@ -1161,6 +1205,20 @@ func (m *MockEvolutionSyncState) GetLastEvoBlock() (model.Block, error) {
 func (mr *MockEvolutionSyncStateMockRecorder) GetLastEvoBlock() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastEvoBlock", reflect.TypeOf((*MockEvolutionSyncState)(nil).GetLastEvoBlock))
+}
+
+// SetCorrespondingEvoBlockNumber mocks base method.
+func (m *MockEvolutionSyncState) SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCorrespondingEvoBlockNumber", ownershipBlockNumber, evoBlockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCorrespondingEvoBlockNumber indicates an expected call of SetCorrespondingEvoBlockNumber.
+func (mr *MockEvolutionSyncStateMockRecorder) SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCorrespondingEvoBlockNumber", reflect.TypeOf((*MockEvolutionSyncState)(nil).SetCorrespondingEvoBlockNumber), ownershipBlockNumber, evoBlockNumber)
 }
 
 // SetLastEvoBlock mocks base method.

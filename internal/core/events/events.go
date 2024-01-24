@@ -37,32 +37,15 @@ func (s events) FilterEventLogs(ctx context.Context, firstBlock, lastBlock *big.
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("ownershipLogs", "ownershipLogs", ownershipLogs)
-	firstBlockTimeStamp, err := getBlockTimestamp(s.ownershipChainClient, ctx, firstBlock)
-	if err != nil {
-		return nil, err
-	}
-	var lastBlockTimeStamp uint64
-	if lastBlock != firstBlock {
-		lastBlockTimeStamp, err = getBlockTimestamp(s.ownershipChainClient, ctx, lastBlock)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		lastBlockTimeStamp = firstBlockTimeStamp
-	}
-
-	evoChainLogs, err := getEvoEvents(s.stateService, firstBlockTimeStamp, lastBlockTimeStamp, contracts...)
+	firstBlockEvo := big.NewInt(0)
+	lastBlockEvo := big.NewInt(0)
+	evoChainLogs, err := filterEventLogs(s.evoChainClient, ctx, firstBlockEvo, lastBlockEvo, topics, contracts...)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("evoChainLogs", "evoChainLogs", evoChainLogs)
 
 	return mergeEventLogs(ownershipLogs, evoChainLogs), nil
-}
-
-func getEvoEvents(stateService state.Service, firstBlockTimeStamp, lastBlockTimeStamp uint64, contracts ...common.Address) ([]types.Log, error) {
-	return nil, nil
 }
 
 func mergeEventLogs(ownershipLogs, evoChainLogs []types.Log) []types.Log {

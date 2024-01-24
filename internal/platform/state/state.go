@@ -73,4 +73,6 @@ type OwnershipSyncState interface {
 type EvolutionSyncState interface {
 	SetLastEvoBlock(block model.Block) error
 	GetLastEvoBlock() (model.Block, error)
+	GetCorrespondingEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error)
+	SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber uint64) error
 }
