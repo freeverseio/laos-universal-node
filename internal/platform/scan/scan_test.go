@@ -317,7 +317,9 @@ func TestScanEventsMintingFromJsonEvent(t *testing.T) {
 		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
 		assertNoError(t, err)
 		assertEventCount(t, events, 1)
-		assertBlockHash(t, events[0].(scan.EventMintedWithExternalURI).BlockHash.Hex(), "0x5bbe9e9fb27242bb7dfb3489ffbfa9de9e46c5d3e59fbee7307e41c5e6bc1c46")
+		if events[0].(scan.EventMintedWithExternalURI).TxIndex != uint64(eventLogs[0].TxIndex) {
+			t.Fatalf("got tx index %d, expected %d", events[0].(scan.EventMintedWithExternalURI).TxIndex, eventLogs[0].TxIndex)
+		}
 	})
 }
 
@@ -752,11 +754,5 @@ func assertNoError(t *testing.T, err error) {
 func assertEventCount(t *testing.T, events []scan.Event, expectedCount int) {
 	if len(events) != expectedCount {
 		t.Errorf("got %d events, expected %d", len(events), expectedCount)
-	}
-}
-
-func assertBlockHash(t *testing.T, gotHash, expectedHash string) {
-	if gotHash != expectedHash {
-		t.Errorf("got %v, expected %v", gotHash, expectedHash)
 	}
 }

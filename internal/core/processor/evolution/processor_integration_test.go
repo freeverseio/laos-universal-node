@@ -100,7 +100,7 @@ func TestProcessEvoBlockRangeWithBadger100Events(t *testing.T) {
 			BlockByNumber(ctx, gomock.Any()).
 			Return(types.NewBlockWithHeader(&types.Header{
 				Time:   lastBlockData.Timestamp,
-				Number: big.NewInt(int64(lastBlocskData.Number)),
+				Number: big.NewInt(int64(lastBlockData.Number)),
 			}), nil).AnyTimes()
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
