@@ -34,7 +34,6 @@ var topics = [][]common.Hash{
 
 func TestParseEvents(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
 		name                string
 		fromBlock           *big.Int
@@ -160,6 +159,74 @@ func TestParseEvents(t *testing.T) {
 
 func TestScanOnlyValidEvents(t *testing.T) {
 	t.Parallel()
+
+	tests := []struct {
+		name           string
+		eventLogs      []types.Log
+		expectedEvents int
+	}{
+		{
+			name: "it only returns Transfer",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+				{
+					Topics: []common.Hash{
+						// Event hash is not included in the list of events to be parsed
+						common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+						common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000009f4"),
+					},
+				},
+			},
+			expectedEvents: 1,
+		},
+		{
+			name: "it does not parse Transfer with unexpected topics length",
+			eventLogs: []types.Log{
+				{
+					Topics: []common.Hash{
+						common.HexToHash(transferEventHash),
+						common.HexToHash("0x00000000000000000000000010fc4aa0135af7bc5d48fe75da32dbb52bd9631b"),
+						common.HexToHash("0x00000000000000000000000066666f58de1bcd762a5e5c5aff9cc3c906d66666"),
+					},
+				},
+			},
+			expectedEvents: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cli := getMockEthClient(t)
+			fromBlock, toBlock, address, contracts := setupScanParams()
+
+			cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+				FromBlock: fromBlock,
+				ToBlock:   toBlock,
+				Addresses: []common.Address{address},
+				Topics:    topics,
+			}).Return(tt.eventLogs, nil)
+
+			s := scan.NewScanner(cli)
+			events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+			assertNoError(t, err)
+			assertEventCount(t, events, tt.expectedEvents)
+		})
+	}
+}
+
+func TestScanOnlyValidEvents_(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		eventLogs      []types.Log
@@ -231,6 +298,27 @@ func TestScanOnlyValidEvents(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScanEventsMintingFromJsonEvent(t *testing.T) {
+	t.Parallel()
+
+	t.Run("it should scan a eventMintedWithExternalURISigHash", func(t *testing.T) {
+		t.Parallel()
+
+		cli := getMockEthClient(t)
+		fromBlock, toBlock, address, contracts := setupScanParams()
+		s := scan.NewScanner(cli)
+		eventLogs := []types.Log{parseEventFromJSON(mockEventJSON())}
+
+		expectFilterLogsCall(cli, fromBlock, toBlock, address, eventLogs)
+		expectHeaderByNumberCall(cli, eventLogs[0].BlockNumber)
+
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+		assertNoError(t, err)
+		assertEventCount(t, events, 1)
+		assertBlockHash(t, events[0].(scan.EventMintedWithExternalURI).BlockHash.Hex(), "0x5bbe9e9fb27242bb7dfb3489ffbfa9de9e46c5d3e59fbee7307e41c5e6bc1c46")
+	})
 }
 
 func TestScanEvents(t *testing.T) {
@@ -604,4 +692,71 @@ func getMockEthClient(t *testing.T) *mock.MockEthClient {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	return mock.NewMockEthClient(ctrl)
+}
+
+// Refactored helper functions for better readability and reuse.
+func setupScanParams() (fromBlock, toBlock *big.Int, address common.Address, contracts []string) {
+	fromBlock = big.NewInt(0)
+	toBlock = big.NewInt(100)
+	address = common.HexToAddress("0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D")
+	contracts = []string{address.String()}
+	return
+}
+
+func parseEventFromJSON(json string) types.Log {
+	event := types.Log{}
+	err := event.UnmarshalJSON([]byte(json))
+	if err != nil {
+		panic("failed to unmarshal event JSON")
+	}
+	return event
+}
+
+func mockEventJSON() string {
+	return `{
+    "address": "0xfffffffffffffffffffffffe00000000000000d1",
+    "topics": [
+        "0xa7135052b348b0b4e9943bae82d8ef1c5ac225e594ef4271d12f0744cfc98348",
+        "0x0000000000000000000000001b0b4a597c764400ea157ab84358c8788a89cd28"
+    ],
+    "data": "0x00000000000000000000000000000000000000005600ffd60e62e400000000005600ffd60e62e400000000001b0b4a597c764400ea157ab84358c8788a89cd2800000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000035697066733a2f2f516d5442313866366a79424332377470635742617542784e366d465075706366576e7278674c57675079625851470000000000000000000000",
+    "blockHash": "0x5bbe9e9fb27242bb7dfb3489ffbfa9de9e46c5d3e59fbee7307e41c5e6bc1c46",
+    "blockNumber": "0x5fbc4",
+    "transactionHash": "0x03571675f5e661821c40258d0756c4a04de6b8c2885814f58dbc6750deadb08c",
+    "transactionIndex": "0x0",
+    "logIndex": "0x0",
+    "transactionLogIndex": "0x0",
+    "removed": false
+}`
+}
+
+func expectFilterLogsCall(cli *mock.MockEthClient, fromBlock, toBlock *big.Int, address common.Address, eventLogs []types.Log) {
+	cli.EXPECT().FilterLogs(context.Background(), ethereum.FilterQuery{
+		FromBlock: fromBlock,
+		ToBlock:   toBlock,
+		Addresses: []common.Address{address},
+		Topics:    topics,
+	}).Return(eventLogs, nil)
+}
+
+func expectHeaderByNumberCall(cli *mock.MockEthClient, blockNumber uint64) {
+	cli.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(blockNumber))).Return(&types.Header{Time: uint64(time.Now().Unix())}, nil)
+}
+
+func assertNoError(t *testing.T, err error) {
+	if err != nil {
+		t.Errorf("got %v, expected nil", err)
+	}
+}
+
+func assertEventCount(t *testing.T, events []scan.Event, expectedCount int) {
+	if len(events) != expectedCount {
+		t.Errorf("got %d events, expected %d", len(events), expectedCount)
+	}
+}
+
+func assertBlockHash(t *testing.T, gotHash, expectedHash string) {
+	if gotHash != expectedHash {
+		t.Errorf("got %v, expected %v", gotHash, expectedHash)
+	}
 }
