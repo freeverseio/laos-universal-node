@@ -3,6 +3,8 @@ package evolution
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -10,7 +12,9 @@ import (
 )
 
 const (
-	eventsPrefix = "evo_events_"
+	eventsPrefix      = "evo_events_"
+	blockNumberDigits = 18
+	txIndexDigits     = 8
 )
 
 type service struct {
@@ -24,29 +28,49 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-
-	if err := encoder.Encode(events); err != nil {
-		return err
+	for _, event := range events {
+		var buf bytes.Buffer
+		encoder := gob.NewEncoder(&buf)
+		if err := encoder.Encode(event); err != nil {
+			return err
+		}
+		key := fmt.Sprintf("%s%s_%s_%s", eventsPrefix,
+			strings.ToLower(contract),
+			formatNumberForSorting(event.BlockNumber, blockNumberDigits),
+			formatNumberForSorting(event.TxIndex, txIndexDigits))
+		if errSet := s.tx.Set([]byte(key), buf.Bytes()); errSet != nil {
+			return errSet
+		}
 	}
-
-	return s.tx.Set([]byte(eventsPrefix+strings.ToLower(contract)), buf.Bytes())
+	return nil
 }
 
 func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error) {
-	value, err := s.tx.Get([]byte(eventsPrefix + strings.ToLower(contract)))
-	if err != nil {
-		return nil, err
-	}
-	if value == nil {
-		return nil, nil
+	events := s.tx.GetValuesWithPrefix([]byte(eventsPrefix + strings.ToLower(contract) + "_"))
+	var mintedEvents []model.MintedWithExternalURI
+	if len(events) == 0 {
+		return mintedEvents, nil
 	}
 
-	var mintedEvents []model.MintedWithExternalURI
-	decoder := gob.NewDecoder(bytes.NewBuffer(value))
-	if err := decoder.Decode(&mintedEvents); err != nil {
-		return nil, err
+	for _, event := range events {
+		var mintedEvent model.MintedWithExternalURI
+		decoder := gob.NewDecoder(bytes.NewBuffer(event))
+		if err := decoder.Decode(&mintedEvent); err != nil {
+			return nil, err
+		}
+		mintedEvents = append(mintedEvents, mintedEvent)
 	}
 	return mintedEvents, nil
+}
+
+// we add digits to the block number and tx index to make sure the keys are sorted correctly
+// since badger sorts the keys lexicographically
+func formatNumberForSorting(blockNumber uint64, blockNumberDigits uint16) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(blockNumberDigits) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }

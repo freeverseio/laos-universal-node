@@ -26,9 +26,7 @@ func TestMain(m *testing.M) {
 
 func TestStorageGetData(t *testing.T) {
 	t.Parallel()
-
 	service := badgerStorage.NewService(db)
-
 	expectedKey, expectedVal := []byte("expectedKey"), []byte("expectedValue")
 	performTransaction(t, expectedKey, expectedVal, service)
 
@@ -43,9 +41,7 @@ func TestStorageGetData(t *testing.T) {
 
 func TestStorageGetNoData(t *testing.T) {
 	t.Parallel()
-
 	service := badgerStorage.NewService(db)
-
 	got, err := service.Get([]byte("idonotexist"))
 	if err == nil {
 		t.Fatal("got no error, expecting badger.ErrKeyNotFound")
@@ -190,6 +186,85 @@ func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
 	}
 }
 
+func TestFilterKeysWithPrefix(t *testing.T) {
+	// DON'T PARALLELIZE THIS TEST
+	service := badgerStorage.NewService(db)
+	keysAndValues := [][]byte{
+		[]byte("prefix_001"), []byte("1"),
+		[]byte("prefix_002"), []byte("2"),
+		[]byte("prefix_003"), []byte("3"),
+		[]byte("prefix_004"), []byte("4"),
+		[]byte("prefix_005"), []byte("5"),
+		[]byte("prefix_010"), []byte("10"),
+	}
+
+	for i := 0; i < len(keysAndValues); i += 2 {
+		if err := service.Set(keysAndValues[i], keysAndValues[i+1]); err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
+	tx := service.NewTransaction()
+	got := tx.FilterKeysWithPrefix([]byte("prefix_"), "002", "005")
+
+	if len(got) != 4 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
+}
+
+func TestFilterKeysWithPrefixWithValues(t *testing.T) {
+	// DON'T PARALLELIZE THIS TEST
+	service := badgerStorage.NewService(db)
+	for i := 0; i < 100; i++ {
+		formatedBlockNumber := formatBlockNumber(uint64(i))
+		err := service.Set([]byte("prefix_"+formatedBlockNumber), []byte(strconv.Itoa(i)))
+		if err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
+
+	tx := service.NewTransaction()
+	got := tx.FilterKeysWithPrefix([]byte("prefix_"), formatBlockNumber(uint64(6)), formatBlockNumber(uint64(10)))
+
+	if len(got) != 5 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
+}
+
+func TestGetValuesWithPrefixWithValues(t *testing.T) {
+	// DON'T PARALLELIZE THIS TEST
+	service := badgerStorage.NewService(db)
+	for i := 0; i < 100; i++ {
+		formatedBlockNumber := formatBlockNumber(uint64(i))
+		err := service.Set([]byte("prefix_"+formatedBlockNumber), []byte(strconv.Itoa(i)))
+		if err != nil {
+			t.Fatalf("got error %s, expecting no error", err.Error())
+		}
+	}
+
+	tx := service.NewTransaction()
+	got := tx.GetValuesWithPrefix([]byte("prefix_"), false)
+
+	if len(got) != 100 {
+		t.Fatalf("got %d keys when 7 keys were expected", len(got))
+	}
+
+	if string(got[88]) != "88" {
+		t.Fatalf("got %v, expected %v", string(got[0]), "0")
+	}
+
+	if err := db.DropAll(); err != nil {
+		log.Printf("error occurred closing the DB: %s", err.Error())
+	}
+}
+
 func performTransaction(t *testing.T, key, val []byte, service storage.Service) {
 	t.Helper()
 	tx := service.NewTransaction()
@@ -223,4 +298,14 @@ func teardown() {
 	if err := db.Close(); err != nil {
 		log.Printf("error occurred closing the DB: %s", err.Error())
 	}
+}
+
+func formatBlockNumber(blockNumber uint64) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(15) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }

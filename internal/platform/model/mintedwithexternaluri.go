@@ -13,4 +13,5 @@ type MintedWithExternalURI struct {
 	TokenId     *big.Int
 	BlockNumber uint64
 	Timestamp   uint64
+	TxIndex     uint64
 }

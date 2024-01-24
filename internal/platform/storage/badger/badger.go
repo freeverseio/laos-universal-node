@@ -1,6 +1,8 @@
 package badger
 
 import (
+	"bytes"
+
 	"github.com/dgraph-io/badger/v4"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
@@ -151,6 +153,69 @@ func (t Tx) GetKeysWithPrefix(prefix []byte, reverse ...bool) [][]byte {
 	for iterator.Seek(seekPrefix); iterator.ValidForPrefix(prefix); iterator.Next() {
 		item := iterator.Item()
 		key := item.KeyCopy(nil)
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+func (t Tx) GetValuesWithPrefix(prefix []byte, reverse ...bool) [][]byte {
+	var values [][]byte
+
+	// Determine the reverse setting based on the optional parameter
+	isReverse := false
+	if len(reverse) > 0 {
+		isReverse = reverse[0]
+	}
+
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.Reverse = isReverse
+	opts.PrefetchSize = 100
+	iterator := t.tx.NewIterator(opts)
+	defer iterator.Close()
+
+	// Append 0xff to the prefix for the seek key if in reverse mode
+	var seekPrefix []byte
+	if isReverse {
+		seekPrefix = append([]byte(nil), prefix...)
+		seekPrefix = append(seekPrefix, 0xff)
+	} else {
+		seekPrefix = prefix
+	}
+
+	for iterator.Seek(seekPrefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			continue
+		}
+		values = append(values, value)
+	}
+
+	return values
+}
+
+func (t Tx) FilterKeysWithPrefix(prefix []byte, from, to string) [][]byte {
+	var keys [][]byte
+
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	opts.PrefetchSize = 100
+	iterator := t.tx.NewIterator(opts)
+	defer iterator.Close()
+
+	startKey := append([]byte(nil), prefix...)
+	startKey = append(startKey, []byte(from)...)
+	endKey := append([]byte(nil), prefix...)
+	endKey = append(endKey, []byte(to)...)
+
+	for iterator.Seek(startKey); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		key := item.KeyCopy(nil)
+		if bytes.Compare(key, endKey) > 0 {
+			break
+		}
 		keys = append(keys, key)
 	}
 

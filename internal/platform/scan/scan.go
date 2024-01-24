@@ -134,6 +134,7 @@ type EventMintedWithExternalURI struct {
 	Contract    common.Address
 	BlockNumber uint64
 	Timestamp   uint64
+	TxIndex     uint64
 }
 
 // EventEvolvedWithExternalURI is the LaosEvolution event emitted when a token metadata is updated
@@ -281,6 +282,7 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 				ev.Contract = eventLogs[i].Address
 				ev.BlockNumber = blockNum
 				ev.Timestamp = h.Time
+				ev.TxIndex = uint64(eventLogs[i].TxIndex)
 
 				parsedEvents = append(parsedEvents, ev)
 				slog.Info("received event", eventMintedWithExternalURI, ev)
