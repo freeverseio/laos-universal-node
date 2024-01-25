@@ -60,11 +60,3 @@ func filterEventLogs(client blockchain.EthClient, ctx context.Context, firstBloc
 		Topics:    topics,
 	})
 }
-
-func getBlockTimestamp(client blockchain.EthClient, ctx context.Context, blockNumber *big.Int) (uint64, error) {
-	block, err := client.BlockByNumber(ctx, blockNumber)
-	if err != nil {
-		return 0, err
-	}
-	return block.Time(), nil
-}
