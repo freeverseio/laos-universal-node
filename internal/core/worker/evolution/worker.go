@@ -71,11 +71,6 @@ func executeEvoBlockRange(ctx context.Context, w *worker, startingBlock uint64) 
 		return startingBlock - 1, nil // return lastBlock from previous range to avoid skipping a block
 	}
 
-	err = w.processor.VerifyChainConsistency(ctx, startingBlock)
-	if err != nil {
-		return 0, err
-	}
-
 	err = w.processor.ProcessEvoBlockRange(ctx, startingBlock, lastBlock)
 	if err != nil {
 		return 0, err

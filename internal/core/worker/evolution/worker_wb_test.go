@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	evoProcessMock "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution/mock"
 
 	"go.uber.org/mock/gomock"
@@ -51,45 +49,6 @@ func TestExecuteBlockRange(t *testing.T) {
 		}
 	})
 
-	t.Run("error on verifying chain consistency", func(t *testing.T) {
-		t.Parallel()
-
-		waitingTimeMillisecond := 100 * time.Millisecond
-		startingBlock := uint64(100)
-
-		ctx := context.TODO()
-		processor := evoProcessMock.NewMockProcessor(gomock.NewController(t))
-		worker := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
-
-		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(uint64(110), nil)
-		processor.EXPECT().VerifyChainConsistency(ctx, startingBlock).Return(errors.New("error on verifying chain consistency"))
-
-		_, err := executeEvoBlockRange(ctx, worker, startingBlock)
-		assertError(t, errors.New("error on verifying chain consistency"), err)
-	})
-
-	t.Run("chain not consistent", func(t *testing.T) {
-		t.Parallel()
-
-		waitingTimeMillisecond := 100 * time.Millisecond
-		startingBlock := uint64(100)
-
-		ctx := context.TODO()
-		processor := evoProcessMock.NewMockProcessor(gomock.NewController(t))
-		worker := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
-
-		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(uint64(110), nil)
-		processor.EXPECT().
-			VerifyChainConsistency(ctx, startingBlock).
-			Return(evolution.ReorgError{
-				Block:       100,
-				ChainHash:   common.HexToHash("0x1"),
-				StorageHash: common.HexToHash("0x2"),
-			})
-
-		_, err := executeEvoBlockRange(ctx, worker, startingBlock)
-		assertError(t, errors.New("reorg error"), err)
-	})
 	t.Run("process evo block range returns error", func(t *testing.T) {
 		t.Parallel()
 
@@ -101,7 +60,6 @@ func TestExecuteBlockRange(t *testing.T) {
 		worker := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
 
 		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(uint64(110), nil)
-		processor.EXPECT().VerifyChainConsistency(ctx, startingBlock).Return(nil)
 		processor.EXPECT().
 			ProcessEvoBlockRange(ctx, startingBlock, uint64(110)).
 			Return(errors.New("process evo block range returns error"))
@@ -120,7 +78,7 @@ func TestExecuteBlockRange(t *testing.T) {
 		worker := &worker{waitingTime: waitingTimeMillisecond, processor: processor}
 
 		processor.EXPECT().GetLastBlock(ctx, startingBlock).Return(uint64(110), nil)
-		processor.EXPECT().VerifyChainConsistency(ctx, startingBlock).Return(nil)
+
 		processor.EXPECT().ProcessEvoBlockRange(ctx, startingBlock, uint64(110)).Return(nil)
 
 		lastBlock, err := executeEvoBlockRange(ctx, worker, startingBlock)
