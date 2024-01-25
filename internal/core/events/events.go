@@ -37,14 +37,24 @@ func (s events) FilterEventLogs(ctx context.Context, firstBlock, lastBlock *big.
 	if err != nil {
 		return nil, err
 	}
-	firstBlockEvo := big.NewInt(0)
-	lastBlockEvo := big.NewInt(0)
-	evoChainLogs, err := filterEventLogs(s.evoChainClient, ctx, firstBlockEvo, lastBlockEvo, topics, contracts...)
+
+	tx := s.stateService.NewTransaction()
+	firstBlockEvo, err := tx.GetCorrespondingEvoBlockNumber(uint64(firstBlock.Int64()))
+	if err != nil {
+		slog.Error("error getting corresponding evo block number", "err", err)
+		return nil, err
+	}
+	lastBlockEvo, err := tx.GetCorrespondingEvoBlockNumber(uint64(lastBlock.Int64()))
+	if err != nil {
+		slog.Error("error getting corresponding evo block number", "err", err)
+		return nil, err
+	}
+
+	evoChainLogs, err := filterEventLogs(s.evoChainClient, ctx, big.NewInt(int64(firstBlockEvo)), big.NewInt(int64(lastBlockEvo)), topics, contracts...)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("evoChainLogs", "evoChainLogs", evoChainLogs)
-
 	return mergeEventLogs(ownershipLogs, evoChainLogs), nil
 }
 
