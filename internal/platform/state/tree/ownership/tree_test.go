@@ -121,6 +121,40 @@ func TestTree(t *testing.T) {
 		assert.Equal(t, tokenData.Idx, 1)
 	})
 
+	t.Run(`mint same token 2 times returns an error`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		assert.NilError(t, err)
+
+		firstMintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x1"),
+			TokenURI: "tokenURI",
+			TokenId:  big.NewInt(1),
+		}
+		err = tr.Mint(&firstMintEvent, 0)
+		assert.NilError(t, err)
+		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
+
+		tokenData, err := tr.TokenData(firstMintEvent.TokenId)
+		assert.NilError(t, err)
+		assert.Equal(t, tokenData.SlotOwner.Cmp(firstMintEvent.To), 0)
+		assert.Equal(t, tokenData.TokenURI, firstMintEvent.TokenURI)
+		assert.Equal(t, tokenData.Minted, true)
+		assert.Equal(t, tokenData.Idx, 0)
+
+		secondMintEvent := model.MintedWithExternalURI{
+			To:       common.HexToAddress("0x2"),
+			TokenURI: "tokenURI",
+			TokenId:  big.NewInt(1),
+		}
+
+		err = tr.Mint(&secondMintEvent, 1)
+		assert.Error(t, err, "token 1 already minted")
+	})
+
 	t.Run(`mint tokens in different contracts`, func(t *testing.T) {
 		t.Parallel()
 		service := memory.New()

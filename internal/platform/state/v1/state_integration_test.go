@@ -80,45 +80,66 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 			t.Fatalf(`got error "%s", expected "%s"`, err.Error(), expectedErr)
 		}
 	})
-	t.Run("successfully loads merkle trees in memory and mints 1400 assets", func(t *testing.T) {
+	t.Run("mint many assets in different transaction and then measure tx size", func(t *testing.T) {
 		// the test can run for 1400 assets and it fails for 1500 for this table size
 		// for the table size of 1 << 30 the test can successfully run for 18000 assets
 		// but that test is slower so I am not putting it for such big number
-		db := createBadger(t)
-		tx := createBadgerTransaction(t, db)
 		contract := common.HexToAddress("0x500")
-
-		err := tx.LoadMerkleTrees(contract)
-		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
-		}
-
-		for i := 1; i < 1400; i++ {
-			mintEvent := model.MintedWithExternalURI{
-				Slot:        big.NewInt(int64(i)),
-				To:          common.HexToAddress("0x3"),
-				TokenURI:    "tokenURI",
-				TokenId:     big.NewInt(int64(i)),
-				BlockNumber: uint64(i),
-				Timestamp:   uint64(time.Now().Unix()),
-			}
-			err = tx.Mint(contract, &mintEvent)
+		db := createBadger(t)
+		blocks := 1
+		mintsInBlock := 1000
+		for block := 0; block < blocks; block++ {
+			tx := createBadgerTransaction(t, db)
+			err := tx.LoadMerkleTrees(contract)
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
+
+			for mintInBlock := 0; mintInBlock < mintsInBlock; mintInBlock++ {
+				mintId := block*mintsInBlock + mintInBlock
+				fmt.Println("test checkpoint", "mintId", mintId, "block", block, "mintsInBlock", mintsInBlock)
+
+				owner := common.HexToAddress("0xB200110583D9d9F5E041FcEe024886bd00996691")
+				tokenId := big.NewInt(int64(mintId))
+				tokenId = tokenId.Lsh(tokenId, 160)
+				tokenId = tokenId.Add(tokenId, owner.Big())
+
+				mintEvent := model.MintedWithExternalURI{
+					Slot:        big.NewInt(int64(mintId)),
+					To:          common.HexToAddress("0x3"),
+					TokenURI:    "tokenURI",
+					TokenId:     tokenId,
+					BlockNumber: uint64(block),
+					Timestamp:   uint64(time.Now().Unix()),
+				}
+				err = tx.Mint(contract, &mintEvent)
+				if err != nil {
+					t.Fatal("got error when no error was expected 1", err.Error())
+				}
+			}
+			err = tx.Commit()
+			if err != nil {
+				t.Fatal("got error when no error was expected 2", err.Error())
+			}
+		}
+
+		tx := createBadgerTransaction(t, db)
+		err := tx.LoadMerkleTrees(contract)
+		if err != nil {
+			t.Fatal("got error when no error was expected 3", err.Error())
 		}
 
 		err = tx.Commit()
 		if err != nil {
-			t.Errorf(`got error "%v" when no error was expected`, err)
+			t.Fatal("got error when no error was expected 4", err.Error())
 		}
 		errDrop := db.DropAll()
 		if errDrop != nil {
-			t.Errorf(`got error "%v" when no error was expected`, errDrop)
+			t.Fatal("got error when no error was expected 5", err.Error())
 		}
 		errClose := db.Close()
 		if errClose != nil {
-			t.Errorf(`got error "%v" when no error was expected`, errClose)
+			t.Fatal("got error when no error was expected 6", err.Error())
 		}
 	})
 }
@@ -165,7 +186,7 @@ func createBadger(t *testing.T) *badger.DB {
 	db, err := badger.Open(
 		badger.DefaultOptions("").
 			WithInMemory(true).
-			WithLoggingLevel(badger.ERROR))
+			WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
 	if err != nil {
 		t.Fatalf("error initializing storage: %v", err)
 	}

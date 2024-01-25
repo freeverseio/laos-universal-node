@@ -12,6 +12,8 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 )
 
+const prefix = "prefix_"
+
 var db *badger.DB // badger.DB is thread-safe
 
 func TestMain(m *testing.M) {
@@ -150,7 +152,7 @@ func TestStorageGetNoKeysWithPrefixWithValues(t *testing.T) {
 		}
 	}
 	tx := service.NewTransaction()
-	got := tx.GetKeysWithPrefix([]byte("prefix_"), false)
+	got := tx.GetKeysWithPrefix([]byte(prefix), false)
 
 	if len(got) != 7 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
@@ -171,13 +173,13 @@ func TestStorageGetNoKeysWithPrefixReverse(t *testing.T) {
 	service := badgerStorage.NewService(db)
 
 	for i := 0; i < 1000; i++ {
-		err := service.Set([]byte("prefix_"+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
+		err := service.Set([]byte(prefix+strconv.Itoa(i)), []byte(strconv.Itoa(i)))
 		if err != nil {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	}
 	tx := service.NewTransaction()
-	got := tx.GetKeysWithPrefix([]byte("prefix_"), true)
+	got := tx.GetKeysWithPrefix([]byte(prefix), true)
 	if len(got) != 1000 {
 		t.Fatalf("got %d keys when 1000 keys were expected", len(got))
 	}
@@ -204,7 +206,7 @@ func TestFilterKeysWithPrefix(t *testing.T) {
 		}
 	}
 	tx := service.NewTransaction()
-	got := tx.FilterKeysWithPrefix([]byte("prefix_"), "002", "005")
+	got := tx.FilterKeysWithPrefix([]byte(prefix), "002", "005")
 
 	if len(got) != 4 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
@@ -220,14 +222,14 @@ func TestFilterKeysWithPrefixWithValues(t *testing.T) {
 	service := badgerStorage.NewService(db)
 	for i := 0; i < 100; i++ {
 		formatedBlockNumber := formatBlockNumber(uint64(i))
-		err := service.Set([]byte("prefix_"+formatedBlockNumber), []byte(strconv.Itoa(i)))
+		err := service.Set([]byte(prefix+formatedBlockNumber), []byte(strconv.Itoa(i)))
 		if err != nil {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	}
 
 	tx := service.NewTransaction()
-	got := tx.FilterKeysWithPrefix([]byte("prefix_"), formatBlockNumber(uint64(6)), formatBlockNumber(uint64(10)))
+	got := tx.FilterKeysWithPrefix([]byte(prefix), formatBlockNumber(uint64(6)), formatBlockNumber(uint64(10)))
 
 	if len(got) != 5 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
@@ -243,14 +245,14 @@ func TestGetValuesWithPrefixWithValues(t *testing.T) {
 	service := badgerStorage.NewService(db)
 	for i := 0; i < 100; i++ {
 		formatedBlockNumber := formatBlockNumber(uint64(i))
-		err := service.Set([]byte("prefix_"+formatedBlockNumber), []byte(strconv.Itoa(i)))
+		err := service.Set([]byte(prefix+formatedBlockNumber), []byte(strconv.Itoa(i)))
 		if err != nil {
 			t.Fatalf("got error %s, expecting no error", err.Error())
 		}
 	}
 
 	tx := service.NewTransaction()
-	got := tx.GetValuesWithPrefix([]byte("prefix_"), false)
+	got := tx.GetValuesWithPrefix([]byte(prefix), false)
 
 	if len(got) != 100 {
 		t.Fatalf("got %d keys when 7 keys were expected", len(got))
