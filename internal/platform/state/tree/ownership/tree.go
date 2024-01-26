@@ -18,12 +18,9 @@ import (
 const ones160bits = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 
 const (
-	prefix            = "ownership/"
-	treePrefix        = prefix + "tree/"
-	headRootKeyPrefix = prefix + "head/"
-	tokenDataPrefix   = prefix + "data/"
-	tagPrefix         = prefix + "tags/"
-	lastTagPrefix     = prefix + "lasttag/"
+	prefix          = "ownership/"
+	treePrefix      = prefix + "tree/"
+	tokenDataPrefix = prefix + "data/"
 )
 
 // TokenData defines token data placed in data of the leaf of the tree
@@ -42,7 +39,7 @@ type Tree interface {
 	TokenData(tokenId *big.Int) (*TokenData, error)
 	SetTokenData(tokenData *TokenData, tokenId *big.Int) error
 	OwnerOf(tokenId *big.Int) (common.Address, error)
-	SetRoot(root common.Hash) error
+	SetRoot(root common.Hash)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each SlotOwner
@@ -56,17 +53,12 @@ type tree struct {
 // TODO NewTree should be GetTree (same for enumerated and enumeratedtotal packages)
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
+func NewTree(contract common.Address, root common.Hash, store storage.Tx) (Tree, error) {
 	if contract.Cmp(common.Address{}) == 0 {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
 
 	t, err := jellyfish.New(store, treePrefix+contract.String())
-	if err != nil {
-		return nil, err
-	}
-
-	root, err := headRoot(contract, store)
 	if err != nil {
 		return nil, err
 	}
@@ -85,10 +77,8 @@ func (b *tree) Transfer(eventTransfer *model.ERC721Transfer) error {
 	}
 
 	tokenData.SlotOwner = eventTransfer.To
-	if err := b.SetTokenData(tokenData, eventTransfer.TokenId); err != nil {
-		return err
-	}
-	return setHeadRoot(b.contract, b.store, b.Root())
+
+	return b.SetTokenData(tokenData, eventTransfer.TokenId)
 }
 
 // Mint creates a new token
@@ -105,11 +95,8 @@ func (b *tree) Mint(mintEvent *model.MintedWithExternalURI, idx int) error {
 	tokenData.Minted = true
 	tokenData.Idx = idx
 	tokenData.TokenURI = mintEvent.TokenURI
-	if err := b.SetTokenData(tokenData, mintEvent.TokenId); err != nil {
-		return err
-	}
 
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return b.SetTokenData(tokenData, mintEvent.TokenId)
 }
 
 // SetTokenData updates the tokenData
@@ -174,25 +161,7 @@ func (b *tree) Root() common.Hash {
 	return b.mt.Root()
 }
 
-func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
-	buf, err := store.Get([]byte(headRootKeyPrefix + contract.String()))
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	if len(buf) == 0 {
-		return common.Hash{}, nil
-	}
-
-	return common.BytesToHash(buf), nil
-}
-
-func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
-	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
-}
-
 // SetRoot sets the current root to the one that is tagged for a blockNumber.
-func (b *tree) SetRoot(root common.Hash) error {
+func (b *tree) SetRoot(root common.Hash) {
 	b.mt.SetRoot(root)
-	return setHeadRoot(b.contract, b.store, root)
 }

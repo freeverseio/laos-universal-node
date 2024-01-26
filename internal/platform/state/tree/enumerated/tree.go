@@ -18,12 +18,9 @@ import (
 )
 
 const (
-	prefix            = "enumerated/"
-	treePrefix        = prefix + "tree/"
-	headRootKeyPrefix = prefix + "head/"
-	tokensPrefix      = prefix + "tokens/"
-	tagPrefix         = prefix + "tags/"
-	lastTagPrefix     = prefix + "lasttag/"
+	prefix       = "enumerated/"
+	treePrefix   = prefix + "tree/"
+	tokensPrefix = prefix + "tokens/"
 )
 
 // Tree is used to store enumerated tokens of each owner

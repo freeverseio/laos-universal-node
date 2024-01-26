@@ -15,14 +15,9 @@ import (
 )
 
 const (
-	prefix               = "enumeratedtotal/"
-	treePrefix           = prefix + "tree/"
-	headRootKeyPrefix    = prefix + "head/"
-	totalSupplyPrefix    = prefix + "totalsupply/"
-	tokensPrefix         = prefix + "tokens/"
-	tagPrefix            = prefix + "tags/"
-	totalSupplyTagPrefix = prefix + "tags/totalsupply"
-	lastTagPrefix        = prefix + "lasttag/"
+	prefix       = "enumeratedtotal/"
+	treePrefix   = prefix + "tree/"
+	tokensPrefix = prefix + "tokens/"
 )
 
 // Tree defines interface for enumerated total tree
