@@ -41,35 +41,6 @@ func (m *MockTree) EXPECT() *MockTreeMockRecorder {
 	return m.recorder
 }
 
-// Checkout mocks base method.
-func (m *MockTree) Checkout(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Checkout", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Checkout indicates an expected call of Checkout.
-func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
-}
-
-// GetLastTaggedBlock mocks base method.
-func (m *MockTree) GetLastTaggedBlock() (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastTaggedBlock")
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
-func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
-}
-
 // Mint mocks base method.
 func (m *MockTree) Mint(mintEvent *model.MintedWithExternalURI, idx int) error {
 	m.ctrl.T.Helper()
@@ -113,6 +84,18 @@ func (mr *MockTreeMockRecorder) Root() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Root", reflect.TypeOf((*MockTree)(nil).Root))
 }
 
+// SetRoot mocks base method.
+func (m *MockTree) SetRoot(root common.Hash) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetRoot", root)
+}
+
+// SetRoot indicates an expected call of SetRoot.
+func (mr *MockTreeMockRecorder) SetRoot(root any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRoot", reflect.TypeOf((*MockTree)(nil).SetRoot), root)
+}
+
 // SetTokenData mocks base method.
 func (m *MockTree) SetTokenData(tokenData *ownership.TokenData, tokenId *big.Int) error {
 	m.ctrl.T.Helper()
@@ -125,20 +108,6 @@ func (m *MockTree) SetTokenData(tokenData *ownership.TokenData, tokenId *big.Int
 func (mr *MockTreeMockRecorder) SetTokenData(tokenData, tokenId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTokenData", reflect.TypeOf((*MockTree)(nil).SetTokenData), tokenData, tokenId)
-}
-
-// TagRoot mocks base method.
-func (m *MockTree) TagRoot(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TagRoot", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TagRoot indicates an expected call of TagRoot.
-func (mr *MockTreeMockRecorder) TagRoot(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTree)(nil).TagRoot), blockNumber)
 }
 
 // TokenData mocks base method.

@@ -10,6 +10,7 @@ import (
 	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/ownership"
 	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/evolution"
 	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
+	accountTreeMock "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
 	enumeratedTreeMock "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
@@ -29,7 +30,8 @@ func TestTransfer(t *testing.T) {
 		memoryService := memory.New()
 		stateService := NewStateService(memoryService)
 
-		tx := stateService.NewTransaction()
+		tx, err := stateService.NewTransaction()
+		assert.NilError(t, err)
 
 		eventTransfer := model.ERC721Transfer{
 			From:    common.HexToAddress("0x1"),
@@ -37,13 +39,13 @@ func TestTransfer(t *testing.T) {
 			TokenId: big.NewInt(1),
 		}
 
-		err := tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
+		err = tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
 		assert.Error(t, err, "contract 0x0000000000000000000000000000000000000500 does not exist")
 	})
 
 	t.Run(`transfer token that is not minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -63,7 +65,7 @@ func TestTransfer(t *testing.T) {
 
 	t.Run(`transfer token that is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, _, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -84,7 +86,7 @@ func TestTransfer(t *testing.T) {
 
 	t.Run(`burn token that is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -116,7 +118,7 @@ func TestMinting(t *testing.T) {
 	t.Parallel()
 	t.Run(`mint token`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
@@ -147,7 +149,7 @@ func TestTokenURI(t *testing.T) {
 	t.Parallel()
 	t.Run(`tokenURI returns valid string when asset is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
@@ -165,7 +167,7 @@ func TestTokenURI(t *testing.T) {
 
 	t.Run(`tokenURI returns an error when asset is not minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x0"), Minted: false, Idx: 0, TokenURI: ""}
@@ -190,19 +192,24 @@ func TestCheckout(t *testing.T) {
 	t.Parallel()
 	t.Run(`test checkout`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, _, accountTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
-		enumeratedTotalTree.EXPECT().Checkout(int64(1)).Return(nil)
-		enumeratedTree.EXPECT().Checkout(int64(1)).Return(nil)
-		ownershipTree.EXPECT().Checkout(int64(1)).Return(nil)
+		accountTree.EXPECT().Checkout(int64(1)).Return(nil)
 
-		err := transaction.Checkout(common.HexToAddress("0x500"), int64(1))
+		err := transaction.Checkout(int64(1))
 		assert.NilError(t, err)
 	})
 }
 
-func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller, enumeratedTree *enumeratedTreeMock.MockTree, enumeratedTotalTree *enumeratedTotalTreeMock.MockTree, ownershipTree *ownershipTreeMock.MockTree, transaction tx) {
+// nolint:gocritic // it complains about more than five results in return but it is OK for the test
+func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
+	enumeratedTree *enumeratedTreeMock.MockTree,
+	enumeratedTotalTree *enumeratedTotalTreeMock.MockTree,
+	ownershipTree *ownershipTreeMock.MockTree,
+	accountTree *accountTreeMock.MockTree,
+	transaction tx,
+) {
 	t.Helper()
 	ctrl = gomock.NewController(t)
 
@@ -212,6 +219,7 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller, enumeratedTr
 	enumeratedTree = enumeratedTreeMock.NewMockTree(ctrl)
 	enumeratedTotalTree = enumeratedTotalTreeMock.NewMockTree(ctrl)
 	ownershipTree = ownershipTreeMock.NewMockTree(ctrl)
+	accountTree = accountTreeMock.NewMockTree(ctrl)
 
 	transaction = tx{
 		ownershipTrees:         make(map[common.Address]ownership.Tree),
@@ -227,5 +235,5 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller, enumeratedTr
 	transaction.enumeratedTrees[common.HexToAddress("0x500")] = enumeratedTree
 	transaction.enumeratedTotalTrees[common.HexToAddress("0x500")] = enumeratedTotalTree
 
-	return ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction
+	return ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, accountTree, transaction
 }

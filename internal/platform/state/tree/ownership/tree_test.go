@@ -16,13 +16,13 @@ func TestTree(t *testing.T) {
 
 	t.Run(`init with nil store should fail`, func(t *testing.T) {
 		t.Parallel()
-		_, err := ownership.NewTree(common.Address{}, nil)
+		_, err := ownership.NewTree(common.Address{}, common.Hash{}, nil)
 		assert.Error(t, err, "contract address is 0x0000000000000000000000000000000000000000")
 	})
 
 	t.Run(`init with nil store should fail`, func(t *testing.T) {
 		t.Parallel()
-		_, err := ownership.NewTree(common.HexToAddress("0x500"), nil)
+		_, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, nil)
 		assert.Error(t, err, "store is nil")
 	})
 
@@ -31,7 +31,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
 	})
@@ -41,7 +41,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		tokenId, success := new(big.Int).SetString("0101FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF10", 16)
@@ -84,7 +84,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		firstMintEvent := model.MintedWithExternalURI{
@@ -126,7 +126,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		firstMintEvent := model.MintedWithExternalURI{
@@ -160,7 +160,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		mintEvent := model.MintedWithExternalURI{
@@ -180,7 +180,7 @@ func TestTree(t *testing.T) {
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
-		tr1, err := ownership.NewTree(common.HexToAddress("0x501"), tx)
+		tr1, err := ownership.NewTree(common.HexToAddress("0x501"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		err = tr1.Mint(&mintEvent, 0)
@@ -200,7 +200,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		tokenId := big.NewInt(1)
@@ -244,12 +244,12 @@ func TestTree(t *testing.T) {
 		assert.Equal(t, owner.Cmp(common.HexToAddress("0x2")), 0)
 	})
 
-	t.Run(`mint token and then transfer it`, func(t *testing.T) {
+	t.Run(`mint token and then transfer it. set root to the one before transfer, owner is correct`, func(t *testing.T) {
 		t.Parallel()
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := ownership.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		tokenId := big.NewInt(1)
@@ -291,121 +291,19 @@ func TestTree(t *testing.T) {
 		owner, err = tr.OwnerOf(tokenId)
 		assert.NilError(t, err)
 		assert.Equal(t, owner.Cmp(common.HexToAddress("0x2")), 0)
-	})
-}
 
-func TestTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`tag root before transfer. checkout at that root returns state before transfer`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		tokenId := big.NewInt(1)
-		mintEvent := model.MintedWithExternalURI{
-			To:       common.HexToAddress("0x1"),
-			TokenURI: "tokenURI",
-			TokenId:  tokenId,
-		}
-		err = tr.Mint(&mintEvent, 0)
-		assert.NilError(t, err)
+		tr.SetRoot(common.HexToHash("0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55"))
 		assert.Equal(t, tr.Root().String(), "0x390efb1b494cf9fec34922b9e6c80adfaeb1a488e7abc52d40d034adb6527c55")
 
-		err = tr.TagRoot(1)
+		tokenData, err = tr.TokenData(tokenId)
 		assert.NilError(t, err)
-
-		tokenData, err := tr.TokenData(tokenId)
-		assert.NilError(t, err)
-
 		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
 		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
 		assert.Equal(t, tokenData.Minted, true)
 		assert.Equal(t, tokenData.Idx, 0)
 
-		err = tr.Transfer(&model.ERC721Transfer{
-			From:    common.HexToAddress("0x1"),
-			To:      common.HexToAddress("0x2"),
-			TokenId: tokenId,
-		})
-
+		owner, err = tr.OwnerOf(tokenId)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x02d716d8efa798c67be692351475fbeb8025fad04ccf08308191628897aaf2fe")
-
-		tokenData, err = tr.TokenData(tokenId)
-		assert.NilError(t, err)
-
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
-		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
-		assert.Equal(t, tokenData.Minted, true)
-		assert.Equal(t, tokenData.Idx, 0)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-		err = tr.Checkout(1)
-		assert.NilError(t, err)
-
-		tokenData, err = tr.TokenData(tokenId)
-		assert.NilError(t, err)
-
-		assert.Equal(t, tokenData.SlotOwner.Cmp(mintEvent.To), 0)
-		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
-		assert.Equal(t, tokenData.Minted, true)
-		assert.Equal(t, tokenData.Idx, 0)
-
-		err = tr.Checkout(2)
-		assert.NilError(t, err)
-
-		tokenData, err = tr.TokenData(tokenId)
-		assert.NilError(t, err)
-
-		assert.Equal(t, tokenData.SlotOwner.Cmp(common.HexToAddress("0x2")), 0)
-		assert.Equal(t, tokenData.TokenURI, mintEvent.TokenURI)
-		assert.Equal(t, tokenData.Minted, true)
-		assert.Equal(t, tokenData.Idx, 0)
-	})
-
-	t.Run(`tag root before transfer. checkout at block which tag does not exist returns error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
-	})
-}
-
-func TestDeleteRootTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		err = ownership.DeleteRootTag(tx, common.HexToAddress("0x500").Hex(), 1)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		tr, err = ownership.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
+		assert.Equal(t, owner.Cmp(common.HexToAddress("0x1")), 0)
 	})
 }

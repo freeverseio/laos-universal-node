@@ -55,35 +55,6 @@ func (mr *MockTreeMockRecorder) BalanceOfOwner(owner any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BalanceOfOwner", reflect.TypeOf((*MockTree)(nil).BalanceOfOwner), owner)
 }
 
-// Checkout mocks base method.
-func (m *MockTree) Checkout(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Checkout", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Checkout indicates an expected call of Checkout.
-func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
-}
-
-// GetLastTaggedBlock mocks base method.
-func (m *MockTree) GetLastTaggedBlock() (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastTaggedBlock")
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
-func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
-}
-
 // Mint mocks base method.
 func (m *MockTree) Mint(tokenId *big.Int, owner common.Address) error {
 	m.ctrl.T.Helper()
@@ -126,6 +97,18 @@ func (mr *MockTreeMockRecorder) SetBalanceToOwner(owner, balance any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBalanceToOwner", reflect.TypeOf((*MockTree)(nil).SetBalanceToOwner), owner, balance)
 }
 
+// SetRoot mocks base method.
+func (m *MockTree) SetRoot(root common.Hash) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetRoot", root)
+}
+
+// SetRoot indicates an expected call of SetRoot.
+func (mr *MockTreeMockRecorder) SetRoot(root any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRoot", reflect.TypeOf((*MockTree)(nil).SetRoot), root)
+}
+
 // SetTokenToOwnerToIndex mocks base method.
 func (m *MockTree) SetTokenToOwnerToIndex(owner common.Address, idx uint64, token *big.Int) error {
 	m.ctrl.T.Helper()
@@ -138,20 +121,6 @@ func (m *MockTree) SetTokenToOwnerToIndex(owner common.Address, idx uint64, toke
 func (mr *MockTreeMockRecorder) SetTokenToOwnerToIndex(owner, idx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTokenToOwnerToIndex", reflect.TypeOf((*MockTree)(nil).SetTokenToOwnerToIndex), owner, idx, token)
-}
-
-// TagRoot mocks base method.
-func (m *MockTree) TagRoot(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TagRoot", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TagRoot indicates an expected call of TagRoot.
-func (mr *MockTreeMockRecorder) TagRoot(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTree)(nil).TagRoot), blockNumber)
 }
 
 // TokenOfOwnerByIndex mocks base method.

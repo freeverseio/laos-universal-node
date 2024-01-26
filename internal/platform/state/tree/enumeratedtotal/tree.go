@@ -33,10 +33,13 @@ type Tree interface {
 
 // EnumeratedTokensTree is used to store enumerated tokens of each owner
 type tree struct {
-	contract    common.Address
-	mt          merkletree.MerkleTree
-	store       storage.Tx
-	tx          bool
+	contract common.Address
+	mt       merkletree.MerkleTree
+	store    storage.Tx
+	tx       bool
+	// total supply is currently not store in the tree.
+	// We should measure how much storing it in the tree (in a similar way as in enumerated tree) reduces max tx size.
+	// if not too much I suggest to put in the tree because code would be simpler
 	totalSupply int64
 }
 
