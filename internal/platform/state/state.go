@@ -10,7 +10,7 @@ import (
 
 // Service interface is used for initializing and terminating state transaction.
 type Service interface {
-	NewTransaction() Tx
+	NewTransaction() (Tx, error)
 }
 
 // Tx interface wraps all the available actions for state
@@ -37,11 +37,11 @@ type State interface {
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	LoadMerkleTrees(contractAddress common.Address) error
 	Get(key string) ([]byte, error)
-	TagRoot(contract common.Address, blockNumber int64) error
-	DeleteRootTag(contract common.Address, blockNumber int64) error
+	TagRoot(blockNumber int64) error
+	DeleteRootTag(blockNumber int64) error
 	DeleteOrphanRootTags(formBlock, toBlock int64) error
-	GetLastTaggedBlock(contract common.Address) (int64, error)
-	Checkout(contract common.Address, blockNumber int64) error
+	GetLastTaggedBlock() (int64, error)
+	Checkout(blockNumber int64) error
 }
 
 type OwnershipContractState interface {

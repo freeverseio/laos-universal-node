@@ -24,45 +24,42 @@ const (
 	lastTagPrefix     = prefix + "lasttag/"
 )
 
-// MerkleTreeRoots defines the roots from enumerated, enumerated total and ownership merkle trees
+// AccountData defines the roots from enumerated, enumerated total and ownership merkle trees
 // placed in data of the leaf of the tree
-type MerkleTreeRoots struct {
-	Enumerated      common.Hash
-	EnumeratedTotal common.Hash
-	Ownership       common.Hash
+type AccountData struct {
+	EnumeratedRoot      common.Hash
+	EnumeratedTotalRoot common.Hash
+	OwnershipRoot       common.Hash
+	TotalSupply         int64
 }
 
 // Tree defines interface for the account tree
 type Tree interface {
 	Root() common.Hash
-	MerkleTreeRoots(merkleTreeID *big.Int) (*MerkleTreeRoots, error)
-	SetMerkleTreeRoots(roots *MerkleTreeRoots, merkleTreeID *big.Int) error
+	AccountData(contract common.Address) (*AccountData, error)
+	SetAccountData(data *AccountData, accountAddress common.Address) error
 	TagRoot(blockNumber int64) error
 	GetLastTaggedBlock() (int64, error)
 	Checkout(blockNumber int64) error
+	DeleteRootTag(blockNumber int64) error
 }
 
 type tree struct {
-	contract common.Address
-	mt       merkletree.MerkleTree
-	store    storage.Tx
-	tx       bool
+	mt    merkletree.MerkleTree
+	store storage.Tx
+	tx    bool
 }
 
 // TODO NewTree should be GetTree (same for enumerated and enumeratedtotal packages)
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
-	if contract.Cmp(common.Address{}) == 0 {
-		return nil, errors.New("contract address is " + common.Address{}.String())
-	}
-
-	t, err := jellyfish.New(store, treePrefix+contract.String())
+func NewTree(store storage.Tx) (Tree, error) {
+	t, err := jellyfish.New(store, treePrefix)
 	if err != nil {
 		return nil, err
 	}
 
-	root, err := headRoot(contract, store)
+	root, err := headRoot(store)
 	if err != nil {
 		return nil, err
 	}
@@ -70,42 +67,42 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 	t.SetRoot(root)
 	slog.Debug("accountTree", "HEAD", root.String())
 
-	return &tree{contract, t, store, false}, err
+	return &tree{t, store, false}, err
 }
 
-// SetMerkleTreeRoots updates the MerkleTreeRoots
-func (b *tree) SetMerkleTreeRoots(data *MerkleTreeRoots, accountID *big.Int) error {
+// SetAccountData updates the MerkleTreeRoots
+func (b *tree) SetAccountData(data *AccountData, accountID *big.Int) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
 	hash := crypto.Keccak256Hash(buf)
-	if err := b.store.Set([]byte(leafDataPrefix+b.contract.String()+"/"+hash.String()), buf); err != nil {
+	if err := b.store.Set([]byte(leafDataPrefix+hash.String()), buf); err != nil {
 		return err
 	}
 
 	return b.mt.SetLeaf(accountID, hash)
 }
 
-// MerkleTreeRoots returns the merkle trees roots
-func (b *tree) MerkleTreeRoots(accountID *big.Int) (*MerkleTreeRoots, error) {
+// AccountData returns the merkle trees roots
+func (b *tree) AccountData(accountID *big.Int) (*AccountData, error) {
 	leafHash, err := b.mt.Leaf(accountID)
 	if err != nil {
-		return &MerkleTreeRoots{}, err
+		return &AccountData{}, err
 	}
 	if leafHash.String() == jellyfish.Null {
-		return &MerkleTreeRoots{}, err
+		return &AccountData{}, err
 	}
 
-	buf, err := b.store.Get([]byte(leafDataPrefix + b.contract.String() + "/" + leafHash.String()))
+	buf, err := b.store.Get([]byte(leafDataPrefix + leafHash.String()))
 	if err != nil {
-		return &MerkleTreeRoots{}, err
+		return &AccountData{}, err
 	}
 
-	var roots MerkleTreeRoots
+	var roots AccountData
 	if err := json.Unmarshal(buf, &roots); err != nil {
-		return &MerkleTreeRoots{}, err
+		return &AccountData{}, err
 	}
 
 	return &roots, nil
@@ -115,8 +112,8 @@ func (b *tree) Root() common.Hash {
 	return b.mt.Root()
 }
 
-func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
-	buf, err := store.Get([]byte(headRootKeyPrefix + contract.String()))
+func headRoot(store storage.Tx) (common.Hash, error) {
+	buf, err := store.Get([]byte(headRootKeyPrefix))
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -128,26 +125,24 @@ func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
 	return common.BytesToHash(buf), nil
 }
 
-func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
-	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
+func setHeadRoot(store storage.Tx, root common.Hash) error {
+	return store.Set([]byte(headRootKeyPrefix), root.Bytes())
 }
 
 // TagRoot stores a root value for the block so that it can be checked later
 func (b *tree) TagRoot(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	tagKey := tagPrefix + strconv.FormatInt(blockNumber, 10)
 	root := b.Root()
 	err := b.store.Set([]byte(tagKey), root.Bytes())
 	if err != nil {
 		return err
 	}
 
-	lastTagKey := lastTagPrefix + b.contract.String()
-	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
+	return b.store.Set([]byte(lastTagPrefix), []byte(strconv.FormatInt(blockNumber, 10)))
 }
 
 func (b *tree) GetLastTaggedBlock() (int64, error) {
-	lastTagKey := lastTagPrefix + b.contract.String()
-	buf, err := b.store.Get([]byte(lastTagKey))
+	buf, err := b.store.Get([]byte(lastTagPrefix))
 	if err != nil {
 		return 0, err
 	}
@@ -160,7 +155,7 @@ func (b *tree) GetLastTaggedBlock() (int64, error) {
 
 // Checkout sets the current root to the one that is tagged for a blockNumber.
 func (b *tree) Checkout(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
+	tagKey := tagPrefix + strconv.FormatInt(blockNumber, 10)
 	buf, err := b.store.Get([]byte(tagKey))
 	if err != nil {
 		return err
@@ -172,11 +167,11 @@ func (b *tree) Checkout(blockNumber int64) error {
 
 	newRoot := common.BytesToHash(buf)
 	b.mt.SetRoot(newRoot)
-	return setHeadRoot(b.contract, b.store, newRoot)
+	return setHeadRoot(b.store, newRoot)
 }
 
 // DeleteRootTag deletes root tag without loading the tree
-func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
-	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	return tx.Delete([]byte(tagKey))
+func (b *tree) DeleteRootTag(blockNumber int64) error {
+	tagKey := tagPrefix + strconv.FormatInt(blockNumber, 10)
+	return b.store.Delete([]byte(tagKey))
 }

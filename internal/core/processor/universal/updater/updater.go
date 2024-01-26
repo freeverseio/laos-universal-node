@@ -119,6 +119,23 @@ func (u *updater) UpdateState(
 	return nil
 }
 
+func mergeEvents(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, fromBlock, toBlock, lastBlockTimestamp uint64) {
+	// assum that own and evo blocks are sorted and grouped
+	// for i := fromBlock; i < toBlock; i++ {
+	//	for _, transf := range modelTransferEvents {
+	//		if transf.Block == i {
+	//			update mekle tree
+	//		}
+	// }
+	//	for _, mint := range MintedWithExternalURI {
+	// if mint.Timestamp >=  i.Timestamp && minted.Timestamp < (i+1).timestamp {
+	//			update mekle tree
+	//		}
+	// }
+	// TagRoot(i)
+	// }
+}
+
 func mergeAndUpdate(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlockTimestamp uint64) (uint64, error) {
 	ownershipContractEvoEventIndex, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
 	if err != nil {
@@ -225,6 +242,7 @@ func tagRootsUntilBlock(tx state.Tx, contractAddress string, blockNumber uint64)
 		return err
 	}
 
+	// ?? shouldn't this be block <=?
 	for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
 		if err := tx.TagRoot(common.HexToAddress(contractAddress), block); err != nil {
 			return err

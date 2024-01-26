@@ -262,6 +262,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		if errTr != nil {
 			return errTr
 		}
+		// TODO add startingBlock argument
 		err = p.updater.UpdateState(ctx, tx, contracts, transferEvents, lastBlockData)
 		if err != nil {
 			return err

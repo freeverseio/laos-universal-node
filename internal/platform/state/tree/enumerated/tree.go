@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/jellyfish"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -34,9 +35,7 @@ type Tree interface {
 	SetTokenToOwnerToIndex(owner common.Address, idx uint64, token *big.Int) error
 	SetBalanceToOwner(owner common.Address, balance uint64) error
 	BalanceOfOwner(owner common.Address) (uint64, error)
-	TagRoot(blockNumber int64) error
-	GetLastTaggedBlock() (int64, error)
-	Checkout(blockNumber int64) error
+	SetRoot(root common.Hash)
 }
 
 type tree struct {
@@ -47,17 +46,12 @@ type tree struct {
 }
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
+func NewTree(contract common.Address, root common.Hash, store storage.Tx) (Tree, error) {
 	if contract.Cmp(common.Address{}) == 0 {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
 
 	t, err := jellyfish.New(store, treePrefix+contract.String())
-	if err != nil {
-		return nil, err
-	}
-
-	root, err := headRoot(contract, store)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +145,7 @@ func (b *tree) SetTokenToOwnerToIndex(owner common.Address, idx uint64, token *b
 	position = position.Lsh(position, 64)
 	position = position.Add(position, big.NewInt(int64(idx+1))) // +1 because balance is stored at index 0
 
-	if err := b.mt.SetLeaf(position, hash); err != nil {
-		return err
-	}
-
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return b.mt.SetLeaf(position, hash)
 }
 
 // TokensOf returns the tokens of an owner
@@ -176,6 +166,7 @@ func (b *tree) TokenOfOwnerByIndex(owner common.Address, idx uint64) (*big.Int, 
 	if err != nil {
 		return big.NewInt(0), err
 	}
+
 	if leaf.String() == jellyfish.Null {
 		return big.NewInt(0), nil
 	}
@@ -204,11 +195,8 @@ func (b *tree) SetBalanceToOwner(owner common.Address, balance uint64) error {
 
 	position := owner.Big()
 	position = position.Lsh(position, 64)
-	if err := b.mt.SetLeaf(position, hash); err != nil {
-		return err
-	}
 
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return b.mt.SetLeaf(position, hash)
 }
 
 func (b *tree) BalanceOfOwner(owner common.Address) (uint64, error) {
@@ -235,69 +223,7 @@ func (b *tree) Root() common.Hash {
 	return b.mt.Root()
 }
 
-func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
-	buf, err := store.Get([]byte(headRootKeyPrefix + contract.String()))
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	if len(buf) == 0 {
-		return common.Hash{}, nil
-	}
-
-	return common.BytesToHash(buf), nil
-}
-
-func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
-	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
-}
-
-// TagRoot stores a root value for the block so that it can be checked later
-func (b *tree) TagRoot(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	root := b.Root()
-
-	err := b.store.Set([]byte(tagKey), root.Bytes())
-	if err != nil {
-		return err
-	}
-
-	lastTagKey := lastTagPrefix + b.contract.String()
-	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
-}
-
-func (b *tree) GetLastTaggedBlock() (int64, error) {
-	lastTagKey := lastTagPrefix + b.contract.String()
-	buf, err := b.store.Get([]byte(lastTagKey))
-	if err != nil {
-		return 0, err
-	}
-	if len(buf) == 0 {
-		return 0, nil
-	}
-
-	return strconv.ParseInt(string(buf), 10, 64)
-}
-
-// Checkout sets the current root to the one that is tagged for a blockNumber.
-func (b *tree) Checkout(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	buf, err := b.store.Get([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-
-	if len(buf) == 0 {
-		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
-	}
-
-	newRoot := common.BytesToHash(buf)
-	b.mt.SetRoot(newRoot)
-	return setHeadRoot(b.contract, b.store, newRoot)
-}
-
-// DeleteRootTag deletes root tag without loading the tree
-func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
-	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	return tx.Delete([]byte(tagKey))
+// SetRoot sets the current root to the one that is tagged for a blockNumber.
+func (b *tree) SetRoot(root common.Hash) {
+	b.mt.SetRoot(root)
 }
