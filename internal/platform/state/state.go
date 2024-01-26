@@ -36,6 +36,7 @@ type State interface {
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	LoadMerkleTrees(contractAddress common.Address) error
+	LoadContractState(contract common.Address) error
 	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error

@@ -80,18 +80,22 @@ func (t *tx) createTreesForContract(contract common.Address) (
 	err error,
 ) {
 	slog.Debug("creating trees for contract", "contract", contract.String())
-
-	ownershipTree, err = ownership.NewTree(contract, t.tx)
+	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTree, err = enumerated.NewTree(contract, t.tx)
+	ownershipTree, err = ownership.NewTree(contract, accountData.OwnershipRoot, t.tx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, t.tx)
+	enumeratedTree, err = enumerated.NewTree(contract, accountData.EnumeratedRoot, t.tx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, accountData.EnumeratedTotalRoot, accountData.TotalSupply, t.tx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -113,6 +117,7 @@ func (t *tx) setTreesForContract(
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
 }
 
+// TODO check if it can be merged with LoadContractState
 // LoadMerkleTrees loads the merkle trees in memory for contractAddress
 func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
 	if !t.isTreeSetForContract(contractAddress) {
@@ -205,12 +210,7 @@ func (t *tx) Transfer(contract common.Address, eventTransfer *model.ERC721Transf
 			return fmt.Errorf("contract %s does not exist", contract.String())
 		}
 
-		totalSupply, err := enumeratedTotalTree.TotalSupply()
-		if err != nil {
-			return err
-		}
-
-		tokenIdLast, err := enumeratedTotalTree.TokenByIndex(int(totalSupply) - 1)
+		tokenIdLast, err := enumeratedTotalTree.TokenByIndex(int(enumeratedTotalTree.TotalSupply()) - 1)
 		if err != nil {
 			return err
 		}
@@ -245,17 +245,12 @@ func (t *tx) Mint(contract common.Address, mintEvent *model.MintedWithExternalUR
 		return err
 	}
 
-	totalSupply, err := enumeratedTotalTree.TotalSupply()
-	if err != nil {
-		return err
-	}
-
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = ownershipTree.Mint(mintEvent, int(totalSupply)-1)
+	err = ownershipTree.Mint(mintEvent, int(enumeratedTotalTree.TotalSupply())-1)
 	if err != nil {
 		return err
 	}
@@ -280,7 +275,7 @@ func (t *tx) TotalSupply(contract common.Address) (int64, error) {
 		return 0, fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	return enumeratedTotalTree.TotalSupply()
+	return enumeratedTotalTree.TotalSupply(), nil
 }
 
 // TokenByIndex returns the token at the index
@@ -370,32 +365,22 @@ func (t *tx) LoadContractState(contract common.Address) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = enumeratedTree.SetRoot(accountData.EnumeratedRoot)
-	if err != nil {
-		return err
-	}
+	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
 
 	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot, int64(accountData.TotalSupply))
-	if err != nil {
-		return err
-	}
+	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
+	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
 
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
-
-	err = ownershipTree.SetRoot(accountData.OwnershipRoot)
-	if err != nil {
-		return err
-	}
+	ownershipTree.SetRoot(accountData.OwnershipRoot)
 
 	return nil
 }
@@ -422,16 +407,12 @@ func (t *tx) SetContractState(contract common.Address) error {
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
-	totalSupply, err := enumeratedTotalTree.TotalSupply()
-	if err != nil {
-		return err
-	}
 
 	accountData := account.AccountData{
 		EnumeratedRoot:      enumeratedTree.Root(),
 		EnumeratedTotalRoot: enumeratedTotalTree.Root(),
 		OwnershipRoot:       ownershipTree.Root(),
-		TotalSupply:         totalSupply,
+		TotalSupply:         enumeratedTotalTree.TotalSupply(),
 	}
 
 	return t.accountTree.SetAccountData(&accountData, contract)

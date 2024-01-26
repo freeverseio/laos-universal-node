@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -71,7 +70,7 @@ func NewTree(store storage.Tx) (Tree, error) {
 }
 
 // SetAccountData updates the MerkleTreeRoots
-func (b *tree) SetAccountData(data *AccountData, accountID *big.Int) error {
+func (b *tree) SetAccountData(data *AccountData, address common.Address) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -82,12 +81,12 @@ func (b *tree) SetAccountData(data *AccountData, accountID *big.Int) error {
 		return err
 	}
 
-	return b.mt.SetLeaf(accountID, hash)
+	return b.mt.SetLeaf(address.Big(), hash)
 }
 
 // AccountData returns the merkle trees roots
-func (b *tree) AccountData(accountID *big.Int) (*AccountData, error) {
-	leafHash, err := b.mt.Leaf(accountID)
+func (b *tree) AccountData(address common.Address) (*AccountData, error) {
+	leafHash, err := b.mt.Leaf(address.Big())
 	if err != nil {
 		return &AccountData{}, err
 	}

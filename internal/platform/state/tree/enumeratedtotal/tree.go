@@ -28,7 +28,7 @@ type Tree interface {
 	TokenByIndex(idx int) (*big.Int, error)
 	TotalSupply() int64
 	SetTotalSupply(totalSupply int64)
-	SetRoot(root common.Hash, totalSupply int64)
+	SetRoot(root common.Hash)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each owner
@@ -153,7 +153,6 @@ func (b *tree) Root() common.Hash {
 }
 
 // SetRoot sets the current root to the one that is tagged for a blockNumber.
-func (b *tree) SetRoot(root common.Hash, totalSupply int64) {
+func (b *tree) SetRoot(root common.Hash) {
 	b.mt.SetRoot(root)
-	b.totalSupply = totalSupply
 }
