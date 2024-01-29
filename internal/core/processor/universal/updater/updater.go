@@ -125,6 +125,9 @@ func (u *updater) UpdateState(
 						return fmt.Errorf("error occurred retrieving next evo event block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
 					}
 
+					if newBlock == 0 || newBlock == evoBlock {
+						break
+					}
 					err = tx.SetCurrentEvoBlockForOwnershipContract(contract, newBlock)
 					if err != nil {
 						return fmt.Errorf("error occurred setting current evo block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
