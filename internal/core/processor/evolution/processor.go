@@ -69,7 +69,11 @@ func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 }
 
 func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock uint64) error {
-	tx := p.stateService.NewTransaction()
+	tx, err := p.stateService.NewTransaction()
+	if err != nil {
+		slog.Debug("error occurred while creating new transaction", "err", err.Error())
+		return err
+	}
 	defer tx.Discard()
 
 	lastBlockDB, err := tx.GetLastEvoBlock()
@@ -101,7 +105,11 @@ func (p *processor) VerifyChainConsistency(ctx context.Context, startingBlock ui
 }
 
 func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error {
-	tx := p.stateService.NewTransaction()
+	tx, err := p.stateService.NewTransaction()
+	if err != nil {
+		slog.Debug("error occurred while creating new transaction", "err", err.Error())
+		return err
+	}
 	defer tx.Discard()
 
 	for {
@@ -171,24 +179,11 @@ func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.Eth
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
-	groupedMintEvents := groupEventsMintedWithExternalURIByContract(events)
-	for contract, scannedEvents := range groupedMintEvents {
-		ev := make([]model.MintedWithExternalURI, 0)
-		ev = append(ev, scannedEvents...)
-		if err := tx.StoreMintedWithExternalURIEvents(contract.String(), ev); err != nil {
-			return err
-		}
-	}
 
-	return nil
-}
-
-// groups events that are of type scan.EventMintedWithExternalURI by contract address
-func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.Address][]model.MintedWithExternalURI {
-	groupMintEvents := make(map[common.Address][]model.MintedWithExternalURI, 0)
 	for _, event := range events {
-		if e, ok := event.(scan.EventMintedWithExternalURI); ok {
-			groupMintEvents[e.Contract] = append(groupMintEvents[e.Contract], model.MintedWithExternalURI{
+		e, ok := event.(scan.EventMintedWithExternalURI)
+		if ok {
+			externalMintEvent := model.MintedWithExternalURI{
 				Slot:        e.Slot,
 				To:          e.To,
 				TokenURI:    e.TokenURI,
@@ -196,10 +191,20 @@ func groupEventsMintedWithExternalURIByContract(events []scan.Event) map[common.
 				BlockNumber: e.BlockNumber,
 				Timestamp:   e.Timestamp,
 				TxIndex:     e.TxIndex,
-			})
+			}
+
+			if err := tx.StoreMintedWithExternalURIEvents(e.Contract.String(), externalMintEvent); err != nil {
+				return err
+			}
+
+			if err := tx.SetNextEvoEventBlockForOwnershipContract(e.Contract.String(), e.BlockNumber); err != nil {
+				return err
+			}
+
 		}
 	}
-	return groupMintEvents
+
+	return nil
 }
 
 func (p *processor) hasBlockFinalize(blockNumber *big.Int) (bool, error) {

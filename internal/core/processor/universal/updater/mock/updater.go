@@ -41,10 +41,10 @@ func (m *MockUpdater) EXPECT() *MockUpdaterMockRecorder {
 }
 
 // GetModelTransferEvents mocks base method.
-func (m *MockUpdater) GetModelTransferEvents(ctx context.Context, startingBlock, lastBlock uint64, contracts []string) (map[string][]model.ERC721Transfer, error) {
+func (m *MockUpdater) GetModelTransferEvents(ctx context.Context, startingBlock, lastBlock uint64, contracts []string) (map[uint64]map[string][]model.ERC721Transfer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelTransferEvents", ctx, startingBlock, lastBlock, contracts)
-	ret0, _ := ret[0].(map[string][]model.ERC721Transfer)
+	ret0, _ := ret[0].(map[uint64]map[string][]model.ERC721Transfer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -56,15 +56,15 @@ func (mr *MockUpdaterMockRecorder) GetModelTransferEvents(ctx, startingBlock, la
 }
 
 // UpdateState mocks base method.
-func (m *MockUpdater) UpdateState(ctx context.Context, tx state.Tx, contracts []string, modelTransferEvents map[string][]model.ERC721Transfer, lastBlockData model.Block) error {
+func (m *MockUpdater) UpdateState(ctx context.Context, tx state.Tx, contracts []string, modelTransferEvents map[uint64]map[string][]model.ERC721Transfer, startingBlock uint64, lastBlockData model.Block) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateState", ctx, tx, contracts, modelTransferEvents, lastBlockData)
+	ret := m.ctrl.Call(m, "UpdateState", ctx, tx, contracts, modelTransferEvents, startingBlock, lastBlockData)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateState indicates an expected call of UpdateState.
-func (mr *MockUpdaterMockRecorder) UpdateState(ctx, tx, contracts, modelTransferEvents, lastBlockData any) *gomock.Call {
+func (mr *MockUpdaterMockRecorder) UpdateState(ctx, tx, contracts, modelTransferEvents, startingBlock, lastBlockData any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockUpdater)(nil).UpdateState), ctx, tx, contracts, modelTransferEvents, lastBlockData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockUpdater)(nil).UpdateState), ctx, tx, contracts, modelTransferEvents, startingBlock, lastBlockData)
 }

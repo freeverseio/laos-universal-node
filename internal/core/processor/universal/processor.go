@@ -83,7 +83,10 @@ func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 // It will return an error if any error occurs.
 func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
 	// Start a transaction
-	tx := p.stateService.NewTransaction()
+	tx, err := p.stateService.NewTransaction()
+	if err != nil {
+		return nil, err
+	}
 	defer tx.Discard()
 
 	storedBlockNumbers, err := tx.GetAllStoredBlockNumbers()
@@ -108,23 +111,13 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 		return nil, errDeleteOrphanRootTags
 	}
 
-	if errCommit := tx.Commit(); errCommit != nil {
-		return nil, errCommit
+	err = tx.Checkout(int64(blockWithoutReorg.Number))
+	if err != nil {
+		return nil, err
 	}
 
-	contracts := tx.GetAllERC721UniversalContracts()
-	// Process each contract
-	for _, contract := range contracts {
-		// Handle each contract in its own transaction
-		contractTx := p.stateService.NewTransaction()
-		err = checkout(contractTx, common.HexToAddress(contract), blockWithoutReorg.Number)
-		if err != nil {
-			contractTx.Discard()
-			return nil, err
-		}
-		if errCommit := contractTx.Commit(); errCommit != nil {
-			return nil, errCommit // Handle commit error
-		}
+	if errCommit := tx.Commit(); errCommit != nil {
+		return nil, errCommit
 	}
 
 	return blockWithoutReorg, nil
@@ -206,7 +199,10 @@ func (p *processor) IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipB
 		return false, err
 	}
 
-	tx := p.stateService.NewTransaction()
+	tx, err := p.stateService.NewTransaction()
+	if err != nil {
+		return false, err
+	}
 	defer tx.Discard()
 
 	lastEvoBLockData, err := tx.GetLastEvoBlock()
@@ -225,7 +221,11 @@ func (p *processor) IsEvoSyncedWithOwnership(ctx context.Context, lastOwnershipB
 }
 
 func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBlock, lastBlock uint64) error {
-	tx := p.stateService.NewTransaction()
+	tx, err := p.stateService.NewTransaction()
+	if err != nil {
+		slog.Error("error occurred while creating transaction", "err", err.Error())
+		return err
+	}
 	defer tx.Discard()
 
 	// Get the last stored block number from the database
@@ -257,17 +257,20 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		return err
 	}
 
+	var transferEvents map[uint64]map[string][]model.ERC721Transfer
 	if len(contracts) > 0 {
-		transferEvents, errTr := p.updater.GetModelTransferEvents(ctx, startingBlock, lastBlock, contracts)
-		if errTr != nil {
-			return errTr
-		}
-		// TODO add startingBlock argument
-		err = p.updater.UpdateState(ctx, tx, contracts, transferEvents, lastBlockData)
+		transferEvents, err = p.updater.GetModelTransferEvents(ctx, startingBlock, lastBlock, contracts)
 		if err != nil {
 			return err
 		}
 	}
+
+	// TODO add startingBlock argument
+	err = p.updater.UpdateState(ctx, tx, contracts, transferEvents, startingBlock, lastBlockData)
+	if err != nil {
+		return err
+	}
+	
 
 	slog.Debug("setting ownership end range block hash for block number",
 		"blockNumber", lastBlockData.Number, "blockHash", lastBlockData.Hash, "timestamp", lastBlockData.Timestamp)
@@ -308,22 +311,6 @@ func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBloc
 		Timestamp: header.Time,
 		Hash:      header.Hash(),
 	}, nil
-}
-
-func checkout(tx state.Tx, contractAddress common.Address, blockNumber uint64) error {
-	err := tx.LoadMerkleTrees(contractAddress)
-	if err != nil {
-		return err
-	}
-
-	err = tx.Checkout(contractAddress, int64(blockNumber))
-	if err != nil {
-		slog.Error("error occurred checking out merkle tree at block number", "block_number", blockNumber,
-			"contract_address", contractAddress, "err", err)
-		return err
-	}
-
-	return nil
 }
 
 func getSafeBlock(currentBlockNumber uint64) *model.Block {

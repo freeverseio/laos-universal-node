@@ -21,13 +21,14 @@ type Updater interface {
 		startingBlock,
 		lastBlock uint64,
 		contracts []string,
-	) (map[string][]model.ERC721Transfer, error)
+	) (map[uint64]map[string][]model.ERC721Transfer, error)
 
 	UpdateState(
 		ctx context.Context,
 		tx state.Tx,
 		contracts []string,
-		modelTransferEvents map[string][]model.ERC721Transfer,
+		modelTransferEvents map[uint64]map[string][]model.ERC721Transfer,
+		startingBlock uint64,
 		lastBlockData model.Block,
 	) error
 }
@@ -49,28 +50,29 @@ func (u *updater) GetModelTransferEvents(
 	startingBlock,
 	lastBlock uint64,
 	contracts []string,
-) (map[string][]model.ERC721Transfer, error) {
+) (map[uint64]map[string][]model.ERC721Transfer, error) {
 	scanEvents, err := u.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), contracts)
 	if err != nil {
 		slog.Error("error occurred while scanning events", "err", err.Error())
 		return nil, err
 	}
-	modelTransferEvents := make(map[string][]model.ERC721Transfer)
+
+	modelTransferEvents := make(map[uint64]map[string][]model.ERC721Transfer)
+
 	for i := range scanEvents {
 		if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
-			header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(scanEvent.BlockNumber)))
-			if err != nil {
-				return nil, fmt.Errorf("error retrieving timestamp for block number %d: %w", scanEvent.BlockNumber, err)
-			}
-			contractString := strings.ToLower(scanEvent.Contract.String())
-			modelTransferEvents[contractString] = append(modelTransferEvents[contractString], model.ERC721Transfer{
+			eventTransfer := model.ERC721Transfer{
 				From:        scanEvent.From,
 				To:          scanEvent.To,
 				TokenId:     scanEvent.TokenId,
 				BlockNumber: scanEvent.BlockNumber,
 				Contract:    scanEvent.Contract,
-				Timestamp:   header.Time,
-			})
+				Timestamp:   0,
+			}
+			// timestamp will be updated later to avoid calling headerByNumber for every event.
+			// Instead, it will be updated only once for every block
+			contractString := strings.ToLower(eventTransfer.Contract.String())
+			modelTransferEvents[scanEvent.BlockNumber][contractString] = append(modelTransferEvents[scanEvent.BlockNumber][contractString], eventTransfer)
 		}
 	}
 	return modelTransferEvents, nil
@@ -80,171 +82,89 @@ func (u *updater) UpdateState(
 	ctx context.Context,
 	tx state.Tx,
 	contracts []string,
-	modelTransferEvents map[string][]model.ERC721Transfer,
+	transferEvents map[uint64]map[string][]model.ERC721Transfer,
+	startingBlock uint64,
 	lastBlockData model.Block,
 ) error {
-	for _, contract := range contracts {
-		err := tx.LoadMerkleTrees(common.HexToAddress(contract))
+
+	for block := startingBlock; block <= lastBlockData.Number; block++ {
+		header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
 		if err != nil {
-			slog.Error("error creating merkle trees", "err", err)
+			slog.Debug("error retrieving header for block number", "blockNumber", block, "err", err.Error())
 			return err
 		}
+		blockTime := header.Time
 
-		collection, err := tx.GetCollectionAddress(contract)
-		if err != nil {
-			return fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contract, err)
-		}
-
-		// now we get the minted events from the evolution chain for the collection address
-		mintedEvents, err := tx.GetMintedWithExternalURIEvents(collection.String())
-		if err != nil {
-			return fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
-				contract, collection.String(), err)
-		}
-
-		evoIndex, err := mergeAndUpdate(ctx, u.client, mintedEvents, modelTransferEvents[contract], contract, tx, lastBlockData.Timestamp)
-		if err != nil {
-			return fmt.Errorf("error updating state: %w", err)
-		}
-
-		if err = tx.SetCurrentEvoEventsIndexForOwnershipContract(contract, evoIndex); err != nil {
-			return fmt.Errorf("error updating current evochain index %d for ownership contract %s: %w", evoIndex, contract, err)
-		}
-
-		if err = tagRootsUntilBlock(tx, contract, lastBlockData.Number+1); err != nil { // add+1 because we want to tag last block also
-			slog.Error("error occurred while tagging roots", "err", err.Error())
-			return err
-		}
-	}
-	return nil
-}
-
-func mergeEvents(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, fromBlock, toBlock, lastBlockTimestamp uint64) {
-	// assum that own and evo blocks are sorted and grouped
-	// for i := fromBlock; i < toBlock; i++ {
-	//	for _, transf := range modelTransferEvents {
-	//		if transf.Block == i {
-	//			update mekle tree
-	//		}
-	// }
-	//	for _, mint := range MintedWithExternalURI {
-	// if mint.Timestamp >=  i.Timestamp && minted.Timestamp < (i+1).timestamp {
-	//			update mekle tree
-	//		}
-	// }
-	// TagRoot(i)
-	// }
-}
-
-func mergeAndUpdate(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlockTimestamp uint64) (uint64, error) {
-	ownershipContractEvoEventIndex, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
-	if err != nil {
-		return 0, err
-	}
-	var transferIndex int
-	for {
-		switch {
-		// all events have been processed => return
-		case ownershipContractEvoEventIndex >= uint64(len(mintedEvents)) && transferIndex >= len(modelTransferEvents):
-			return ownershipContractEvoEventIndex, nil
-		// all minted events have been processed => process remaining transfer events
-		case ownershipContractEvoEventIndex >= uint64(len(mintedEvents)):
-			if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
-				return 0, err
+		for _, contract := range contracts {
+			collection, err := tx.GetCollectionAddress(contract)
+			if err != nil {
+				return fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contract, err)
 			}
-			transferIndex++
-		// all transfer events have been processed => process remaining minted events
-		case transferIndex >= len(modelTransferEvents):
-			if mintedEvents[ownershipContractEvoEventIndex].Timestamp < lastBlockTimestamp {
-				err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[ownershipContractEvoEventIndex])
+
+			evoBlockTimestamp := uint64(0)
+			evoEvents := make([]model.MintedWithExternalURI, 0)
+			for evoBlockTimestamp < blockTime {
+				// first we get all mint events before this block
+				evoBlock, err := tx.GetCurrentEvoBlockForOwnershipContract(contract)
 				if err != nil {
-					return 0, err
+					return fmt.Errorf("error occurred retrieving current evo block for ownership contract %s: %w", contract, err)
 				}
-				ownershipContractEvoEventIndex++
-			} else {
-				return ownershipContractEvoEventIndex, nil
-			}
-
-		default:
-			// if minted event's timestamp is behind transfer event's timestamp => process minted event
-			if mintedEvents[ownershipContractEvoEventIndex].Timestamp < modelTransferEvents[transferIndex].Timestamp {
-				err := updateStateWithMint(ctx, client, contract, tx, &mintedEvents[ownershipContractEvoEventIndex])
+				mintedEvents, err := tx.GetMintedWithExternalURIEvents(collection.String(), evoBlock)
 				if err != nil {
-					return 0, err
+					return fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
+						contract, collection.String(), err)
+
 				}
-				ownershipContractEvoEventIndex++
-			} else {
-				if err := updateStateWithTransfer(contract, tx, &modelTransferEvents[transferIndex]); err != nil {
-					return 0, err
+
+				evoBlockTimestamp = mintedEvents[0].Timestamp
+				if evoBlockTimestamp < blockTime {
+					evoEvents = append(evoEvents, mintedEvents...)
+
+					newBlock, err := tx.GetNextEvoEventBlockForOwnershipContract(contract, evoBlock)
+					if err != nil {
+						return fmt.Errorf("error occurred retrieving next evo event block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
+					}
+
+					err = tx.SetCurrentEvoBlockForOwnershipContract(contract, newBlock)
+					if err != nil {
+						return fmt.Errorf("error occurred setting current evo block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
+					}
 				}
-				transferIndex++
 			}
+
+			// Now we update state if there are new events
+			if len(evoEvents) > 0 || len(transferEvents[block][contract]) > 0 {
+				err = tx.LoadMerkleTrees(common.HexToAddress(contract))
+				if err != nil {
+					slog.Error("error creating merkle trees", "err", err)
+					return err
+				}
+
+				for _, mintEvent := range evoEvents {
+					err = tx.Mint(common.HexToAddress(contract), &mintEvent)
+					if err != nil {
+						return fmt.Errorf("error occurred while updating state with mint event %v: %w", mintEvent, err)
+					}
+				}
+
+				for _, transferEvent := range transferEvents[block][contract] {
+					err = tx.Transfer(common.HexToAddress(contract), &transferEvent)
+					if err != nil {
+						return fmt.Errorf("error occurred while updating state with transfer event %v: %w", transferEvent, err)
+					}
+				}
+
+				// update account state
+				err = tx.UpdateContractState(common.HexToAddress(contract))
+				if err != nil {
+					return fmt.Errorf("error occurred while updating contract state for contract %s: %w", contract, err)
+				}
+			}
+
 		}
-	}
-}
 
-func updateStateWithTransfer(contract string, tx state.Tx, transferEvent *model.ERC721Transfer) error {
-	slog.Debug("updating state with transfer event", "modelTransferEvent", transferEvent, "contract", contract)
-	err := tagRootsUntilBlock(tx, contract, transferEvent.BlockNumber)
-	if err != nil {
-		return err
-	}
-
-	return tx.Transfer(common.HexToAddress(contract), transferEvent)
-}
-
-func updateStateWithMint(ctx context.Context, client blockchain.EthClient, contract string, tx state.Tx, mintedEvent *model.MintedWithExternalURI) error {
-	slog.Debug("updating state with mint event", "modelTransferEvent", mintedEvent, "contract", contract)
-	block, err := getFirstOwnershipBlockAfterMintEvent(ctx, client, contract, tx, mintedEvent)
-	if err != nil {
-		return err
-	}
-
-	err = tagRootsUntilBlock(tx, contract, block)
-	if err != nil {
-		return err
-	}
-
-	return tx.Mint(common.HexToAddress(contract), mintedEvent)
-}
-
-func getFirstOwnershipBlockAfterMintEvent(ctx context.Context,
-	client blockchain.EthClient,
-	contract string,
-	tx state.Tx,
-	mintedEvent *model.MintedWithExternalURI,
-) (uint64, error) {
-	// At this point this function uses GetLastTaggedBlock(). I think the first ownership block after mint event
-	// can be found in a way that is more clean but I will keep it now as is
-
-	slog.Debug("finding the first ownership block after mint event", "mintedEvent", mintedEvent, "contract", contract)
-
-	block, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
-	if err != nil {
-		return 0, err
-	}
-
-	for {
-		block++
-		header, err := client.HeaderByNumber(ctx, big.NewInt(block))
-		if err != nil {
-			return 0, err
-		}
-		if header.Time >= mintedEvent.Timestamp {
-			return uint64(block), nil
-		}
-	}
-}
-
-func tagRootsUntilBlock(tx state.Tx, contractAddress string, blockNumber uint64) error {
-	lastTaggedBlock, err := tx.GetLastTaggedBlock(common.HexToAddress(contractAddress))
-	if err != nil {
-		return err
-	}
-
-	// ?? shouldn't this be block <=?
-	for block := lastTaggedBlock + 1; block < int64(blockNumber); block++ {
-		if err := tx.TagRoot(common.HexToAddress(contractAddress), block); err != nil {
+		if err := tx.TagRoot(int64(block)); err != nil {
+			slog.Error("error occurred while tagging root", "err", err.Error())
 			return err
 		}
 	}

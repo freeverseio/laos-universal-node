@@ -131,8 +131,12 @@ func run() error {
 			case <-ctx.Done():
 				return nil
 			case <-ticker.C:
-				tx := stateService.NewTransaction()
-				err := tx.DeleteOldStoredBlockNumbers()
+				tx, err := stateService.NewTransaction()
+				if err != nil {
+					slog.Error("error occurred while creating new transaction", "err", err.Error())
+					return err
+				}
+				err = tx.DeleteOldStoredBlockNumbers()
 				if err != nil {
 					slog.Error("error occurred while cleaning stored block numbers", "err", err.Error())
 				}

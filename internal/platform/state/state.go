@@ -37,6 +37,7 @@ type State interface {
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	LoadMerkleTrees(contractAddress common.Address) error
 	LoadContractState(contract common.Address) error
+	UpdateContractState(contract common.Address) error
 	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error
@@ -54,13 +55,16 @@ type OwnershipContractState interface {
 }
 
 type EvolutionContractState interface {
-	GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error)
-	StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error
+	GetMintedWithExternalURIEvents(contract string, blockNumber uint64) ([]model.MintedWithExternalURI, error)
+	StoreMintedWithExternalURIEvents(contract string, event model.MintedWithExternalURI) error
 }
 
 type OwnershipSyncState interface {
-	SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error
-	GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error)
+	SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error
+	GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error)
+
+	SetNextEvoEventBlockForOwnershipContract(contract string, blockNumber uint64) (error)
+	GetNextEvoEventBlockForOwnershipContract(contract string, blockNumber uint64) (uint64, error)
 
 	SetLastOwnershipBlock(block model.Block) error
 	GetLastOwnershipBlock() (model.Block, error)

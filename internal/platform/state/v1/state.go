@@ -353,7 +353,7 @@ func (t *tx) LoadContractState(contract common.Address) error {
 	// If we just want to read the state at current root we should not commit this transaction
 	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
 	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
-	slog.Debug("Checkout", "contract", contract.String())
+	slog.Debug("LoadContractState", "contract", contract.String())
 
 	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
@@ -383,6 +383,41 @@ func (t *tx) LoadContractState(contract common.Address) error {
 	ownershipTree.SetRoot(accountData.OwnershipRoot)
 
 	return nil
+}
+
+func (t *tx) UpdateContractState(contract common.Address) error{
+	slog.Debug("Updating contract state in the account tree", "contract", contract.String())
+
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedRoot := enumeratedTree.Root()
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTotalRoot := enumeratedTotalTree.Root()
+	totalSupply := enumeratedTotalTree.TotalSupply()
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	ownershipRoot := ownershipTree.Root()
+
+	accountData := account.AccountData{
+		EnumeratedRoot:      enumeratedRoot,
+		EnumeratedTotalRoot: enumeratedTotalRoot,
+		OwnershipRoot:       ownershipRoot,
+		TotalSupply:         totalSupply,
+	}
+
+	return t.accountTree.SetAccountData(&accountData, contract)
 }
 
 func (t *tx) SetContractState(contract common.Address) error {
