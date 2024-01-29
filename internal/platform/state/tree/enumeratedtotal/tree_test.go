@@ -13,15 +13,15 @@ import (
 func TestTree(t *testing.T) {
 	t.Parallel()
 
-	t.Run(`init with nil store should fail`, func(t *testing.T) {
+	t.Run(`init contract address is common.Hash{} returns error `, func(t *testing.T) {
 		t.Parallel()
-		_, err := enumeratedtotal.NewTree(common.Address{}, nil)
+		_, err := enumeratedtotal.NewTree(common.Address{}, common.Hash{}, 0, nil)
 		assert.Error(t, err, "contract address is 0x0000000000000000000000000000000000000000")
 	})
 
 	t.Run(`init with nil store should fail`, func(t *testing.T) {
 		t.Parallel()
-		_, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), nil)
+		_, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, nil)
 		assert.Error(t, err, "store is nil")
 	})
 
@@ -30,9 +30,9 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.HexToHash("0x1"), 0, tx)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
+		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000001")
 	})
 
 	t.Run(`mint token changes root, error if index is out of bound`, func(t *testing.T) {
@@ -40,15 +40,14 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
-		totalSupply, err := tr.TotalSupply()
-		assert.NilError(t, err)
+		totalSupply := tr.TotalSupply()
 
 		assert.Equal(t, totalSupply, int64(1))
 		token, err := tr.TokenByIndex(0)
@@ -65,17 +64,16 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
-		totalSupply, err := tr.TotalSupply()
-		assert.NilError(t, err)
-
+		totalSupply := tr.TotalSupply()
 		assert.Equal(t, totalSupply, int64(1))
+
 		token, err := tr.TokenByIndex(0)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
@@ -84,6 +82,48 @@ func TestTree(t *testing.T) {
 		assert.Error(t, err, "index out of totalSupply range")
 	})
 
+	t.Run(`mint 2 tokens, set root after the first mint, second token does not exist`, func(t *testing.T) {
+		t.Parallel()
+		service := memory.New()
+		tx := service.NewTransaction()
+
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, tx)
+		assert.NilError(t, err)
+
+		err = tr.Mint(big.NewInt(1))
+		assert.NilError(t, err)
+		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
+
+		totalSupply := tr.TotalSupply()
+		assert.Equal(t, totalSupply, int64(1))
+
+		token, err := tr.TokenByIndex(0)
+		assert.NilError(t, err)
+		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
+
+		err = tr.Mint(big.NewInt(2))
+		assert.NilError(t, err)
+		assert.Equal(t, tr.Root().String(), "0x3505457d4944236492ccb69056852e218f55eba5aed2adad48e5309f9339fcef")
+
+		totalSupply = tr.TotalSupply()
+		assert.Equal(t, totalSupply, int64(2))
+
+		token, err = tr.TokenByIndex(0)
+		assert.NilError(t, err)
+		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
+
+		token, err = tr.TokenByIndex(1)
+		assert.NilError(t, err)
+		assert.Equal(t, token.Cmp(big.NewInt(2)), 0)
+
+		tr.SetRoot(common.HexToHash("0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa"))
+		tr.SetTotalSupply(1)
+		totalSupply = tr.TotalSupply()
+		assert.Equal(t, totalSupply, int64(1))
+
+		_, err = tr.TokenByIndex(1)
+		assert.Error(t, err, "index out of totalSupply range")
+	})
 	tests := []struct {
 		name        string
 		idxOfBurned int
@@ -112,17 +152,16 @@ func TestTree(t *testing.T) {
 			service := memory.New()
 			tx := service.NewTransaction()
 
-			tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+			tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, tx)
 			assert.NilError(t, err)
 
 			err = tr.Mint(big.NewInt(1))
 			assert.NilError(t, err)
 			assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
-			totalSupply, err := tr.TotalSupply()
-			assert.NilError(t, err)
-
+			totalSupply := tr.TotalSupply()
 			assert.Equal(t, totalSupply, int64(1))
+
 			token, err := tr.TokenByIndex(0)
 			assert.NilError(t, err)
 			assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
@@ -131,8 +170,7 @@ func TestTree(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, tr.Root().String(), "0x3505457d4944236492ccb69056852e218f55eba5aed2adad48e5309f9339fcef")
 
-			totalSupply, err = tr.TotalSupply()
-			assert.NilError(t, err)
+			totalSupply = tr.TotalSupply()
 			assert.Equal(t, totalSupply, int64(2))
 
 			token, err = tr.TokenByIndex(0)
@@ -147,8 +185,7 @@ func TestTree(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, tr.Root().String(), tt.root)
 
-			totalSupply, err = tr.TotalSupply()
-			assert.NilError(t, err)
+			totalSupply = tr.TotalSupply()
 			assert.Equal(t, totalSupply, int64(1))
 
 			token, err = tr.TokenByIndex(0)
@@ -162,140 +199,39 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), common.Hash{}, 0, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1))
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
-		totalSupply, err := tr.TotalSupply()
-		assert.NilError(t, err)
-
+		totalSupply := tr.TotalSupply()
 		assert.Equal(t, totalSupply, int64(1))
+
 		token, err := tr.TokenByIndex(0)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
 
-		tr1, err := enumeratedtotal.NewTree(common.HexToAddress("0x501"), tx)
+		tr1, err := enumeratedtotal.NewTree(common.HexToAddress("0x501"), common.Hash{}, 0, tx)
 		assert.NilError(t, err)
 
 		err = tr1.Mint(big.NewInt(2))
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
 
-		totalSupply, err = tr1.TotalSupply()
-		assert.NilError(t, err)
-
+		totalSupply = tr1.TotalSupply()
 		assert.Equal(t, totalSupply, int64(1))
+
 		token, err = tr1.TokenByIndex(0)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(2)), 0)
 
-		totalSupply, err = tr.TotalSupply()
-		assert.NilError(t, err)
-
+		totalSupply = tr.TotalSupply()
 		assert.Equal(t, totalSupply, int64(1))
+
 		token, err = tr.TokenByIndex(0)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-	})
-}
-
-func TestTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`tag root after mints. checkout at that root returns state before the second mint`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.Mint(big.NewInt(1))
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x2a7c66cf9e4638104cbf07da77fe051a8aa94a675bb1c539d113052cdff1b0aa")
-
-		totalSupply, err := tr.TotalSupply()
-		assert.NilError(t, err)
-		assert.Equal(t, totalSupply, int64(1))
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.Mint(big.NewInt(2))
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x3505457d4944236492ccb69056852e218f55eba5aed2adad48e5309f9339fcef")
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-
-		totalSupply, err = tr.TotalSupply()
-		assert.NilError(t, err)
-		assert.Equal(t, totalSupply, int64(2))
-
-		err = tr.Checkout(1)
-		assert.NilError(t, err)
-
-		totalSupply, err = tr.TotalSupply()
-		assert.NilError(t, err)
-		assert.Equal(t, totalSupply, int64(1))
-
-		token0, err := tr.TokenByIndex(0)
-		assert.NilError(t, err)
-		assert.Equal(t, token0.Cmp(big.NewInt(1)), 0)
-
-		err = tr.Checkout(2)
-		assert.NilError(t, err)
-
-		totalSupply, err = tr.TotalSupply()
-		assert.NilError(t, err)
-		assert.Equal(t, totalSupply, int64(2))
-
-		token0, err = tr.TokenByIndex(1)
-		assert.NilError(t, err)
-		assert.Equal(t, token0.Cmp(big.NewInt(2)), 0)
-	})
-
-	t.Run(`tag root before transfer. checkout at block which tag does not exist returns error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
-	})
-}
-
-func TestDeleteRootTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		err = enumeratedtotal.DeleteRootTag(tx, common.HexToAddress("0x500").Hex(), 1)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		tr, err = enumeratedtotal.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
 	})
 }

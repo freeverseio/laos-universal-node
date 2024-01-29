@@ -14,15 +14,15 @@ import (
 
 func TestTree(t *testing.T) {
 	t.Parallel()
-	t.Run(`init with nil store should fail`, func(t *testing.T) {
+	t.Run(`init contract address is common.Hash{} returns error `, func(t *testing.T) {
 		t.Parallel()
-		_, err := enumerated.NewTree(common.Address{}, nil)
+		_, err := enumerated.NewTree(common.Address{}, common.Hash{}, nil)
 		assert.Error(t, err, "contract address is 0x0000000000000000000000000000000000000000")
 	})
 
 	t.Run(`init with nil store should fail`, func(t *testing.T) {
 		t.Parallel()
-		_, err := enumerated.NewTree(common.HexToAddress("0x500"), nil)
+		_, err := enumerated.NewTree(common.HexToAddress("0x500"), common.Hash{}, nil)
 		assert.Error(t, err, "store is nil")
 	})
 
@@ -31,9 +31,9 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), common.HexToHash("0x1"), tx)
 		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
+		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000001")
 	})
 
 	t.Run(`transfer of the token that is not minted does not change state`, func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		assert.Equal(t, tr.Root().String(), "0x0000000000000000000000000000000000000000000000000000000000000000")
@@ -87,12 +87,12 @@ func TestTree(t *testing.T) {
 		assert.Equal(t, balance2, uint64(1))
 	})
 
-	t.Run(`mint tokens to address`, func(t *testing.T) {
+	t.Run(`mint tokens to address, setting root returns correct data`, func(t *testing.T) {
 		t.Parallel()
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
@@ -122,6 +122,18 @@ func TestTree(t *testing.T) {
 		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x1"), 1)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(2)), 0)
+
+		tr.SetRoot(common.HexToHash("0x5ce00d2afc3d832a1cd6383355aeb85283a0b0004fad0efc599324ed9057737b"))
+		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x1"))
+		assert.NilError(t, err)
+		assert.Equal(t, balance, uint64(1))
+
+		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x1"), 0)
+		assert.NilError(t, err)
+		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
+
+		_, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x1"), 1)
+		assert.Error(t, err, "index 1 out of range")
 	})
 
 	t.Run(`tokens minted in different contracts`, func(t *testing.T) {
@@ -129,14 +141,14 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
 		assert.NilError(t, err)
 		assert.Equal(t, tr.Root().String(), "0x5ce00d2afc3d832a1cd6383355aeb85283a0b0004fad0efc599324ed9057737b")
 
-		tr1, err := enumerated.NewTree(common.HexToAddress("0x501"), tx)
+		tr1, err := enumerated.NewTree(common.HexToAddress("0x501"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		err = tr1.Mint(big.NewInt(1), common.HexToAddress("0x1"))
@@ -149,7 +161,7 @@ func TestTree(t *testing.T) {
 		service := memory.New()
 		tx := service.NewTransaction()
 
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
+		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), common.Hash{}, tx)
 		assert.NilError(t, err)
 
 		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
@@ -190,130 +202,5 @@ func TestTree(t *testing.T) {
 		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x2"), 0)
 		assert.NilError(t, err)
 		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-	})
-}
-
-func TestTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`tag root before transfer. checkout at that root returns state before transfer`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.Mint(big.NewInt(1), common.HexToAddress("0x1"))
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x5ce00d2afc3d832a1cd6383355aeb85283a0b0004fad0efc599324ed9057737b")
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		balance, err := tr.BalanceOfOwner(common.HexToAddress("0x1"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(1))
-
-		token, err := tr.TokenOfOwnerByIndex(common.HexToAddress("0x1"), 0)
-		assert.NilError(t, err)
-		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x2"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(0))
-
-		err = tr.Transfer(true, &model.ERC721Transfer{
-			From:    common.HexToAddress("0x1"),
-			To:      common.HexToAddress("0x2"),
-			TokenId: big.NewInt(1),
-		})
-		assert.NilError(t, err)
-		assert.Equal(t, tr.Root().String(), "0x5a8a15f0f6e2e2c551e0dadfb31c1f1d2f08377328eb20812e6e3df86b979218")
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x1"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(0))
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x2"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(1))
-
-		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x2"), 0)
-		assert.NilError(t, err)
-		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-
-		err = tr.Checkout(1)
-		assert.NilError(t, err)
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x1"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(1))
-
-		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x1"), 0)
-		assert.NilError(t, err)
-		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x2"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(0))
-
-		err = tr.Checkout(2)
-		assert.NilError(t, err)
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x1"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(0))
-
-		balance, err = tr.BalanceOfOwner(common.HexToAddress("0x2"))
-		assert.NilError(t, err)
-		assert.Equal(t, balance, uint64(1))
-
-		token, err = tr.TokenOfOwnerByIndex(common.HexToAddress("0x2"), 0)
-		assert.NilError(t, err)
-		assert.Equal(t, token.Cmp(big.NewInt(1)), 0)
-	})
-
-	t.Run(`tag root before transfer. checkout at block which tag does not exist returns error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
-	})
-}
-
-func TestDeleteRootTag(t *testing.T) {
-	t.Parallel()
-	t.Run(`Tag two roots and then delete the first tag. Checkout at deleted tag gives error`, func(t *testing.T) {
-		t.Parallel()
-		service := memory.New()
-		tx := service.NewTransaction()
-
-		tr, err := enumerated.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(1)
-		assert.NilError(t, err)
-
-		err = tr.TagRoot(2)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		err = enumerated.DeleteRootTag(tx, common.HexToAddress("0x500").Hex(), 1)
-		assert.NilError(t, err)
-		err = tx.Commit()
-		assert.NilError(t, err)
-		tx = service.NewTransaction()
-		tr, err = enumerated.NewTree(common.HexToAddress("0x500"), tx)
-		assert.NilError(t, err)
-		err = tr.Checkout(1)
-		assert.Error(t, err, "no tag found for this block number 1")
 	})
 }

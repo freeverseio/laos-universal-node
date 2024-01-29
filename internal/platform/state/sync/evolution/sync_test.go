@@ -22,7 +22,10 @@ func TestSetGetLastEvoBlock(t *testing.T) {
 	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
 
 	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
 
 	block := model.Block{
 		Number:    1,
@@ -36,7 +39,7 @@ func TestSetGetLastEvoBlock(t *testing.T) {
 
 	mockStorageTransaction.EXPECT().Set([]byte("evo_last_block"), buf.Bytes()).Return(nil)
 
-	err := tx.SetLastEvoBlock(block)
+	err = tx.SetLastEvoBlock(block)
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}

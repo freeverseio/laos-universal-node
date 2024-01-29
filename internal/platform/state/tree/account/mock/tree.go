@@ -9,7 +9,6 @@
 package mock
 
 import (
-	big "math/big"
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
@@ -40,6 +39,21 @@ func (m *MockTree) EXPECT() *MockTreeMockRecorder {
 	return m.recorder
 }
 
+// AccountData mocks base method.
+func (m *MockTree) AccountData(contract common.Address) (*account.AccountData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AccountData", contract)
+	ret0, _ := ret[0].(*account.AccountData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AccountData indicates an expected call of AccountData.
+func (mr *MockTreeMockRecorder) AccountData(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccountData", reflect.TypeOf((*MockTree)(nil).AccountData), contract)
+}
+
 // Checkout mocks base method.
 func (m *MockTree) Checkout(blockNumber int64) error {
 	m.ctrl.T.Helper()
@@ -52,6 +66,20 @@ func (m *MockTree) Checkout(blockNumber int64) error {
 func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
+}
+
+// DeleteRootTag mocks base method.
+func (m *MockTree) DeleteRootTag(blockNumber int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRootTag", blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRootTag indicates an expected call of DeleteRootTag.
+func (mr *MockTreeMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTree)(nil).DeleteRootTag), blockNumber)
 }
 
 // GetLastTaggedBlock mocks base method.
@@ -69,21 +97,6 @@ func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
 }
 
-// MerkleTreeRoots mocks base method.
-func (m *MockTree) MerkleTreeRoots(merkleTreeID *big.Int) (*account.MerkleTreeRoots, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MerkleTreeRoots", merkleTreeID)
-	ret0, _ := ret[0].(*account.MerkleTreeRoots)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// MerkleTreeRoots indicates an expected call of MerkleTreeRoots.
-func (mr *MockTreeMockRecorder) MerkleTreeRoots(merkleTreeID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MerkleTreeRoots", reflect.TypeOf((*MockTree)(nil).MerkleTreeRoots), merkleTreeID)
-}
-
 // Root mocks base method.
 func (m *MockTree) Root() common.Hash {
 	m.ctrl.T.Helper()
@@ -98,18 +111,18 @@ func (mr *MockTreeMockRecorder) Root() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Root", reflect.TypeOf((*MockTree)(nil).Root))
 }
 
-// SetMerkleTreeRoots mocks base method.
-func (m *MockTree) SetMerkleTreeRoots(roots *account.MerkleTreeRoots, merkleTreeID *big.Int) error {
+// SetAccountData mocks base method.
+func (m *MockTree) SetAccountData(data *account.AccountData, accountAddress common.Address) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMerkleTreeRoots", roots, merkleTreeID)
+	ret := m.ctrl.Call(m, "SetAccountData", data, accountAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetMerkleTreeRoots indicates an expected call of SetMerkleTreeRoots.
-func (mr *MockTreeMockRecorder) SetMerkleTreeRoots(roots, merkleTreeID any) *gomock.Call {
+// SetAccountData indicates an expected call of SetAccountData.
+func (mr *MockTreeMockRecorder) SetAccountData(data, accountAddress any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMerkleTreeRoots", reflect.TypeOf((*MockTree)(nil).SetMerkleTreeRoots), roots, merkleTreeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAccountData", reflect.TypeOf((*MockTree)(nil).SetAccountData), data, accountAddress)
 }
 
 // TagRoot mocks base method.

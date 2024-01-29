@@ -27,7 +27,10 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
 
 	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
 
 	block := model.Block{
 		Number:    1,
@@ -42,7 +45,7 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_last_block"), buf.Bytes()).Return(nil)
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_block_000000000000000001"), buf.Bytes())
 
-	err := tx.SetLastOwnershipBlock(block)
+	err = tx.SetLastOwnershipBlock(block)
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
@@ -76,12 +79,15 @@ func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
 	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
 
 	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
 
 	contract := "0x123"
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_contract_evo_current_index_"+contract), []byte("50")).Return(nil)
 
-	err := tx.SetCurrentEvoEventsIndexForOwnershipContract(contract, uint64(50))
+	err = tx.SetCurrentEvoEventsIndexForOwnershipContract(contract, uint64(50))
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}

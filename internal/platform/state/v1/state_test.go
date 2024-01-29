@@ -17,10 +17,13 @@ func TestLoadMerkleTrees(t *testing.T) {
 	t.Parallel()
 	t.Run("fails when contract is 0x0", func(t *testing.T) {
 		t.Parallel()
-		tx := createTransaction()
+		tx, err := createTransaction()
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
 		expectedErr := fmt.Sprintf("contract address is " + common.Address{}.String())
 
-		err := tx.LoadMerkleTrees(common.HexToAddress("0x0"))
+		err = tx.LoadMerkleTrees(common.HexToAddress("0x0"))
 		if err == nil {
 			t.Errorf("got no error while an error was expected")
 		}
@@ -30,10 +33,13 @@ func TestLoadMerkleTrees(t *testing.T) {
 	})
 	t.Run("successfully loads merkle trees in memory", func(t *testing.T) {
 		t.Parallel()
-		tx := createTransaction()
+		tx, err := createTransaction()
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
 		contract := common.HexToAddress("0x500")
 
-		err := tx.LoadMerkleTrees(contract)
+		err = tx.LoadMerkleTrees(contract)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
@@ -58,10 +64,13 @@ func TestLoadMerkleTrees(t *testing.T) {
 
 func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 	t.Parallel()
-	t.Run("stores minte events", func(t *testing.T) {
+	t.Run("stores minted events", func(t *testing.T) {
 		t.Parallel()
-		tx := createTransaction()
-		err := tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
+		tx, err := createTransaction()
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
 			{
 				Slot:        big.NewInt(1),
 				To:          common.HexToAddress("0x3"),
@@ -88,7 +97,7 @@ func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 	})
 }
 
-func createTransaction() state.Tx {
+func createTransaction() (state.Tx, error) {
 	mem := memory.New()
 	stateService := v1.NewStateService(mem)
 	return stateService.NewTransaction()

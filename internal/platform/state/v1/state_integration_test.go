@@ -17,7 +17,10 @@ import (
 func TestDeleteOrphanRootTags(t *testing.T) {
 	t.Run("successfully deletes orphan root tags", func(t *testing.T) {
 		db := createBadger(t)
-		tx := createBadgerTransaction(t, db)
+		tx, err := createBadgerTransaction(t, db)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
 		contract := common.HexToAddress("0x500")
 		collection := common.HexToAddress("0x501")
 		c := model.ERC721UniversalContract{
@@ -26,22 +29,23 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 			BlockNumber:       100,
 		}
 
-		if err := tx.StoreERC721UniversalContracts([]model.ERC721UniversalContract{c}); err != nil {
+		err = tx.StoreERC721UniversalContracts([]model.ERC721UniversalContract{c})
+		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 		contracts := tx.GetAllERC721UniversalContracts()
 		fmt.Println("c", contracts)
 
-		err := tx.LoadMerkleTrees(contract)
+		err = tx.LoadMerkleTrees(contract)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.TagRoot(contract, 100)
+		err = tx.TagRoot(100)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 		// we can checkout the contract at block 100
-		err = tx.Checkout(contract, 100)
+		err = tx.Checkout(100)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
@@ -49,7 +53,10 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		tx = createBadgerTransaction(t, db)
+		tx, err = createBadgerTransaction(t, db)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
 		err = tx.LoadMerkleTrees(contract)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
@@ -59,7 +66,7 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 		// we can not checkout the contract at block 100 anymore
-		err = tx.Checkout(contract, 100)
+		err = tx.Checkout(100)
 		if err == nil {
 			t.Errorf(`got no error when an error was expected`)
 		}
@@ -69,10 +76,14 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 func TestLoadMerkleTreesWithBadger(t *testing.T) {
 	t.Run("fails when contract is 0x0", func(t *testing.T) {
 		db := createBadger(t)
-		tx := createBadgerTransaction(t, db)
+		tx, err := createBadgerTransaction(t, db)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
 		expectedErr := fmt.Sprintf("contract address is " + common.Address{}.String())
 
-		err := tx.LoadMerkleTrees(common.HexToAddress("0x0"))
+		err = tx.LoadMerkleTrees(common.HexToAddress("0x0"))
 		if err == nil {
 			t.Errorf("got no error while an error was expected")
 		}
@@ -89,8 +100,11 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 		blocks := 1
 		mintsInBlock := 1000
 		for block := 0; block < blocks; block++ {
-			tx := createBadgerTransaction(t, db)
-			err := tx.LoadMerkleTrees(contract)
+			tx, err := createBadgerTransaction(t, db)
+			if err != nil {
+				t.Errorf(`got error "%v" when no error was expected`, err)
+			}
+			err = tx.LoadMerkleTrees(contract)
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
@@ -123,8 +137,11 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 			}
 		}
 
-		tx := createBadgerTransaction(t, db)
-		err := tx.LoadMerkleTrees(contract)
+		tx, err := createBadgerTransaction(t, db)
+		if err != nil {
+			t.Fatal("got error when no error was expected 3", err.Error())
+		}
+		err = tx.LoadMerkleTrees(contract)
 		if err != nil {
 			t.Fatal("got error when no error was expected 3", err.Error())
 		}
@@ -147,8 +164,11 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 	t.Run("stores and gets mint events", func(t *testing.T) {
 		db := createBadger(t)
-		tx := createBadgerTransaction(t, db)
-		err := tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
+		tx, err := createBadgerTransaction(t, db)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
 			{
 				Slot:        big.NewInt(1),
 				To:          common.HexToAddress("0x3"),
@@ -194,7 +214,7 @@ func createBadger(t *testing.T) *badger.DB {
 	return db
 }
 
-func createBadgerTransaction(t *testing.T, db *badger.DB) state.Tx {
+func createBadgerTransaction(t *testing.T, db *badger.DB) (state.Tx, error) {
 	t.Helper()
 	badgerService := badgerStorage.NewService(db)
 	stateService := v1.NewStateService(badgerService)
