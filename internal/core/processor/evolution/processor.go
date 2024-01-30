@@ -179,7 +179,6 @@ func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.Eth
 }
 
 func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event) error {
-
 	for _, event := range events {
 		e, ok := event.(scan.EventMintedWithExternalURI)
 		if ok {
@@ -197,10 +196,9 @@ func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event
 				return err
 			}
 
-			if err := tx.SetNextEvoEventBlockForOwnershipContract(e.Contract.String(), e.BlockNumber); err != nil {
+			if err := tx.SetNextEvoEventBlock(e.Contract.String(), e.BlockNumber); err != nil {
 				return err
 			}
-
 		}
 	}
 

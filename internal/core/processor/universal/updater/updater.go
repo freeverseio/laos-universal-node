@@ -59,7 +59,7 @@ func (u *updater) GetModelTransferEvents(
 	}
 
 	modelTransferEvents := make(map[uint64]map[string][]model.ERC721Transfer)
-
+	
 	for i := range scanEvents {
 		if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
 			eventTransfer := model.ERC721Transfer{
@@ -73,6 +73,10 @@ func (u *updater) GetModelTransferEvents(
 			// timestamp will be updated later to avoid calling headerByNumber for every event.
 			// Instead, it will be updated only once for every block
 			contractString := strings.ToLower(eventTransfer.Contract.String())
+			
+			if _, ok := modelTransferEvents[scanEvent.BlockNumber]; !ok {
+				modelTransferEvents[scanEvent.BlockNumber] = make(map[string][]model.ERC721Transfer)
+			}
 			modelTransferEvents[scanEvent.BlockNumber][contractString] = append(modelTransferEvents[scanEvent.BlockNumber][contractString], eventTransfer)
 		}
 	}
@@ -90,6 +94,7 @@ func (u *updater) UpdateState(
 ) error {
 
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
+		slog.Debug("Zoran debug processing block", "block", block)
 		header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
 		if err != nil {
 			slog.Debug("error retrieving header for block number", "blockNumber", block, "err", err.Error())
@@ -115,11 +120,12 @@ func (u *updater) UpdateState(
 			evoBlockTimestamp := uint64(0)
 			evoEvents := make([]model.MintedWithExternalURI, 0)
 			for evoBlockTimestamp < blockTime {
-				newBlock, err := tx.GetNextEvoEventBlockForOwnershipContract(contract, evoBlock)
+				newBlock, err := tx.GetNextEvoEventBlock(strings.ToLower(collection.String()), evoBlock)
 				if err != nil {
 					return fmt.Errorf("error occurred retrieving next evo event block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
 				}
 
+				slog.Debug("Zoran debug after GetNextEvoBlock", "contract", contract, "newBlock", newBlock, "evoBlock", evoBlock)
 				if newBlock == 0 || newBlock == evoBlock {
 					break
 				}
@@ -135,6 +141,7 @@ func (u *updater) UpdateState(
 				evoEvents = append(evoEvents, mintedEvents...)
 			}
 
+			slog.Debug("zoran debug before updating state", "contract", contract, "evoEvents", len(evoEvents), "transferEvents", len(transferEvents[block][contract]))
 			// Now we update state if there are new events
 			if len(evoEvents) > 0 || len(transferEvents[block][contract]) > 0 {
 				err = tx.LoadContractTrees(common.HexToAddress(contract))
@@ -171,7 +178,7 @@ func (u *updater) UpdateState(
 			}
 
 		}
-
+		slog.Debug("Zoran debug before tagging root", "block", block)
 		if err := tx.TagRoot(int64(block)); err != nil {
 			slog.Error("error occurred while tagging root", "err", err.Error())
 			return err

@@ -132,7 +132,7 @@ func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
 
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
-		return  fmt.Errorf("contract %s does not exist", contract.String())
+		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
 	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
@@ -154,9 +154,11 @@ func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
 
 	return nil
 }
+
 // TODO check if it can be merged with LoadContractState
 // LoadContractTrees loads the merkle trees in memory for contractAddress
 func (t *tx) LoadContractTrees(contractAddress common.Address) error {
+	slog.Debug("LoadContractTrees", "contract", contractAddress.String())
 	if !t.isTreeSetForContract(contractAddress) {
 		ownTree, enumTree, enumTotTree, err := t.createTreesForContract(contractAddress)
 		if err != nil {
@@ -384,9 +386,7 @@ func (t *tx) Checkout(blockNumber int64) error {
 	return t.accountTree.Checkout(blockNumber)
 }
 
-
-func (t *tx) UpdateContractState(contract common.Address) error{
-	slog.Debug("Updating contract state in the account tree", "contract", contract.String())
+func (t *tx) UpdateContractState(contract common.Address) error {
 
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
@@ -410,6 +410,12 @@ func (t *tx) UpdateContractState(contract common.Address) error{
 
 	ownershipRoot := ownershipTree.Root()
 
+	slog.Debug("UpdatingContractState in the account tree",
+		"contract", contract.String(),
+		"enumeratedRoot", enumeratedRoot.String(),
+		"enumeratedTotalRoot", enumeratedTotalRoot.String(),
+		"ownershipRoot", ownershipRoot.String(), "totalSupply", totalSupply)
+
 	accountData := account.AccountData{
 		EnumeratedRoot:      enumeratedRoot,
 		EnumeratedTotalRoot: enumeratedTotalRoot,
@@ -420,7 +426,8 @@ func (t *tx) UpdateContractState(contract common.Address) error{
 	return t.accountTree.SetAccountData(&accountData, contract)
 }
 
-func (t *tx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error{
+func (t *tx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error {
+	slog.Debug("SetLastProcessedEvoBlockForOwnershipContract", "contract", contract.String())
 	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
 		return err
@@ -428,6 +435,7 @@ func (t *tx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Addres
 	accountData.LastProcessedEvoBlock = blockNumber
 	return t.accountTree.SetAccountData(accountData, contract)
 }
+
 func (t *tx) GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error) {
 	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
@@ -435,7 +443,6 @@ func (t *tx) GetLastProcessedEvoBlockForOwnershipContract(contract common.Addres
 	}
 	return accountData.LastProcessedEvoBlock, nil
 }
-
 
 // Discards transaction
 func (t *tx) Discard() {

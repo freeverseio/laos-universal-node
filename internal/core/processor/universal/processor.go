@@ -259,7 +259,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		return err
 	}
 
-	var transferEvents map[uint64]map[string][]model.ERC721Transfer
+	transferEvents := make(map[uint64]map[string][]model.ERC721Transfer)
 	if len(contracts) > 0 {
 		transferEvents, err = p.updater.GetModelTransferEvents(ctx, startingBlock, lastBlock, contracts)
 		if err != nil {
@@ -286,7 +286,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
 	if (previousLastBlockDB.Hash != common.Hash{}) {
 		// we check the previously stored last block and check if it is still on the same branch as the current last block
-		// othwerwise we return an reorg error
+		// otherwise we return an reorg error
 		err = p.checkBlockForReorg(ctx, previousLastBlockDB)
 		if err != nil {
 			return err

@@ -1,7 +1,6 @@
 package ownership
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -11,13 +10,10 @@ import (
 )
 
 const (
-	contractCurrentEvoEventBlockPrefix = "ownership_contract_current_evo_event_block_"
-	contractNextEvoEventBlockPrefix    = "ownership_contract_next_evo_event_block_"
-	contractLastEvoEventBlockPrefix    = "ownership_contract_last_evo_event_block_"
-	lastBlock                          = "ownership_last_block"
-	ownershipBlockTag                  = "ownership_block_"
-	blockNumberDigits                  = 18
-	numberOfBlocksToKeep               = 250
+	lastBlock            = "ownership_last_block"
+	ownershipBlockTag    = "ownership_block_"
+	blockNumberDigits    = 18
+	numberOfBlocksToKeep = 250
 )
 
 type service struct {
@@ -53,53 +49,6 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
 	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
 	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
-}
-
-// SetNextEvoEventBlockForOwnershipContract is used by evo processor for storing the next block that has events
-func (s *service) SetNextEvoEventBlockForOwnershipContract(contract string, blockNumber uint64) error {
-	value, err := s.tx.Get([]byte(contractLastEvoEventBlockPrefix + strings.ToLower(contract)))
-	if err != nil {
-		return err
-	}
-
-	uintValue := uint64(0)
-	if value == nil && len(value) > 0 {
-		uintValue, err = strconv.ParseUint(string(value), 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-
-	nextKey := fmt.Sprintf("%s_%s_%s",
-		contractNextEvoEventBlockPrefix,
-		strings.ToLower(contract),
-		strconv.FormatUint(uintValue, 10))
-
-	err = s.tx.Set([]byte(nextKey), []byte(strconv.FormatUint(blockNumber, 10)))
-	if err != nil {
-		return err
-	}
-
-	return s.tx.Set([]byte(contractLastEvoEventBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(blockNumber, 10)))
-}
-
-// GetNextEvoEventBlockForOwnershipContract is used by universal processor for getting the next block that has events
-func (s *service) GetNextEvoEventBlockForOwnershipContract(contract string, blockNumber uint64) (uint64, error) {
-	key := fmt.Sprintf("%s_%s_%s",
-	contractNextEvoEventBlockPrefix,
-	strings.ToLower(contract),
-	strconv.FormatUint(blockNumber, 10))
-
-	value, err := s.tx.Get([]byte(key))
-	if err != nil {
-		return 0, err
-	}
-
-	if value == nil && len(value) > 0 {
-		return 0, nil
-	}
-
-	return strconv.ParseUint(string(value), 10, 64)
 }
 
 func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
