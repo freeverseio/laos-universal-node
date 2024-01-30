@@ -60,8 +60,8 @@ func (d *discoverer) DiscoverContracts(
 	ctx context.Context,
 	tx state.Tx,
 	startingBlock,
-	lastBlock uint64) (map[common.Address]uint64, error) {
-
+	lastBlock uint64,
+) (map[common.Address]uint64, error) {
 	scannedContracts, err := d.scanner.ScanNewUniversalEvents(ctx,
 		big.NewInt(int64(startingBlock)),
 		big.NewInt(int64(lastBlock)))

@@ -59,7 +59,7 @@ func (u *updater) GetModelTransferEvents(
 	}
 
 	modelTransferEvents := make(map[uint64]map[string][]model.ERC721Transfer)
-	
+
 	for i := range scanEvents {
 		if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
 			eventTransfer := model.ERC721Transfer{
@@ -73,7 +73,7 @@ func (u *updater) GetModelTransferEvents(
 			// timestamp will be updated later to avoid calling headerByNumber for every event.
 			// Instead, it will be updated only once for every block
 			contractString := strings.ToLower(eventTransfer.Contract.String())
-			
+
 			if _, ok := modelTransferEvents[scanEvent.BlockNumber]; !ok {
 				modelTransferEvents[scanEvent.BlockNumber] = make(map[string][]model.ERC721Transfer)
 			}
@@ -92,7 +92,6 @@ func (u *updater) UpdateState(
 	startingBlock uint64,
 	lastBlockData model.Block,
 ) error {
-
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
 		slog.Debug("Zoran debug processing block", "block", block)
 		header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
@@ -104,7 +103,7 @@ func (u *updater) UpdateState(
 
 		for _, contract := range contracts {
 			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
-				if block<blockWhenDiscovered {
+				if block < blockWhenDiscovered {
 					continue
 				}
 			}
@@ -134,7 +133,6 @@ func (u *updater) UpdateState(
 				if err != nil {
 					return fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
 						contract, collection.String(), err)
-
 				}
 				evoBlockTimestamp = mintedEvents[0].Timestamp
 				evoBlock = newBlock
@@ -174,9 +172,7 @@ func (u *updater) UpdateState(
 				if err != nil {
 					return fmt.Errorf("error occurred while updating current evo block for contract %s: %w", contract, err)
 				}
-
 			}
-
 		}
 		slog.Debug("Zoran debug before tagging root", "block", block)
 		if err := tx.TagRoot(int64(block)); err != nil {

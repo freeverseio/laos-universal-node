@@ -387,7 +387,6 @@ func (t *tx) Checkout(blockNumber int64) error {
 }
 
 func (t *tx) UpdateContractState(contract common.Address) error {
-
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())

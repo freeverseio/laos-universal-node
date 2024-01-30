@@ -182,4 +182,3 @@ func (b *tree) DeleteRootTag(blockNumber int64) error {
 	tagKey := tagPrefix + strconv.FormatInt(blockNumber, 10)
 	return b.store.Delete([]byte(tagKey))
 }
-

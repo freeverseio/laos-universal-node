@@ -272,7 +272,6 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	if err != nil {
 		return err
 	}
-	
 
 	slog.Debug("setting ownership end range block hash for block number",
 		"blockNumber", lastBlockData.Number, "blockHash", lastBlockData.Hash, "timestamp", lastBlockData.Timestamp)

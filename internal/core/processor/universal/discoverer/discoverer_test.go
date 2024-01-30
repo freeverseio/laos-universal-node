@@ -146,7 +146,6 @@ func TestDiscoverContractsErrorOnScanning(t *testing.T) {
 
 		_, err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
 		assertError(t, expectedError, err)
-
 	})
 }
 
@@ -224,8 +223,6 @@ func TestDiscoverContractsErrorOnStoring(t *testing.T) {
 		assertError(t, expectedError, err)
 	})
 }
-
-
 func TestDiscoverContractsSuccess(t *testing.T) {
 	t.Parallel()
 
