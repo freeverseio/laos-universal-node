@@ -19,8 +19,6 @@ import (
 
 func TestFilterEventLogsSuccess(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	// Define your test cases
 	tests := []struct {
@@ -93,6 +91,8 @@ func TestFilterEventLogsSuccess(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			t.Parallel()
 			mockStateService := mockTx.NewMockService(ctrl)
 			mockOwnershipClient := mockClient.NewMockEthClient(ctrl)
@@ -132,15 +132,12 @@ func TestFilterEventLogsSuccess(t *testing.T) {
 			}
 
 			assertLogsEqual(t, logs, tt.expectedLogs)
-
 		})
 	}
 }
 
 func TestFilterEventLogsError(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	tests := []struct {
 		name        string
@@ -195,6 +192,8 @@ func TestFilterEventLogsError(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			mockStateService := mockTx.NewMockService(ctrl)
 			mockOwnershipClient := mockClient.NewMockEthClient(ctrl)
 			mockEvoClient := mockClient.NewMockEthClient(ctrl)
@@ -216,7 +215,7 @@ func TestFilterEventLogsError(t *testing.T) {
 	}
 }
 
-func assertLogsEqual(t *testing.T, logs []types.Log, expectedLogs []types.Log) {
+func assertLogsEqual(t *testing.T, logs, expectedLogs []types.Log) {
 	if len(logs) != len(expectedLogs) {
 		t.Errorf("expected %d logs, got %d", len(expectedLogs), len(logs))
 		return
