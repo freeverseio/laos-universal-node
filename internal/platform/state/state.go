@@ -75,4 +75,6 @@ type EvolutionSyncState interface {
 	GetLastEvoBlock() (model.Block, error)
 	GetCorrespondingEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error)
 	SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber uint64) error
+	SetEvoEventOwnershipBlockNumber(ownershipBlockNumber uint64, event *model.MintedWithExternalURI, contract string) error
+	GetEvoEventOwnershipBlockNumber(blockNumber uint64, txIndex uint64, contract string) (uint64, error)
 }

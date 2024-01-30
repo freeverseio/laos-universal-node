@@ -3,6 +3,7 @@ package sync
 import (
 	"bytes"
 	"encoding/gob"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -42,4 +43,16 @@ func GetBlock(tx storage.Tx, key string) (model.Block, error) {
 		return defaultBlock, err
 	}
 	return block, nil
+}
+
+// we add digits to the block number and tx index to make sure the keys are sorted correctly
+// since badger sorts the keys lexicographically
+func FormatNumberForSorting(blockNumber uint64, blockNumberDigits uint16) string {
+	// Convert the block number to a string
+	blockNumberString := strconv.FormatUint(blockNumber, 10)
+	// Pad with leading zeros if shorter
+	for len(blockNumberString) < int(blockNumberDigits) {
+		blockNumberString = "0" + blockNumberString
+	}
+	return blockNumberString
 }

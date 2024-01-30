@@ -1,6 +1,7 @@
 package evolution
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -11,6 +12,8 @@ import (
 const (
 	lastBlock         = "evo_last_block"
 	ownershipBlockTag = "evo_block_"
+	evoEvent          = "evo_event_"
+	blockNumberDigits = 18
 )
 
 type service struct {
@@ -44,4 +47,22 @@ func (s *service) GetCorrespondingEvoBlockNumber(ownershipBlockNumber uint64) (u
 
 func (s *service) SetCorrespondingEvoBlockNumber(ownershipBlockNumber, evoBlockNumber uint64) error {
 	return s.tx.Set([]byte(ownershipBlockTag+strconv.Itoa(int(ownershipBlockNumber))), []byte(strconv.Itoa(int(evoBlockNumber))))
+}
+
+func (s *service) SetEvoEventOwnershipBlockNumber(ownershipBlockNumber uint64, event *model.MintedWithExternalURI, contract string) error {
+	key := fmt.Sprintf("%s%s_%s_%d", evoEvent, sync.FormatNumberForSorting(event.BlockNumber, blockNumberDigits), contract, event.TxIndex)
+	value := strconv.FormatUint(ownershipBlockNumber, 10)
+	return s.tx.Set([]byte(key), []byte(value))
+}
+
+func (s *service) GetEvoEventOwnershipBlockNumber(blockNumber uint64, txIndex uint64, contract string) (uint64, error) {
+	key := fmt.Sprintf("%s%s_%s_%d", evoEvent, sync.FormatNumberForSorting(blockNumber, blockNumberDigits), contract, txIndex)
+	value, err := s.tx.Get([]byte(key))
+	if err != nil {
+		return 0, err
+	}
+	if value == nil {
+		return 0, nil
+	}
+	return strconv.ParseUint(string(value), 10, 64)
 }
