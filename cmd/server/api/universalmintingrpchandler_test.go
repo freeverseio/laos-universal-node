@@ -67,7 +67,7 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			name: "Should execute OwnerOf with an error from create contract",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx) {
 				setUpTransactionMocks(t, storage, tx)
-				tx.EXPECT().LoadMerkleTrees(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(fmt.Errorf("error")).Times(1)
+				tx.EXPECT().LoadContractTrees(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(fmt.Errorf("error")).Times(1)
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x6352211e0000000000000000000000021b0b4a597c764400ea157ab84358c8788a89cd28","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
@@ -223,12 +223,12 @@ func setupMocks(t *testing.T, mockSetup func(storage *mockTx.MockService, tx *mo
 
 func setupMerkleTreeMocks(t *testing.T, tx *mockTx.MockTx) {
 	t.Helper()
-	tx.EXPECT().LoadMerkleTrees(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil).Times(1)
+	tx.EXPECT().LoadContractTrees(common.HexToAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A")).Return(nil).Times(1)
 }
 
 func setUpTransactionMocks(t *testing.T, storage *mockTx.MockService, tx *mockTx.MockTx) {
 	t.Helper()
-	storage.EXPECT().NewTransaction().Return(tx).Times(1)
+	storage.EXPECT().NewTransaction().Return(tx, nil).Times(1)
 	tx.EXPECT().Discard().AnyTimes()
 }
 

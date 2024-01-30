@@ -36,9 +36,9 @@ type State interface {
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	LoadContractTrees(contractAddress common.Address) error
+	UpdateContractState(contract common.Address) error
 	SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error
 	GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error)
-	UpdateContractState(contract common.Address) error
 	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error
@@ -61,7 +61,6 @@ type EvolutionContractState interface {
 }
 
 type OwnershipSyncState interface {
-
 	SetLastOwnershipBlock(block model.Block) error
 	GetLastOwnershipBlock() (model.Block, error)
 	GetOwnershipBlock(blockNumber uint64) (model.Block, error)
@@ -72,7 +71,7 @@ type OwnershipSyncState interface {
 }
 
 type EvolutionSyncState interface {
-	SetNextEvoEventBlock(contract string, blockNumber uint64) (error)
+	SetNextEvoEventBlock(contract string, blockNumber uint64) error
 	GetNextEvoEventBlock(contract string, blockNumber uint64) (uint64, error)
 
 	SetLastEvoBlock(block model.Block) error

@@ -89,7 +89,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			ctx := context.TODO()
 			stateService, tx, client, _, _, _ := createMocks(t)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastOwnershipBlock().Return(tt.startingBlockData, tt.startingBlockError)
 			tx.EXPECT().Discard()
 			if tt.userProvidedBlock == 0 && tt.startingBlockData.Number == 0 && tt.startingBlockError == nil {
@@ -272,7 +272,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			stateService, tx, client, scanner, discoverer, updater := createMocks(t)
 			p := universal.NewProcessor(client, stateService, scanner, &config.Config{}, discoverer, updater)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(tt.blockHeaderFromChain, nil)
 
@@ -284,8 +284,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			discoverer.EXPECT().ShouldDiscover(tx, tt.startingBlock, tt.blockDataFromDB.Number).Return(tt.discoverReturn, nil)
 			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
 
-			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(tt.updateReturn, nil)
-			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, tt.updateReturn, tt.blockDataFromDB).Return(nil)
+			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(make(map[uint64]map[string][]model.ERC721Transfer), nil)
+			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, nil, tt.updateReturn, tt.startingBlock, tt.blockDataFromDB).Return(nil)
 
 			tx.EXPECT().Commit().Return(nil).Times(tt.expectedTxCommit)
 			tx.EXPECT().Discard()
@@ -467,8 +467,8 @@ func TestRecoverFromReorg(t *testing.T) {
 			tx.EXPECT().DeleteOrphanRootTags(int64(tt.safeBlockNumber)+1, int64(tt.startingBlock)).Return(nil).Times(1)
 
 			for _, contract := range tt.getAllContracts {
-				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil).Times(1)
-				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
+				tx.EXPECT().LoadContractTrees(common.HexToAddress(contract)).Return(nil).Times(1)
+				tx.EXPECT().Checkout(int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
 			}
 			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
 			block, err := p.RecoverFromReorg(ctx, tt.startingBlock)
