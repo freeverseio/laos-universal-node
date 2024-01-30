@@ -26,10 +26,11 @@ const (
 // AccountData defines the roots from enumerated, enumerated total and ownership merkle trees
 // placed in data of the leaf of the tree
 type AccountData struct {
-	EnumeratedRoot      common.Hash
-	EnumeratedTotalRoot common.Hash
-	OwnershipRoot       common.Hash
-	TotalSupply         int64
+	EnumeratedRoot        common.Hash
+	EnumeratedTotalRoot   common.Hash
+	OwnershipRoot         common.Hash
+	TotalSupply           int64
+	LastProcessedEvoBlock uint64
 }
 
 // Tree defines interface for the account tree
@@ -174,3 +175,4 @@ func (b *tree) DeleteRootTag(blockNumber int64) error {
 	tagKey := tagPrefix + strconv.FormatInt(blockNumber, 10)
 	return b.store.Delete([]byte(tagKey))
 }
+

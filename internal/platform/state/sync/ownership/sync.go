@@ -55,23 +55,6 @@ func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
 	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
 }
 
-// SetCurrentEvoBlockForOwnershipContract is used by universal processor updater to store the last block number
-func (s *service) SetCurrentEvoBlockForOwnershipContract(contract string, number uint64) error {
-	return s.tx.Set([]byte(contractCurrentEvoEventBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(number, 10)))
-}
-
-// GetCurrentEvoBlockForOwnershipContract is used by universal processor updater to get the last block number
-func (s *service) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
-	value, err := s.tx.Get([]byte(contractCurrentEvoEventBlockPrefix + strings.ToLower(contract)))
-	if err != nil {
-		return 0, err
-	}
-	if value == nil {
-		value = []byte("0")
-	}
-	return strconv.ParseUint(string(value), 10, 64)
-}
-
 // SetNextEvoEventBlockForOwnershipContract is used by evo processor for storing the next block that has events
 func (s *service) SetNextEvoEventBlockForOwnershipContract(contract string, blockNumber uint64) error {
 	value, err := s.tx.Get([]byte(contractLastEvoEventBlockPrefix + strings.ToLower(contract)))

@@ -101,43 +101,36 @@ func (u *updater) UpdateState(
 				return fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contract, err)
 			}
 
+			evoBlock, err := tx.GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract))
+			if err != nil {
+				return fmt.Errorf("error occurred retrieving the last processed evo block for ownership contract %s: %w", contract, err)
+			}
 			evoBlockTimestamp := uint64(0)
 			evoEvents := make([]model.MintedWithExternalURI, 0)
 			for evoBlockTimestamp < blockTime {
-				// first we get all mint events before this block
-				evoBlock, err := tx.GetCurrentEvoBlockForOwnershipContract(contract)
+				newBlock, err := tx.GetNextEvoEventBlockForOwnershipContract(contract, evoBlock)
 				if err != nil {
-					return fmt.Errorf("error occurred retrieving current evo block for ownership contract %s: %w", contract, err)
+					return fmt.Errorf("error occurred retrieving next evo event block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
 				}
-				mintedEvents, err := tx.GetMintedWithExternalURIEvents(collection.String(), evoBlock)
+
+				if newBlock == 0 || newBlock == evoBlock {
+					break
+				}
+
+				mintedEvents, err := tx.GetMintedWithExternalURIEvents(collection.String(), newBlock)
 				if err != nil {
 					return fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
 						contract, collection.String(), err)
 
 				}
-
 				evoBlockTimestamp = mintedEvents[0].Timestamp
-				if evoBlockTimestamp < blockTime {
-					evoEvents = append(evoEvents, mintedEvents...)
-
-					newBlock, err := tx.GetNextEvoEventBlockForOwnershipContract(contract, evoBlock)
-					if err != nil {
-						return fmt.Errorf("error occurred retrieving next evo event block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
-					}
-
-					if newBlock == 0 || newBlock == evoBlock {
-						break
-					}
-					err = tx.SetCurrentEvoBlockForOwnershipContract(contract, newBlock)
-					if err != nil {
-						return fmt.Errorf("error occurred setting current evo block for ownership contract %s and evo block %d: %w", contract, evoBlock, err)
-					}
-				}
+				evoBlock = newBlock
+				evoEvents = append(evoEvents, mintedEvents...)
 			}
 
 			// Now we update state if there are new events
 			if len(evoEvents) > 0 || len(transferEvents[block][contract]) > 0 {
-				err = tx.LoadMerkleTrees(common.HexToAddress(contract))
+				err = tx.LoadContractTrees(common.HexToAddress(contract))
 				if err != nil {
 					slog.Error("error creating merkle trees", "err", err)
 					return err
@@ -162,6 +155,12 @@ func (u *updater) UpdateState(
 				if err != nil {
 					return fmt.Errorf("error occurred while updating contract state for contract %s: %w", contract, err)
 				}
+
+				err = tx.SetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract), evoBlock)
+				if err != nil {
+					return fmt.Errorf("error occurred while updating current evo block for contract %s: %w", contract, err)
+				}
+
 			}
 
 		}

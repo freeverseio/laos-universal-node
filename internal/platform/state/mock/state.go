@@ -249,21 +249,6 @@ func (mr *MockTxMockRecorder) GetCollectionAddress(contract any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCollectionAddress", reflect.TypeOf((*MockTx)(nil).GetCollectionAddress), contract)
 }
 
-// GetCurrentEvoBlockForOwnershipContract mocks base method.
-func (m *MockTx) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlockForOwnershipContract", contract)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentEvoBlockForOwnershipContract indicates an expected call of GetCurrentEvoBlockForOwnershipContract.
-func (mr *MockTxMockRecorder) GetCurrentEvoBlockForOwnershipContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).GetCurrentEvoBlockForOwnershipContract), contract)
-}
-
 // GetExistingERC721UniversalContracts mocks base method.
 func (m *MockTx) GetExistingERC721UniversalContracts(contracts []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -307,6 +292,21 @@ func (m *MockTx) GetLastOwnershipBlock() (model.Block, error) {
 func (mr *MockTxMockRecorder) GetLastOwnershipBlock() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).GetLastOwnershipBlock))
+}
+
+// GetLastProcessedEvoBlockForOwnershipContract mocks base method.
+func (m *MockTx) GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastProcessedEvoBlockForOwnershipContract", contract)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastProcessedEvoBlockForOwnershipContract indicates an expected call of GetLastProcessedEvoBlockForOwnershipContract.
+func (mr *MockTxMockRecorder) GetLastProcessedEvoBlockForOwnershipContract(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastProcessedEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).GetLastProcessedEvoBlockForOwnershipContract), contract)
 }
 
 // GetLastTaggedBlock mocks base method.
@@ -384,32 +384,18 @@ func (mr *MockTxMockRecorder) HasERC721UniversalContract(contract any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasERC721UniversalContract", reflect.TypeOf((*MockTx)(nil).HasERC721UniversalContract), contract)
 }
 
-// LoadContractState mocks base method.
-func (m *MockTx) LoadContractState(contract common.Address) error {
+// LoadContractTrees mocks base method.
+func (m *MockTx) LoadContractTrees(contractAddress common.Address) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadContractState", contract)
+	ret := m.ctrl.Call(m, "LoadContractTrees", contractAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// LoadContractState indicates an expected call of LoadContractState.
-func (mr *MockTxMockRecorder) LoadContractState(contract any) *gomock.Call {
+// LoadContractTrees indicates an expected call of LoadContractTrees.
+func (mr *MockTxMockRecorder) LoadContractTrees(contractAddress any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadContractState", reflect.TypeOf((*MockTx)(nil).LoadContractState), contract)
-}
-
-// LoadMerkleTrees mocks base method.
-func (m *MockTx) LoadMerkleTrees(contractAddress common.Address) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadMerkleTrees", contractAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LoadMerkleTrees indicates an expected call of LoadMerkleTrees.
-func (mr *MockTxMockRecorder) LoadMerkleTrees(contractAddress any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMerkleTrees", reflect.TypeOf((*MockTx)(nil).LoadMerkleTrees), contractAddress)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadContractTrees", reflect.TypeOf((*MockTx)(nil).LoadContractTrees), contractAddress)
 }
 
 // Mint mocks base method.
@@ -441,20 +427,6 @@ func (mr *MockTxMockRecorder) OwnerOf(contract, tokenId any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerOf", reflect.TypeOf((*MockTx)(nil).OwnerOf), contract, tokenId)
 }
 
-// SetCurrentEvoBlockForOwnershipContract mocks base method.
-func (m *MockTx) SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlockForOwnershipContract", contract, blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentEvoBlockForOwnershipContract indicates an expected call of SetCurrentEvoBlockForOwnershipContract.
-func (mr *MockTxMockRecorder) SetCurrentEvoBlockForOwnershipContract(contract, blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).SetCurrentEvoBlockForOwnershipContract), contract, blockNumber)
-}
-
 // SetLastEvoBlock mocks base method.
 func (m *MockTx) SetLastEvoBlock(block model.Block) error {
 	m.ctrl.T.Helper()
@@ -481,6 +453,20 @@ func (m *MockTx) SetLastOwnershipBlock(block model.Block) error {
 func (mr *MockTxMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetLastOwnershipBlock), block)
+}
+
+// SetLastProcessedEvoBlockForOwnershipContract mocks base method.
+func (m *MockTx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLastProcessedEvoBlockForOwnershipContract", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLastProcessedEvoBlockForOwnershipContract indicates an expected call of SetLastProcessedEvoBlockForOwnershipContract.
+func (mr *MockTxMockRecorder) SetLastProcessedEvoBlockForOwnershipContract(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastProcessedEvoBlockForOwnershipContract", reflect.TypeOf((*MockTx)(nil).SetLastProcessedEvoBlockForOwnershipContract), contract, blockNumber)
 }
 
 // SetNextEvoEventBlockForOwnershipContract mocks base method.
@@ -736,6 +722,21 @@ func (mr *MockStateMockRecorder) Get(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockState)(nil).Get), key)
 }
 
+// GetLastProcessedEvoBlockForOwnershipContract mocks base method.
+func (m *MockState) GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastProcessedEvoBlockForOwnershipContract", contract)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastProcessedEvoBlockForOwnershipContract indicates an expected call of GetLastProcessedEvoBlockForOwnershipContract.
+func (mr *MockStateMockRecorder) GetLastProcessedEvoBlockForOwnershipContract(contract any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastProcessedEvoBlockForOwnershipContract", reflect.TypeOf((*MockState)(nil).GetLastProcessedEvoBlockForOwnershipContract), contract)
+}
+
 // GetLastTaggedBlock mocks base method.
 func (m *MockState) GetLastTaggedBlock() (int64, error) {
 	m.ctrl.T.Helper()
@@ -751,32 +752,18 @@ func (mr *MockStateMockRecorder) GetLastTaggedBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockState)(nil).GetLastTaggedBlock))
 }
 
-// LoadContractState mocks base method.
-func (m *MockState) LoadContractState(contract common.Address) error {
+// LoadContractTrees mocks base method.
+func (m *MockState) LoadContractTrees(contractAddress common.Address) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadContractState", contract)
+	ret := m.ctrl.Call(m, "LoadContractTrees", contractAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// LoadContractState indicates an expected call of LoadContractState.
-func (mr *MockStateMockRecorder) LoadContractState(contract any) *gomock.Call {
+// LoadContractTrees indicates an expected call of LoadContractTrees.
+func (mr *MockStateMockRecorder) LoadContractTrees(contractAddress any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadContractState", reflect.TypeOf((*MockState)(nil).LoadContractState), contract)
-}
-
-// LoadMerkleTrees mocks base method.
-func (m *MockState) LoadMerkleTrees(contractAddress common.Address) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadMerkleTrees", contractAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LoadMerkleTrees indicates an expected call of LoadMerkleTrees.
-func (mr *MockStateMockRecorder) LoadMerkleTrees(contractAddress any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMerkleTrees", reflect.TypeOf((*MockState)(nil).LoadMerkleTrees), contractAddress)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadContractTrees", reflect.TypeOf((*MockState)(nil).LoadContractTrees), contractAddress)
 }
 
 // Mint mocks base method.
@@ -806,6 +793,20 @@ func (m *MockState) OwnerOf(contract common.Address, tokenId *big.Int) (common.A
 func (mr *MockStateMockRecorder) OwnerOf(contract, tokenId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnerOf", reflect.TypeOf((*MockState)(nil).OwnerOf), contract, tokenId)
+}
+
+// SetLastProcessedEvoBlockForOwnershipContract mocks base method.
+func (m *MockState) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLastProcessedEvoBlockForOwnershipContract", contract, blockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLastProcessedEvoBlockForOwnershipContract indicates an expected call of SetLastProcessedEvoBlockForOwnershipContract.
+func (mr *MockStateMockRecorder) SetLastProcessedEvoBlockForOwnershipContract(contract, blockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastProcessedEvoBlockForOwnershipContract", reflect.TypeOf((*MockState)(nil).SetLastProcessedEvoBlockForOwnershipContract), contract, blockNumber)
 }
 
 // TagRoot mocks base method.
@@ -1124,21 +1125,6 @@ func (mr *MockOwnershipSyncStateMockRecorder) GetAllStoredBlockNumbers() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStoredBlockNumbers", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetAllStoredBlockNumbers))
 }
 
-// GetCurrentEvoBlockForOwnershipContract mocks base method.
-func (m *MockOwnershipSyncState) GetCurrentEvoBlockForOwnershipContract(contract string) (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentEvoBlockForOwnershipContract", contract)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentEvoBlockForOwnershipContract indicates an expected call of GetCurrentEvoBlockForOwnershipContract.
-func (mr *MockOwnershipSyncStateMockRecorder) GetCurrentEvoBlockForOwnershipContract(contract any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetCurrentEvoBlockForOwnershipContract), contract)
-}
-
 // GetLastOwnershipBlock mocks base method.
 func (m *MockOwnershipSyncState) GetLastOwnershipBlock() (model.Block, error) {
 	m.ctrl.T.Helper()
@@ -1182,20 +1168,6 @@ func (m *MockOwnershipSyncState) GetOwnershipBlock(blockNumber uint64) (model.Bl
 func (mr *MockOwnershipSyncStateMockRecorder) GetOwnershipBlock(blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetOwnershipBlock), blockNumber)
-}
-
-// SetCurrentEvoBlockForOwnershipContract mocks base method.
-func (m *MockOwnershipSyncState) SetCurrentEvoBlockForOwnershipContract(contract string, blockNumber uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentEvoBlockForOwnershipContract", contract, blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentEvoBlockForOwnershipContract indicates an expected call of SetCurrentEvoBlockForOwnershipContract.
-func (mr *MockOwnershipSyncStateMockRecorder) SetCurrentEvoBlockForOwnershipContract(contract, blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentEvoBlockForOwnershipContract", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetCurrentEvoBlockForOwnershipContract), contract, blockNumber)
 }
 
 // SetLastOwnershipBlock mocks base method.

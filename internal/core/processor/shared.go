@@ -40,7 +40,10 @@ func (b *BlockHelper) GetLastBlock(ctx context.Context, startingBlock uint64) (u
 }
 
 func (b *BlockHelper) GetOwnershipInitStartingBlock(ctx context.Context) (uint64, error) {
-	tx := b.stateService.NewTransaction()
+	tx, err := b.stateService.NewTransaction()
+	if err != nil {
+		return 0, fmt.Errorf("error creating a new transaction: %w", err)
+	}
 	defer tx.Discard()
 	startingBlockData, err := tx.GetLastOwnershipBlock()
 	if err != nil {
@@ -51,7 +54,10 @@ func (b *BlockHelper) GetOwnershipInitStartingBlock(ctx context.Context) (uint64
 }
 
 func (b *BlockHelper) GetEvoInitStartingBlock(ctx context.Context) (uint64, error) {
-	tx := b.stateService.NewTransaction()
+	tx, err := b.stateService.NewTransaction()
+	if err != nil {
+		return 0, fmt.Errorf("error creating a new transaction: %w", err)
+	}
 	defer tx.Discard()
 	startingBlockData, err := tx.GetLastEvoBlock()
 	if err != nil {
