@@ -73,7 +73,10 @@ func ownerOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNumb
 	if err != nil {
 		return getErrorResponse(err, id)
 	}
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
@@ -92,7 +95,10 @@ func balanceOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNu
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting owner: %w", err), id)
 	}
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
@@ -104,9 +110,12 @@ func balanceOf(callData erc721.CallData, params ethCallParamsRPCRequest, blockNu
 }
 
 func totalSupply(params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
-	err := checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
+	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error creating merkle trees: %w", err), id)
 	}
@@ -124,7 +133,10 @@ func tokenOfOwnerByIndex(callData erc721.CallData, params ethCallParamsRPCReques
 	if err != nil {
 		return getErrorResponse(fmt.Errorf("error getting owner: %w", err), id)
 	}
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
@@ -140,7 +152,10 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 		return getErrorResponse(fmt.Errorf("error getting tokenId: %w", err), id)
 	}
 
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
@@ -157,7 +172,10 @@ func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNum
 		return getErrorResponse(err, id)
 	}
 
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
 	if err != nil {
@@ -174,7 +192,10 @@ func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNum
 }
 
 func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return getErrorResponse(err, id)
+	}
 	defer tx.Discard()
 	block, err := tx.GetLastOwnershipBlock()
 	if err != nil {
@@ -213,11 +234,6 @@ func getParamAddress(callData erc721.CallData, paramName string) (common.Address
 }
 
 func checkoutBlock(tx state.Tx, contractAddress common.Address, blockNumber string) error {
-	err := tx.LoadMerkleTrees(contractAddress)
-	if err != nil {
-		return err
-	}
-
 	// if block is not latest we should checkout tree for that tag
 	// it is important that this transaction is not commit which is always the case for this transaction
 	if blockNumber != "latest" {
@@ -227,12 +243,17 @@ func checkoutBlock(tx state.Tx, contractAddress common.Address, blockNumber stri
 			return err
 		}
 
-		err = tx.Checkout(contractAddress, num)
+		err = tx.Checkout(num)
 		if err != nil {
-			slog.Error("error occurred checking out merkle tree at block number", "block_number", num,
-				"contract_address", contractAddress, "err", err)
+			slog.Error("error occurred checking out merkle tree at block number", "block_number", num, "err", err)
 			return err
 		}
+	}
+
+	// loading trees after checkout
+	err := tx.LoadContractTrees(contractAddress)
+	if err != nil {
+		return err
 	}
 	return nil
 }

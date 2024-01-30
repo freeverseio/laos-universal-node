@@ -27,6 +27,7 @@ type Updater interface {
 		ctx context.Context,
 		tx state.Tx,
 		contracts []string,
+		newContracts map[common.Address]uint64,
 		modelTransferEvents map[uint64]map[string][]model.ERC721Transfer,
 		startingBlock uint64,
 		lastBlockData model.Block,
@@ -82,6 +83,7 @@ func (u *updater) UpdateState(
 	ctx context.Context,
 	tx state.Tx,
 	contracts []string,
+	newContracts map[common.Address]uint64,
 	transferEvents map[uint64]map[string][]model.ERC721Transfer,
 	startingBlock uint64,
 	lastBlockData model.Block,
@@ -96,6 +98,11 @@ func (u *updater) UpdateState(
 		blockTime := header.Time
 
 		for _, contract := range contracts {
+			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
+				if block<blockWhenDiscovered {
+					continue
+				}
+			}
 			collection, err := tx.GetCollectionAddress(contract)
 			if err != nil {
 				return fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contract, err)

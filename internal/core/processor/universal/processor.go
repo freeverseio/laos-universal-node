@@ -245,10 +245,12 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		slog.Error("error occurred reading contracts from storage", "err", err.Error())
 		return err
 	}
+
+	newContracts := make(map[common.Address]uint64)
 	if shouldDiscover {
-		errDiscover := p.discoverer.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
-		if errDiscover != nil {
-			return errDiscover
+		newContracts, err = p.discoverer.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -266,7 +268,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	}
 
 	// TODO add startingBlock argument
-	err = p.updater.UpdateState(ctx, tx, contracts, transferEvents, startingBlock, lastBlockData)
+	err = p.updater.UpdateState(ctx, tx, contracts, newContracts, transferEvents, startingBlock, lastBlockData)
 	if err != nil {
 		return err
 	}

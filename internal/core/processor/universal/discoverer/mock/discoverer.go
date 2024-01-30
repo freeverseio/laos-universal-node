@@ -12,6 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	common "github.com/ethereum/go-ethereum/common"
 	state "github.com/freeverseio/laos-universal-node/internal/platform/state"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -40,11 +41,12 @@ func (m *MockDiscoverer) EXPECT() *MockDiscovererMockRecorder {
 }
 
 // DiscoverContracts mocks base method.
-func (m *MockDiscoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startingBlock, lastBlock uint64) error {
+func (m *MockDiscoverer) DiscoverContracts(ctx context.Context, tx state.Tx, startingBlock, lastBlock uint64) (map[common.Address]uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DiscoverContracts", ctx, tx, startingBlock, lastBlock)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(map[common.Address]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DiscoverContracts indicates an expected call of DiscoverContracts.
