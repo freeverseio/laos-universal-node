@@ -125,17 +125,6 @@ type EventNewCollecion struct {
 	Owner             common.Address
 }
 
-type ERC721Event struct {
-	Address   common.Address
-	Data      []byte
-	Topics    []common.Hash
-	BlockHash common.Hash
-	TxHash    common.Hash
-	TxIndex   uint
-	Index     uint
-	Removed   bool
-}
-
 // EventMintedWithExternalURI is the LaosEvolution event emitted when a token is minted
 type EventMintedWithExternalURI struct {
 	Slot        *big.Int
@@ -152,7 +141,6 @@ type EventMintedWithExternalURI struct {
 type EventEvolvedWithExternalURI struct {
 	TokenId  *big.Int
 	TokenURI string
-	ERC721Event
 }
 
 func generateEventSignatureHash(event string, params ...string) string {
