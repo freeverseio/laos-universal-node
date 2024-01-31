@@ -122,7 +122,7 @@ func TestMinting(t *testing.T) {
 		defer ctrl.Finish()
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
-		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
+		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2))
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
 		ownershipTree.EXPECT().TokenData(big.NewInt(1)).Return(&tokenData, nil)
