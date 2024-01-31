@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -95,14 +94,20 @@ func (u *updater) UpdateState(
 	lastBlockData model.Block,
 ) error {
 
+	slog.Debug("Zoran TEST 0", "startingBlock", startingBlock, "lastBlockData.Number", lastBlockData.Number)
+	blockTimestamps := getBlockTimestampsParallel(ctx, u.client, startingBlock, lastBlockData.Number)
+
+
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
 		slog.Debug("Zoran TEST 1", "block", block)
-		header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
-		if err != nil {
-			slog.Debug("error retrieving header for block number", "blockNumber", block, "err", err.Error())
-			return err
-		}
-		blockTime := header.Time
+		//header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
+		// if err != nil {
+		// 	slog.Debug("error retrieving header for block number", "blockNumber", block, "err", err.Error())
+		// 	return err
+		// }
+		//blockTime := header.Time
+
+		blockTime := blockTimestamps[block]
 		slog.Debug("Zoran TEST 2", "block", block)
 		for _, contract := range contracts {
 			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
@@ -189,10 +194,10 @@ func (u *updater) UpdateState(
 }
 
 
-func getBlockTimestamp(client *ethclient.Client, blockNumber uint64, wg *sync.WaitGroup, timestamps chan<- map[uint64]uint64) {
+func getBlockTimestamp(ctx context.Context, client blockchain.EthClient, blockNumber uint64, wg *sync.WaitGroup, timestamps chan<- map[uint64]uint64) {
     defer wg.Done()
 
-    header, err := client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(blockNumber))
+    header, err := client.HeaderByNumber(ctx, new(big.Int).SetUint64(blockNumber))
     if err != nil {
         return
     }
@@ -203,13 +208,13 @@ func getBlockTimestamp(client *ethclient.Client, blockNumber uint64, wg *sync.Wa
     timestamps <- map[uint64]uint64{blockNumber: timestamp}
 }
 
-func getBlockTimestampsParallel(client *ethclient.Client, startingBlock, lastBlock uint64) map[uint64]uint64 {
+func getBlockTimestampsParallel(ctx context.Context, client blockchain.EthClient, startingBlock, lastBlock uint64) map[uint64]uint64 {
     var wg sync.WaitGroup
     timestampsChan := make(chan map[uint64]uint64, lastBlock-startingBlock+1)
 
     for blockNumber := startingBlock; blockNumber <= lastBlock; blockNumber++ {
         wg.Add(1)
-        go getBlockTimestamp(client, blockNumber, &wg, timestampsChan)
+        go getBlockTimestamp(ctx, client, blockNumber, &wg, timestampsChan)
     }
 
     // Close the channel when all goroutines are done
