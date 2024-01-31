@@ -27,15 +27,14 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
-	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	formattedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
 	// Saving the block with blocknumber as key
-	return sync.SetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber, block)
+	return sync.SetBlock(s.tx, ownershipBlockTag+formattedOwnershipBlockNumber, block)
 }
 
 func (s *service) SetLastOwnershipBlock(block model.Block) error {
 	// Saving the block with blocknumber as key
-	err := s.SetOwnershipBlock(block.Number, block)
-	if err != nil {
+	if err := s.SetOwnershipBlock(block.Number, block); err != nil {
 		return err
 	}
 	// Saving the block with lastBlock as key
@@ -47,8 +46,8 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 }
 
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
-	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
-	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
+	formattedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	return sync.GetBlock(s.tx, ownershipBlockTag+formattedOwnershipBlockNumber)
 }
 
 func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {
@@ -78,8 +77,7 @@ func (s *service) DeleteOldStoredBlockNumbers() error {
 
 	// Delete all keys beyond the newest 250
 	for _, key := range keys {
-		err := s.tx.Delete(key)
-		if err != nil {
+		if err := s.tx.Delete(key); err != nil {
 			return err
 		}
 	}
@@ -97,8 +95,7 @@ func (s *service) DeleteOrphanBlockData(blockNumberRef uint64) error {
 			return err
 		}
 		if blockNumber > int64(blockNumberRef) {
-			err := s.tx.Delete(key)
-			if err != nil {
+			if err := s.tx.Delete(key); err != nil {
 				return err
 			}
 		}

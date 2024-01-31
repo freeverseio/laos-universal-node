@@ -16,6 +16,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
 	mockScan "github.com/freeverseio/laos-universal-node/internal/platform/scan/mock"
 	mockTx "github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account"
 )
 
 func TestGetModelTransferEvents(t *testing.T) {
@@ -76,7 +77,9 @@ func TestGetEvoEvents(t *testing.T) {
 
 		events := getMockMintedEvents(352, 352)
 		tx.EXPECT().GetCollectionAddress("0x000005555").Return(common.HexToAddress("0x4444"), nil)
-		tx.EXPECT().GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress("0x000005555")).Return(uint64(351), nil)
+		tx.EXPECT().AccountData(common.HexToAddress("0x000005555")).Return(&account.AccountData{
+			LastProcessedEvoBlock: 351,
+		}, nil)
 		tx.EXPECT().GetNextEvoEventBlock(common.HexToAddress("0x4444").String(), uint64(351)).Return(uint64(352), nil)
 		tx.EXPECT().GetMintedWithExternalURIEvents(common.HexToAddress("0x4444").String(), uint64(352)).Return(events, nil)
 
@@ -105,10 +108,7 @@ func TestUpdateContract(t *testing.T) {
 		tx.EXPECT().LoadContractTrees(common.HexToAddress("0x000005555")).Return(nil)
 		tx.EXPECT().Mint(common.HexToAddress("0x000005555"), &evoEvents[0]).Return(nil)
 		tx.EXPECT().Transfer(common.HexToAddress("0x000005555"), &events[0]).Return(nil)
-		tx.EXPECT().UpdateContractState(common.HexToAddress("0x000005555")).Return(nil)
-		tx.EXPECT().SetLastProcessedEvoBlockForOwnershipContract(
-			common.HexToAddress("0x000005555"),
-			uint64(352)).Return(nil)
+		tx.EXPECT().UpdateContractState(common.HexToAddress("0x000005555"), uint64(352)).Return(nil)
 
 		err := uUpdater.UpdateContract(tx, "0x000005555", evoEvents, events, uint64(353), uint64(352))
 		assertError(t, err, nil)

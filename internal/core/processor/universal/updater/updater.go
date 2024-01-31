@@ -113,15 +113,13 @@ func (u *updater) UpdateState(
 			}
 			// Now we update contract storage if there are new events
 			if len(evoEvents) > 0 || len(transferEvents[block][contract]) > 0 {
-				err := UpdateContract(tx, contract, evoEvents, transferEvents[block][contract], block, evoBlock)
-				if err != nil {
+				if err := UpdateContract(tx, contract, evoEvents, transferEvents[block][contract], block, evoBlock); err != nil {
 					return err
 				}
 			}
 		}
 		if err := tx.TagRoot(int64(block)); err != nil {
-			slog.Error("error occurred while tagging root", "err", err.Error())
-			return err
+			return fmt.Errorf("error occurred while tagging root: %w", err)
 		}
 	}
 	return nil
@@ -134,38 +132,25 @@ func UpdateContract(tx state.Tx,
 	block uint64,
 	evoBlock uint64,
 ) error {
-	err := tx.LoadContractTrees(common.HexToAddress(contract))
-	if err != nil {
-		slog.Error("error creating merkle trees", "err", err)
-		return err
+	if err := tx.LoadContractTrees(common.HexToAddress(contract)); err != nil {
+		return fmt.Errorf("error occurred while loading merkle trees for contract %s: %w", contract, err)
 	}
 
 	for i := range evoEvents {
 		mintEvent := evoEvents[i]
-		err = tx.Mint(common.HexToAddress(contract), &mintEvent)
-		if err != nil {
+		if err := tx.Mint(common.HexToAddress(contract), &mintEvent); err != nil {
 			return fmt.Errorf("error occurred while updating state with mint event %v: %w", mintEvent, err)
 		}
 	}
 
 	for i := range transferEvents {
 		transferEvent := transferEvents[i]
-		err = tx.Transfer(common.HexToAddress(contract), &transferEvent)
-		if err != nil {
+		if err := tx.Transfer(common.HexToAddress(contract), &transferEvent); err != nil {
 			return fmt.Errorf("error occurred while updating state with transfer event %v: %w", transferEvent, err)
 		}
 	}
 
-	err = tx.UpdateContractState(common.HexToAddress(contract))
-	if err != nil {
-		return fmt.Errorf("error occurred while updating contract state for contract %s: %w", contract, err)
-	}
-
-	err = tx.SetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract), evoBlock)
-	if err != nil {
-		return fmt.Errorf("error occurred while updating current evo block for contract %s: %w", contract, err)
-	}
-	return nil
+	return tx.UpdateContractState(common.HexToAddress(contract), evoBlock)
 }
 
 func GetEvoEvents(tx state.Tx, contract string, blockTime uint64) (uint64, []model.MintedWithExternalURI, error) {
@@ -174,10 +159,12 @@ func GetEvoEvents(tx state.Tx, contract string, blockTime uint64) (uint64, []mod
 		return 0, nil, fmt.Errorf("error occurred retrieving the collection address from the ownership contract %s: %w", contract, err)
 	}
 
-	evoBlock, err := tx.GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract))
+	accountData, err := tx.AccountData(common.HexToAddress(contract))
 	if err != nil {
 		return 0, nil, fmt.Errorf("error occurred retrieving the last processed evo block for ownership contract %s: %w", contract, err)
 	}
+	evoBlock := accountData.LastProcessedEvoBlock
+
 	evoBlockTimestamp := uint64(0)
 	evoEvents := make([]model.MintedWithExternalURI, 0)
 	for evoBlockTimestamp < blockTime {
@@ -195,6 +182,10 @@ func GetEvoEvents(tx state.Tx, contract string, blockTime uint64) (uint64, []mod
 			return 0, nil, fmt.Errorf("error occurred retrieving evochain minted events for ownership contract %s and collection address %s: %w",
 				contract, collection.String(), err)
 		}
+
+		// we get timestamp from event 0 because we don't store evo block separately in db.
+		// TODO store evo block data in db when scanning evo chain. recalling block timestamp
+		// should be faster then from the function that reads all events
 		evoBlockTimestamp = mintedEvents[0].Timestamp
 		evoBlock = newBlock
 		evoEvents = append(evoEvents, mintedEvents...)
@@ -202,29 +193,10 @@ func GetEvoEvents(tx state.Tx, contract string, blockTime uint64) (uint64, []mod
 	return evoBlock, evoEvents, nil
 }
 
-func getBlockTimestamp(ctx context.Context,
-	client blockchain.EthClient,
-	blockNumber uint64,
-	wg *sync.WaitGroup,
-	timestamps chan<- map[uint64]uint64,
-	errCh chan<- error,
-) {
-	defer wg.Done()
-
-	header, err := client.HeaderByNumber(ctx, new(big.Int).SetUint64(blockNumber))
-	if err != nil {
-		errCh <- err
-		return
-	}
-
-	timestamp := header.Time
-
-	// Send the result through the channel
-	timestamps <- map[uint64]uint64{blockNumber: timestamp}
-}
-
 // GetBlockTimestampsParallel returns a map of block numbers to timestamps in parallel.
 // This can increase the speed of this code 2-3x
+// TODO we should see if we can get further improvements if instead of making calls in parallel we made one call in
+// a batch for all block numbers in a range. possibly this could execute faster because it is only one request
 func GetBlockTimestampsParallel(
 	ctx context.Context,
 	client blockchain.EthClient,
@@ -262,4 +234,25 @@ func GetBlockTimestampsParallel(
 	}
 
 	return timestamps, nil
+}
+
+func getBlockTimestamp(ctx context.Context,
+	client blockchain.EthClient,
+	blockNumber uint64,
+	wg *sync.WaitGroup,
+	timestamps chan<- map[uint64]uint64,
+	errCh chan<- error,
+) {
+	defer wg.Done()
+
+	header, err := client.HeaderByNumber(ctx, new(big.Int).SetUint64(blockNumber))
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	timestamp := header.Time
+
+	// Send the result through the channel
+	timestamps <- map[uint64]uint64{blockNumber: timestamp}
 }

@@ -54,8 +54,7 @@ func (s *service) SetNextEvoEventBlock(contract string, blockNumber uint64) erro
 		strings.ToLower(contract),
 		strconv.FormatUint(uintValue, 10))
 
-	err = s.tx.Set([]byte(nextKey), []byte(strconv.FormatUint(blockNumber, 10)))
-	if err != nil {
+	if err := s.tx.Set([]byte(nextKey), []byte(strconv.FormatUint(blockNumber, 10))); err != nil {
 		return err
 	}
 

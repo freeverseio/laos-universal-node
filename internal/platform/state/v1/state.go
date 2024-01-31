@@ -118,11 +118,6 @@ func (t *tx) setTreesForContract(
 }
 
 func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
-	// TODO this transaction should be committed only if we want to permanently store the new root as the head
-	// (when reorgs happens)
-	// If we just want to read the state at current root we should not commit this transaction
-	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
-	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
 	slog.Debug("LoadContractState", "contract", contract.String())
 
 	accountData, err := t.accountTree.AccountData(contract)
@@ -135,21 +130,19 @@ func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
-
 	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
-
-	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
-	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
 
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
+	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
+	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
+	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
 	ownershipTree.SetRoot(accountData.OwnershipRoot)
 
 	return nil
@@ -165,6 +158,7 @@ func (t *tx) LoadContractTrees(contractAddress common.Address) error {
 			return err
 		}
 		t.setTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
+		return nil // when creating new trees we load contract state directly
 	}
 	return t.loadContractStateFromAccountTree(contractAddress)
 }
@@ -349,7 +343,6 @@ func (t *tx) TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 // TagRoot tags roots for all 3 merkle trees at the same block
 func (t *tx) TagRoot(blockNumber int64) error {
 	slog.Debug("TagRoot", "blockNumber", strconv.FormatInt(blockNumber, 10))
-
 	return t.accountTree.TagRoot(blockNumber)
 }
 
@@ -367,8 +360,7 @@ func (t *tx) DeleteRootTag(blockNumber int64) error {
 // starting from the blockNumber until the most recent tagged block
 func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
 	for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
-		err := t.DeleteRootTag(blockNumber)
-		if err != nil {
+		if err := t.DeleteRootTag(blockNumber); err != nil {
 			return fmt.Errorf("error deleting root tag at block %d: %s", blockNumber, err.Error())
 		}
 	}
@@ -376,7 +368,6 @@ func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
 }
 
 // Checkout sets the current roots to those tagged for the block
-// If no tag for the block exists, it searches for the first block in the past that has the tag.
 func (t *tx) Checkout(blockNumber int64) error {
 	// TODO this transaction should be committed only if we want to permanently store the new root as the head
 	// (when reorgs happens)
@@ -386,61 +377,37 @@ func (t *tx) Checkout(blockNumber int64) error {
 	return t.accountTree.Checkout(blockNumber)
 }
 
-func (t *tx) UpdateContractState(contract common.Address) error {
+// UpdateContractState updates the contract state in the account tree
+func (t *tx) UpdateContractState(contract common.Address, lastProcessedEvoBlock uint64) error {
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
-
-	enumeratedRoot := enumeratedTree.Root()
 
 	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	enumeratedTotalRoot := enumeratedTotalTree.Root()
-	totalSupply := enumeratedTotalTree.TotalSupply()
-
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	ownershipRoot := ownershipTree.Root()
-
-	slog.Debug("UpdatingContractState in the account tree",
-		"contract", contract.String(),
-		"enumeratedRoot", enumeratedRoot.String(),
-		"enumeratedTotalRoot", enumeratedTotalRoot.String(),
-		"ownershipRoot", ownershipRoot.String(), "totalSupply", totalSupply)
-
 	accountData := account.AccountData{
-		EnumeratedRoot:      enumeratedRoot,
-		EnumeratedTotalRoot: enumeratedTotalRoot,
-		OwnershipRoot:       ownershipRoot,
-		TotalSupply:         totalSupply,
+		EnumeratedRoot:        enumeratedTree.Root(),
+		EnumeratedTotalRoot:   enumeratedTotalTree.Root(),
+		OwnershipRoot:         ownershipTree.Root(),
+		TotalSupply:           enumeratedTotalTree.TotalSupply(),
+		LastProcessedEvoBlock: lastProcessedEvoBlock,
 	}
 
+	slog.Debug("UpdatingContractState in the account tree", "accountData", accountData)
 	return t.accountTree.SetAccountData(&accountData, contract)
 }
 
-func (t *tx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error {
-	slog.Debug("SetLastProcessedEvoBlockForOwnershipContract", "contract", contract.String())
-	accountData, err := t.accountTree.AccountData(contract)
-	if err != nil {
-		return err
-	}
-	accountData.LastProcessedEvoBlock = blockNumber
-	return t.accountTree.SetAccountData(accountData, contract)
-}
-
-func (t *tx) GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error) {
-	accountData, err := t.accountTree.AccountData(contract)
-	if err != nil {
-		return 0, err
-	}
-	return accountData.LastProcessedEvoBlock, nil
+func (t *tx) AccountData(contract common.Address) (*account.AccountData, error) {
+	return t.accountTree.AccountData(contract)
 }
 
 // Discards transaction

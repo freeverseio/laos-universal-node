@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account"
 )
 
 // Service interface is used for initializing and terminating state transaction.
@@ -36,9 +37,8 @@ type State interface {
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
 	LoadContractTrees(contractAddress common.Address) error
-	UpdateContractState(contract common.Address) error
-	SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error
-	GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error)
+	UpdateContractState(contract common.Address, lastProcessedEvoBlock uint64) error
+	AccountData(contract common.Address) (*account.AccountData, error)
 	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error
