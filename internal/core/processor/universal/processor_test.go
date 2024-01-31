@@ -331,7 +331,7 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.TimeOwnership))).
 				Return(&types.Header{Number: big.NewInt(100), Time: tt.TimeOwnership}, nil)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: tt.TimeEvo, Timestamp: tt.TimeEvo}, nil)
 			tx.EXPECT().Discard()
 
@@ -450,7 +450,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			for _, header := range tt.getBlockHeadersL1 {
 				client.EXPECT().HeaderByNumber(ctx, header.Number).Return(header, nil).Times(1)
 			}
-			stateService.EXPECT().NewTransaction().Return(tx).Times(1 + len(tt.getAllContracts))
+			stateService.EXPECT().NewTransaction().Return(tx, nil).Times(1 + len(tt.getAllContracts))
 			tx.EXPECT().Discard().Times(1)
 			tx.EXPECT().Commit().Times(len(tt.getAllContracts) + 1)
 			tx.EXPECT().GetAllStoredBlockNumbers().Return(tt.getAllStoredBlockNumbers, nil).Times(1)
