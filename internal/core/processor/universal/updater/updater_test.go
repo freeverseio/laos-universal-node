@@ -156,7 +156,6 @@ func TestGetBlockTimestampsParallel(t *testing.T) {
 
 	t.Run("get block timestamps parallel, one call returns error", func(t *testing.T) {
 		t.Parallel()
-
 		_, client, _ := createMocks(t)
 
 		client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(10)).Return(&types.Header{

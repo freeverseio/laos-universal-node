@@ -230,6 +230,7 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
 		OwnershipSyncState:     ownershipSyncState.NewService(storageTx),
 		EvolutionSyncState:     evolutionSyncState.NewService(storageTx),
+		accountTree:            accountTree,
 	}
 	transaction.ownershipTrees[common.HexToAddress("0x500")] = ownershipTree
 	transaction.enumeratedTrees[common.HexToAddress("0x500")] = enumeratedTree
