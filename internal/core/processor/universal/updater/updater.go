@@ -100,12 +100,10 @@ func (u *updater) UpdateState(
 	}
 
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
-
 		blockTime := blockTimestamps[block]
 		for _, contract := range contracts {
 			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
 				if block < blockWhenDiscovered {
-					//skip iteration if the contract was discovered in this range but not in this block
 					continue
 				}
 			}
@@ -134,21 +132,24 @@ func UpdateContract(tx state.Tx,
 	evoEvents []model.MintedWithExternalURI,
 	transferEvents []model.ERC721Transfer,
 	block uint64,
-	evoBlock uint64) error {
+	evoBlock uint64,
+) error {
 	err := tx.LoadContractTrees(common.HexToAddress(contract))
 	if err != nil {
 		slog.Error("error creating merkle trees", "err", err)
 		return err
 	}
 
-	for _, mintEvent := range evoEvents {
+	for i := range evoEvents {
+		mintEvent := evoEvents[i]
 		err = tx.Mint(common.HexToAddress(contract), &mintEvent)
 		if err != nil {
 			return fmt.Errorf("error occurred while updating state with mint event %v: %w", mintEvent, err)
 		}
 	}
 
-	for _, transferEvent := range transferEvents {
+	for i := range transferEvents {
+		transferEvent := transferEvents[i]
 		err = tx.Transfer(common.HexToAddress(contract), &transferEvent)
 		if err != nil {
 			return fmt.Errorf("error occurred while updating state with transfer event %v: %w", transferEvent, err)
@@ -201,12 +202,13 @@ func GetEvoEvents(tx state.Tx, contract string, blockTime uint64) (uint64, []mod
 	return evoBlock, evoEvents, nil
 }
 
-func getBlockTimestamp(ctx context.Context, 
-	client blockchain.EthClient, 
-	blockNumber uint64, 
-	wg *sync.WaitGroup, 
+func getBlockTimestamp(ctx context.Context,
+	client blockchain.EthClient,
+	blockNumber uint64,
+	wg *sync.WaitGroup,
 	timestamps chan<- map[uint64]uint64,
-	errCh chan<- error) {
+	errCh chan<- error,
+) {
 	defer wg.Done()
 
 	header, err := client.HeaderByNumber(ctx, new(big.Int).SetUint64(blockNumber))
@@ -221,14 +223,14 @@ func getBlockTimestamp(ctx context.Context,
 	timestamps <- map[uint64]uint64{blockNumber: timestamp}
 }
 
-// GetBlockTimestampsParallel returns a map of block numbers to timestamps in parallel. 
+// GetBlockTimestampsParallel returns a map of block numbers to timestamps in parallel.
 // This can increase the speed of this code 2-3x
 func GetBlockTimestampsParallel(
-	ctx context.Context, 
-	client blockchain.EthClient, 
-	startingBlock, 
-	lastBlock uint64) (map[uint64]uint64, error) {
-
+	ctx context.Context,
+	client blockchain.EthClient,
+	startingBlock,
+	lastBlock uint64,
+) (map[uint64]uint64, error) {
 	var wg sync.WaitGroup
 	timestampsChan := make(chan map[uint64]uint64, lastBlock-startingBlock+1)
 	errCh := make(chan error, lastBlock-startingBlock+1)
@@ -246,7 +248,7 @@ func GetBlockTimestampsParallel(
 	}()
 
 	timestamps := make(map[uint64]uint64)
-	
+
 	for err := range errCh {
 		if err != nil {
 			return nil, err
