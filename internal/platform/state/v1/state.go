@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -418,15 +417,4 @@ func (t *tx) Discard() {
 // Commits transaction
 func (t *tx) Commit() error {
 	return t.tx.Commit()
-}
-
-func (t *tx) Get(key string) ([]byte, error) {
-	value, err := t.tx.Get([]byte(key))
-	if err != nil {
-		if err == badger.ErrKeyNotFound {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return value, nil
 }

@@ -39,7 +39,6 @@ type State interface {
 	LoadContractTrees(contractAddress common.Address) error
 	UpdateContractState(contract common.Address, lastProcessedEvoBlock uint64) error
 	AccountData(contract common.Address) (*account.AccountData, error)
-	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error
 	DeleteOrphanRootTags(formBlock, toBlock int64) error

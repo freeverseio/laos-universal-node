@@ -31,7 +31,7 @@ func TestLoadMerkleTrees(t *testing.T) {
 			t.Fatalf(`got error "%s", expected "%s"`, err.Error(), expectedErr)
 		}
 	})
-	t.Run("successfully loads merkle trees in memory", func(t *testing.T) {
+	t.Run("successfully loads merkle trees in memory, minting and checking balances", func(t *testing.T) {
 		t.Parallel()
 		tx, err := createTransaction()
 		if err != nil {
@@ -59,38 +59,51 @@ func TestLoadMerkleTrees(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-	})
-}
 
-func TestStoreMintedWithExternalURIEvents(t *testing.T) {
-	t.Parallel()
-	t.Run("stores minted events", func(t *testing.T) {
-		t.Parallel()
-		tx, err := createTransaction()
+		owner, err := tx.OwnerOf(contract, big.NewInt(1))
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), &model.MintedWithExternalURI{
-			Slot:        big.NewInt(1),
-			To:          common.HexToAddress("0x3"),
-			TokenURI:    "tokenURI",
-			TokenId:     big.NewInt(1),
-			BlockNumber: 100,
-			Timestamp:   1000,
-			TxIndex:     1,
-		})
+
+		if owner != common.HexToAddress("0x1") {
+			t.Errorf(`got owner "%s" when expected "0x1"`, owner.Hex())
+		}
+
+		err = tx.UpdateContractState(contract, uint64(10))
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		val, err := tx.Get("evo_events_" +
-			common.HexToAddress("0x500").Hex() +
-			"_" + formatNumberForSorting(100, 18) +
-			"_" + formatNumberForSorting(1, 8))
+
+		err = tx.LoadContractTrees(contract) // loading tree the second time does not change anything
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		if val == nil {
-			t.Errorf(`got nil value when a value was expected`)
+
+		balance, err := tx.BalanceOf(contract, common.HexToAddress("0x1"))
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
+		if balance.Cmp( big.NewInt(1)) != 0 {
+			t.Errorf(`got balance "%d" when expected "1"`, balance)
+		}
+
+		totalSupply, err := tx.TotalSupply(contract)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
+		if totalSupply != 1 {
+			t.Errorf(`got total supply "%d" when expected "1"`, totalSupply)
+		}
+
+		tokenOfOwner, err := tx.TokenOfOwnerByIndex(contract, common.HexToAddress("0x1"), 0)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
+		if tokenOfOwner.Cmp(big.NewInt(1)) != 0 {
+			t.Errorf(`got token of owner "%d" when expected "1"`, tokenOfOwner)
 		}
 	})
 }

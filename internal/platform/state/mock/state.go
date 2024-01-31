@@ -206,21 +206,6 @@ func (mr *MockTxMockRecorder) Discard() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discard", reflect.TypeOf((*MockTx)(nil).Discard))
 }
 
-// Get mocks base method.
-func (m *MockTx) Get(key string) ([]byte, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", key)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockTxMockRecorder) Get(key any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTx)(nil).Get), key)
-}
-
 // GetAllERC721UniversalContracts mocks base method.
 func (m *MockTx) GetAllERC721UniversalContracts() []string {
 	m.ctrl.T.Helper()
@@ -707,21 +692,6 @@ func (m *MockState) DeleteRootTag(blockNumber int64) error {
 func (mr *MockStateMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockState)(nil).DeleteRootTag), blockNumber)
-}
-
-// Get mocks base method.
-func (m *MockState) Get(key string) ([]byte, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", key)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockStateMockRecorder) Get(key any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockState)(nil).Get), key)
 }
 
 // GetLastTaggedBlock mocks base method.

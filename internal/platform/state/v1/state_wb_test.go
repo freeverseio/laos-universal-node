@@ -40,7 +40,9 @@ func TestTransfer(t *testing.T) {
 		}
 
 		err = tx.Transfer(common.HexToAddress("0x500"), &eventTransfer)
-		assert.Error(t, err, "contract 0x0000000000000000000000000000000000000500 does not exist")
+		if err.Error() != "contract 0x0000000000000000000000000000000000000500 does not exist" {
+			t.Fatalf("got error %s, expected %s", err.Error(), "contract 0x0000000000000000000000000000000000000500 does not exist")
+		}
 	})
 
 	t.Run(`transfer token that is not minted`, func(t *testing.T) {
@@ -60,7 +62,9 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 
 		err := transaction.Transfer(common.HexToAddress("0x500"), &eventTransfer)
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
 	})
 
 	t.Run(`transfer token that is minted`, func(t *testing.T) {
@@ -81,7 +85,9 @@ func TestTransfer(t *testing.T) {
 		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
 
 		err := transaction.Transfer(common.HexToAddress("0x500"), &eventTransfer)
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
 	})
 
 	t.Run(`burn token that is minted`, func(t *testing.T) {
@@ -110,7 +116,9 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().SetTokenData(&tokenData2, big.NewInt(10)).Return(nil)
 
 		err := transaction.Transfer(common.HexToAddress("0x500"), &eventTransfer)
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
 	})
 }
 
@@ -141,7 +149,10 @@ func TestMinting(t *testing.T) {
 		ownershipTree.EXPECT().Mint(&mintEvent, 1).Return(nil)
 
 		err := transaction.Mint(common.HexToAddress("0x500"), &mintEvent)
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
+
 	})
 }
 
@@ -198,7 +209,9 @@ func TestCheckout(t *testing.T) {
 		accountTree.EXPECT().Checkout(int64(1)).Return(nil)
 
 		err := transaction.Checkout(int64(1))
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
 	})
 }
 
