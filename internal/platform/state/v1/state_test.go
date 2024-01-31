@@ -3,7 +3,6 @@ package v1_test
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -84,7 +83,7 @@ func TestLoadMerkleTrees(t *testing.T) {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 
-		if balance.Cmp( big.NewInt(1)) != 0 {
+		if balance.Cmp(big.NewInt(1)) != 0 {
 			t.Errorf(`got balance "%d" when expected "1"`, balance)
 		}
 
@@ -112,14 +111,4 @@ func createTransaction() (state.Tx, error) {
 	mem := memory.New()
 	stateService := v1.NewStateService(mem)
 	return stateService.NewTransaction()
-}
-
-func formatNumberForSorting(blockNumber uint64, blockNumberDigits uint16) string {
-	// Convert the block number to a string
-	blockNumberString := strconv.FormatUint(blockNumber, 10)
-	// Pad with leading zeros if shorter
-	for len(blockNumberString) < int(blockNumberDigits) {
-		blockNumberString = "0" + blockNumberString
-	}
-	return blockNumberString
 }

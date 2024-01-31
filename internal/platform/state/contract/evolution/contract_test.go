@@ -12,12 +12,11 @@ import (
 	badgerStorage "github.com/freeverseio/laos-universal-node/internal/platform/storage/badger"
 )
 
-
 func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 	t.Parallel()
 	t.Run("stores minted events", func(t *testing.T) {
 		t.Parallel()
-        db := createBadger(t)
+		db := createBadger(t)
 		tx, err := createBadgerTransaction(t, db)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
@@ -36,14 +35,13 @@ func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
 
-        events, err := tx.GetMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), 100)
-        if err != nil {
-            t.Errorf(`got error "%v" when no error was expected`, err)
-        }
-        if len(events) != 1 {
-            t.Errorf(`got %d events when 1 was expected`, len(events))
-        }
-		
+		events, err := tx.GetMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), 100)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+		if len(events) != 1 {
+			t.Errorf(`got %d events when 1 was expected`, len(events))
+		}
 	})
 }
 

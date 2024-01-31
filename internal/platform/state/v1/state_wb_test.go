@@ -152,7 +152,6 @@ func TestMinting(t *testing.T) {
 		if err != nil {
 			t.Fatalf("got error %s when no error was expected", err.Error())
 		}
-
 	})
 }
 

@@ -162,15 +162,12 @@ func TestGetBlockTimestampsParallel(t *testing.T) {
 			Time:   10,
 			Number: big.NewInt(int64(10)),
 		}, nil)
-		client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(11)).Return(&types.Header{
-			Time:   11,
-			Number: big.NewInt(int64(11)),
-		}, nil)
-		client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(12)).Return(
+
+		client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(11)).Return(
 			nil,
 			fmt.Errorf("some error"))
 
-		_, err := uUpdater.GetBlockTimestampsParallel(context.Background(), client, 10, 12)
+		_, err := uUpdater.GetBlockTimestampsParallel(context.Background(), client, 10, 11)
 		assertError(t, err, fmt.Errorf("some error"))
 	})
 }
