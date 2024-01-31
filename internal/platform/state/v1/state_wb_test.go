@@ -100,7 +100,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
-		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15), nil)
+		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15))
 		enumeratedTotalTree.EXPECT().TokenByIndex(14).Return(big.NewInt(10), nil)
 		enumeratedTotalTree.EXPECT().Burn(int(0)).Return(nil)
 
