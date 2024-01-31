@@ -100,7 +100,7 @@ func TestTransfer(t *testing.T) {
 		ownershipTree.EXPECT().Transfer(&eventTransfer).Return(nil)
 		ownershipTree.EXPECT().TokenData(eventTransfer.TokenId).Return(&tokenData, nil)
 		enumeratedTree.EXPECT().Transfer(true, &eventTransfer).Return(nil)
-		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15), nil)
+		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(15))
 		enumeratedTotalTree.EXPECT().TokenByIndex(14).Return(big.NewInt(10), nil)
 		enumeratedTotalTree.EXPECT().Burn(int(0)).Return(nil)
 
@@ -122,7 +122,7 @@ func TestMinting(t *testing.T) {
 		defer ctrl.Finish()
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
-		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2), nil)
+		enumeratedTotalTree.EXPECT().TotalSupply().Return(int64(2))
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
 		ownershipTree.EXPECT().TokenData(big.NewInt(1)).Return(&tokenData, nil)
@@ -230,6 +230,7 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
 		OwnershipSyncState:     ownershipSyncState.NewService(storageTx),
 		EvolutionSyncState:     evolutionSyncState.NewService(storageTx),
+		accountTree:            accountTree,
 	}
 	transaction.ownershipTrees[common.HexToAddress("0x500")] = ownershipTree
 	transaction.enumeratedTrees[common.HexToAddress("0x500")] = enumeratedTree

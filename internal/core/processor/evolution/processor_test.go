@@ -297,7 +297,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
+			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
 			Return(errors.New("error storing events to db"))
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
@@ -326,8 +326,10 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
+			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
 			Return(nil)
+
+		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
 
 		client.EXPECT().
 			BlockByNumber(ctx, big.NewInt(int64(lastBlockData.Number))).
@@ -363,7 +365,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
+			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
 			Return(nil)
 
 		client.EXPECT().
@@ -373,6 +375,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 				Number: big.NewInt(int64(lastBlockData.Number)),
 			}), nil)
 
+		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(errors.New("error storing last block info"))
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
@@ -405,7 +408,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), []model.MintedWithExternalURI{adjustedEvent}).
+			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
 			Return(nil)
 
 		client.EXPECT().
@@ -415,6 +418,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 				Number: big.NewInt(int64(lastBlockData.Number)),
 			}), nil)
 
+		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(nil)
 		tx.EXPECT().Commit().Return(nil)
 

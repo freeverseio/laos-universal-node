@@ -77,7 +77,7 @@ func TestGetEvoEvents(t *testing.T) {
 		events := getMockMintedEvents(352, 352)
 		tx.EXPECT().GetCollectionAddress("0x000005555").Return(common.HexToAddress("0x4444"), nil)
 		tx.EXPECT().GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress("0x000005555")).Return(uint64(351), nil)
-		tx.EXPECT().GetNextEvoEventBlock(common.HexToAddress("0x4444").String(), uint64(351)).Return(uint64(uint64(352)), nil)
+		tx.EXPECT().GetNextEvoEventBlock(common.HexToAddress("0x4444").String(), uint64(351)).Return(uint64(352), nil)
 		tx.EXPECT().GetMintedWithExternalURIEvents(common.HexToAddress("0x4444").String(), uint64(352)).Return(events, nil)
 
 		evoBlock, events, err := uUpdater.GetEvoEvents(tx, "0x000005555", uint64(352))
@@ -89,7 +89,6 @@ func TestGetEvoEvents(t *testing.T) {
 			t.Fatal("wrong number of events")
 		}
 	})
-
 }
 
 func TestUpdateContract(t *testing.T) {
@@ -157,7 +156,6 @@ func TestGetBlockTimestampsParallel(t *testing.T) {
 
 	t.Run("get block timestamps parallel, one call returns error", func(t *testing.T) {
 		t.Parallel()
-
 		_, client, _ := createMocks(t)
 
 		client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(10)).Return(&types.Header{
@@ -175,7 +173,6 @@ func TestGetBlockTimestampsParallel(t *testing.T) {
 		_, err := uUpdater.GetBlockTimestampsParallel(context.Background(), client, 10, 12)
 		assertError(t, err, fmt.Errorf("some error"))
 	})
-
 }
 
 func createMocks(t *testing.T) (*mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner) {
