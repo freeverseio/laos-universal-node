@@ -450,9 +450,9 @@ func TestRecoverFromReorg(t *testing.T) {
 			for _, header := range tt.getBlockHeadersL1 {
 				client.EXPECT().HeaderByNumber(ctx, header.Number).Return(header, nil).Times(1)
 			}
-			stateService.EXPECT().NewTransaction().Return(tx, nil).Times(1 + len(tt.getAllContracts))
+			stateService.EXPECT().NewTransaction().Return(tx, nil).Times(1)
 			tx.EXPECT().Discard().Times(1)
-			tx.EXPECT().Commit().Times(len(tt.getAllContracts) + 1)
+			tx.EXPECT().Commit().Times(1)
 			tx.EXPECT().GetAllStoredBlockNumbers().Return(tt.getAllStoredBlockNumbers, nil).Times(1)
 			for i := 0; i < int(tt.numberOfRecursions); i++ {
 				block := tt.getBlockHeadersDB[i]
@@ -461,15 +461,13 @@ func TestRecoverFromReorg(t *testing.T) {
 					Hash:   block.Hash(),
 				}, nil).Times(1)
 			}
-			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
+
 			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanBlockData(tt.safeBlockNumber).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanRootTags(int64(tt.safeBlockNumber)+1, int64(tt.startingBlock)).Return(nil).Times(1)
 
-			for _, contract := range tt.getAllContracts {
-				tx.EXPECT().LoadContractTrees(common.HexToAddress(contract)).Return(nil).Times(1)
-				tx.EXPECT().Checkout(int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
-			}
+			tx.EXPECT().Checkout(int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
+
 			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
 			block, err := p.RecoverFromReorg(ctx, tt.startingBlock)
 			if (err != nil) != (tt.expectedError != nil) {
