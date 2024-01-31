@@ -7,11 +7,12 @@ import (
 )
 
 type MintedWithExternalURI struct {
-	Slot        *big.Int
-	To          common.Address
-	TokenURI    string
-	TokenId     *big.Int
-	BlockNumber uint64
-	Timestamp   uint64
-	TxIndex     uint64
+	Slot                 *big.Int
+	To                   common.Address
+	TokenURI             string
+	TokenId              *big.Int
+	BlockNumber          uint64
+	OwnershipBlockNumber uint64
+	Timestamp            uint64
+	TxIndex              uint64
 }

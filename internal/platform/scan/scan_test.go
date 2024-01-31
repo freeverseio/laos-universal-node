@@ -321,6 +321,25 @@ func TestScanEventsMintingFromJsonEvent(t *testing.T) {
 			t.Fatalf("got tx index %d, expected %d", events[0].(scan.EventMintedWithExternalURI).TxIndex, eventLogs[0].TxIndex)
 		}
 	})
+
+	t.Run("it should scan a eventEvolvedWithExternalURISigHash", func(t *testing.T) {
+	})
+
+	t.Run("it should scan a eventTransferSigHash", func(t *testing.T) {
+		t.Parallel()
+
+		cli := getMockEthClient(t)
+		fromBlock, toBlock, address, contracts := setupScanParams()
+		s := scan.NewScanner(cli)
+		eventLogs := []types.Log{parseEventFromJSON(mockTransferEventJSON())}
+
+		expectFilterLogsCall(cli, fromBlock, toBlock, address, eventLogs)
+
+		events, err := s.ScanEvents(context.Background(), fromBlock, toBlock, contracts)
+		assertNoError(t, err)
+		assertEventCount(t, events, 1)
+		fmt.Printf(events[0].(scan.EventTransfer).To.String())
+	})
 }
 
 func TestScanEvents(t *testing.T) {
@@ -728,6 +747,25 @@ func mockEventJSON() string {
     "transactionIndex": "0x0",
     "logIndex": "0x0",
     "transactionLogIndex": "0x0",
+    "removed": false
+}`
+}
+
+func mockTransferEventJSON() string {
+	return `{
+    "address": "0x4804e8d1661cd1a1e5ddde1ff458a7f878c0ac6d",
+    "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000003436bc69e86977bfbe428c92db60dc488a95f1ae",
+        "0x0000000000000000000000000000000000000000000000000000000000006b87"
+    ],
+    "data": "0x",
+    "blockNumber": "0x32814f7",
+    "transactionHash": "0xb60cc7d363f70ad52530dc8122422c289842fa4af420463a337158575bb3b43e",
+    "transactionIndex": "0x49",
+    "blockHash": "0xc025d4a032957e814cb4b5cb1a36521f3791e184812cfb88e84a71ab6af62bc4",
+    "logIndex": "0xd8",
     "removed": false
 }`
 }
