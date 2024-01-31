@@ -6,8 +6,10 @@ import (
 	"log/slog"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -184,4 +186,46 @@ func (u *updater) UpdateState(
 		slog.Debug("Zoran TEST 5", "block", block)
 	}
 	return nil
+}
+
+
+func getBlockTimestamp(client *ethclient.Client, blockNumber uint64, wg *sync.WaitGroup, timestamps chan<- map[uint64]uint64) {
+    defer wg.Done()
+
+    header, err := client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(blockNumber))
+    if err != nil {
+        return
+    }
+
+    timestamp := header.Time
+
+    // Send the result through the channel
+    timestamps <- map[uint64]uint64{blockNumber: timestamp}
+}
+
+func getBlockTimestampsParallel(client *ethclient.Client, startingBlock, lastBlock uint64) map[uint64]uint64 {
+    var wg sync.WaitGroup
+    timestampsChan := make(chan map[uint64]uint64, lastBlock-startingBlock+1)
+
+    for blockNumber := startingBlock; blockNumber <= lastBlock; blockNumber++ {
+        wg.Add(1)
+        go getBlockTimestamp(client, blockNumber, &wg, timestampsChan)
+    }
+
+    // Close the channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(timestampsChan)
+    }()
+
+    timestamps := make(map[uint64]uint64)
+
+    // Collect results from the channel
+    for result := range timestampsChan {
+        for blockNumber, timestamp := range result {
+            timestamps[blockNumber] = timestamp
+        }
+    }
+
+    return timestamps
 }
