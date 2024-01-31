@@ -59,7 +59,7 @@ func (u *updater) GetModelTransferEvents(
 	}
 
 	modelTransferEvents := make(map[uint64]map[string][]model.ERC721Transfer)
-
+	
 	for i := range scanEvents {
 		if scanEvent, ok := scanEvents[i].(scan.EventTransfer); ok {
 			eventTransfer := model.ERC721Transfer{
@@ -73,7 +73,7 @@ func (u *updater) GetModelTransferEvents(
 			// timestamp will be updated later to avoid calling headerByNumber for every event.
 			// Instead, it will be updated only once for every block
 			contractString := strings.ToLower(eventTransfer.Contract.String())
-
+			
 			if _, ok := modelTransferEvents[scanEvent.BlockNumber]; !ok {
 				modelTransferEvents[scanEvent.BlockNumber] = make(map[string][]model.ERC721Transfer)
 			}
@@ -92,18 +92,19 @@ func (u *updater) UpdateState(
 	startingBlock uint64,
 	lastBlockData model.Block,
 ) error {
+
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
-		slog.Debug("Zoran debug processing block", "block", block)
+		slog.Debug("Zoran TEST 1", "block", block)
 		header, err := u.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
 		if err != nil {
 			slog.Debug("error retrieving header for block number", "blockNumber", block, "err", err.Error())
 			return err
 		}
 		blockTime := header.Time
-
+		slog.Debug("Zoran TEST 2", "block", block)
 		for _, contract := range contracts {
 			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
-				if block < blockWhenDiscovered {
+				if block<blockWhenDiscovered {
 					continue
 				}
 			}
@@ -138,7 +139,7 @@ func (u *updater) UpdateState(
 				evoBlock = newBlock
 				evoEvents = append(evoEvents, mintedEvents...)
 			}
-
+			slog.Debug("Zoran TEST 3", "block", block)
 			slog.Debug("zoran debug before updating state", "contract", contract, "evoEvents", len(evoEvents), "transferEvents", len(transferEvents[block][contract]))
 			// Now we update state if there are new events
 			if len(evoEvents) > 0 || len(transferEvents[block][contract]) > 0 {
@@ -173,12 +174,14 @@ func (u *updater) UpdateState(
 					return fmt.Errorf("error occurred while updating current evo block for contract %s: %w", contract, err)
 				}
 			}
+			slog.Debug("Zoran TEST 4", "block", block)
 		}
 		slog.Debug("Zoran debug before tagging root", "block", block)
 		if err := tx.TagRoot(int64(block)); err != nil {
 			slog.Error("error occurred while tagging root", "err", err.Error())
 			return err
 		}
+		slog.Debug("Zoran TEST 5", "block", block)
 	}
 	return nil
 }
