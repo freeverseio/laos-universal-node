@@ -70,7 +70,7 @@ func TestStoreMintedWithExternalURIEvents(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), model.MintedWithExternalURI{
+		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), &model.MintedWithExternalURI{
 			Slot:        big.NewInt(1),
 			To:          common.HexToAddress("0x3"),
 			TokenURI:    "tokenURI",

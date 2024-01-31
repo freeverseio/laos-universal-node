@@ -91,7 +91,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			ctx := context.TODO()
 			stateService, tx, client, _, laosRpc := createMocks(t)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastEvoBlock().Return(tt.startingBlockData, tt.startingBlockError)
 			tx.EXPECT().Discard()
 			if tt.userProvidedBlock == 0 && tt.startingBlockData.Number == 0 && tt.startingBlockError == nil {
@@ -234,7 +234,7 @@ func TestVerifyChainConsistency(t *testing.T) {
 			ctx := context.TODO()
 			stateService, tx, client, _, laosRpc := createMocks(t)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastEvoBlock().Return(tt.lastBlockDB, tt.lastBlockDBError)
 			tx.EXPECT().Discard()
 
@@ -258,7 +258,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
@@ -281,7 +281,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
@@ -310,7 +310,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
@@ -343,7 +343,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{
@@ -385,7 +385,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{
@@ -428,7 +428,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		ctx := context.TODO()
 		stateService, tx, client, scanner, laosRpc := createMocks(t)
 
-		stateService.EXPECT().NewTransaction().Return(tx)
+		stateService.EXPECT().NewTransaction().Return(tx, nil)
 		tx.EXPECT().Discard()
 
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}

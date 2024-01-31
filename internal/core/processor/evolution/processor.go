@@ -114,10 +114,10 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 
 	for {
 		var ok bool
-		ok, err := p.hasBlockFinalize(big.NewInt(int64(lastBlock)))
-		if err != nil {
-			slog.Error("error occurred while checking latest finalized block", "err", err.Error())
-			return err
+		ok, errFinalize := p.hasBlockFinalize(big.NewInt(int64(lastBlock)))
+		if errFinalize != nil {
+			slog.Error("error occurred while checking latest finalized block", "err", errFinalize.Error())
+			return errFinalize
 		}
 		if ok {
 			break
@@ -182,7 +182,7 @@ func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event
 	for _, event := range events {
 		e, ok := event.(scan.EventMintedWithExternalURI)
 		if ok {
-			externalMintEvent := model.MintedWithExternalURI{
+			externalMintEvent := &model.MintedWithExternalURI{
 				Slot:        e.Slot,
 				To:          e.To,
 				TokenURI:    e.TokenURI,

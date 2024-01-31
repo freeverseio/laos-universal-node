@@ -111,7 +111,6 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 
 			for mintInBlock := 0; mintInBlock < mintsInBlock; mintInBlock++ {
 				mintId := block*mintsInBlock + mintInBlock
-				fmt.Println("test checkpoint", "mintId", mintId, "block", block, "mintsInBlock", mintsInBlock)
 
 				owner := common.HexToAddress("0xB200110583D9d9F5E041FcEe024886bd00996691")
 				tokenId := big.NewInt(int64(mintId))
@@ -168,7 +167,7 @@ func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), model.MintedWithExternalURI{
+		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), &model.MintedWithExternalURI{
 			Slot:        big.NewInt(1),
 			To:          common.HexToAddress("0x3"),
 			TokenURI:    "tokenURI",

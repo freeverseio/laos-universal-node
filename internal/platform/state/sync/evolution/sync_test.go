@@ -20,7 +20,7 @@ func TestSetGetLastEvoBlock(t *testing.T) {
 	mockStorage := mock.NewMockService(mockCtrl)
 	mockStorageTransaction := mock.NewMockTx(mockCtrl)
 	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
-
+	mockStorageTransaction.EXPECT().Get([]byte("accounthead/")).Return(nil, nil)
 	stateService := v1.NewStateService(mockStorage)
 	tx, err := stateService.NewTransaction()
 	if err != nil {
