@@ -215,6 +215,56 @@ func TestFilterEventLogsError(t *testing.T) {
 	}
 }
 
+func TestSortLogs(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		input    []events.UnodeLog
+		expected []events.UnodeLog
+	}{
+		{
+			name: "Basic sorting",
+			input: []events.UnodeLog{
+				{Log: types.Log{BlockNumber: 2, TxIndex: 3}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 2}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 2, TxIndex: 1}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.OwnershipLog},
+			},
+			expected: []events.UnodeLog{
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 2}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 2, TxIndex: 1}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 2, TxIndex: 3}, LogType: events.EvoLog},
+			},
+		},
+		{
+			name: "Basic sorting",
+			input: []events.UnodeLog{
+				{Log: types.Log{BlockNumber: 2, TxIndex: 3}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 2}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.OwnershipLog},
+			},
+			expected: []events.UnodeLog{
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 2}, LogType: events.OwnershipLog},
+				{Log: types.Log{BlockNumber: 1, TxIndex: 1}, LogType: events.EvoLog},
+				{Log: types.Log{BlockNumber: 2, TxIndex: 3}, LogType: events.EvoLog},
+			},
+		},
+		// Add more test cases as needed
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sortedLogs := events.SortLogs(tt.input)
+			if !reflect.DeepEqual(sortedLogs, tt.expected) {
+				t.Errorf("SortLogs() = %v, want %v", sortedLogs, tt.expected)
+			}
+		})
+	}
+}
+
 func assertLogsEqual(t *testing.T, logs, expectedLogs []types.Log) {
 	if len(logs) != len(expectedLogs) {
 		t.Errorf("expected %d logs, got %d", len(expectedLogs), len(logs))
