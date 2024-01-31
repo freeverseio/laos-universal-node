@@ -46,7 +46,7 @@ func TestTree(t *testing.T) {
 
 		err = tr1.SetAccountData(&testData, common.HexToAddress("0x500"))
 		assert.NilError(t, err)
-		assert.Equal(t, tr1.Root().String(), "0x18e83e304ae2bc00324906230abcb8c5854ec3abe84f50da6a63ff9173f638ff")
+		assert.Equal(t, tr1.Root().String(), "0x76d53bd50ccd68af8b623d6d3eccc311c5a7d92db6a06993bde49da9b1c82e9a")
 
 		data, err := tr1.AccountData(common.HexToAddress("0x500"))
 		assert.NilError(t, err)

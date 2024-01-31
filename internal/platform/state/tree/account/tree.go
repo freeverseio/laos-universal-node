@@ -79,8 +79,8 @@ func (b *tree) SetAccountData(data *AccountData, address common.Address) error {
 	}
 
 	hash := crypto.Keccak256Hash(buf)
-	if err := b.store.Set([]byte(leafDataPrefix+hash.String()), buf); err != nil {
-		return err
+	if errSet := b.store.Set([]byte(leafDataPrefix+hash.String()), buf); errSet != nil {
+		return errSet
 	}
 
 	err = b.mt.SetLeaf(address.Big(), hash)

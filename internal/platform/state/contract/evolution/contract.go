@@ -28,7 +28,7 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) StoreMintedWithExternalURIEvents(contract string, event model.MintedWithExternalURI) error {
+func (s *service) StoreMintedWithExternalURIEvents(contract string, event *model.MintedWithExternalURI) error {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(event); err != nil {

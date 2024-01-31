@@ -223,6 +223,7 @@ func TestDiscoverContractsErrorOnStoring(t *testing.T) {
 		assertError(t, expectedError, err)
 	})
 }
+
 func TestDiscoverContractsSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -279,18 +280,5 @@ func assertError(t *testing.T, expectedError, err error) {
 		if err != expectedError {
 			t.Fatalf(`got error "%v", expected error: "%v"`, err, expectedError)
 		}
-	}
-}
-
-func getMockMintedEvents(blockNumber, timestamp uint64) []model.MintedWithExternalURI {
-	return []model.MintedWithExternalURI{
-		{
-			Slot:        big.NewInt(1),
-			To:          common.HexToAddress("0x0"),
-			TokenURI:    "",
-			TokenId:     big.NewInt(1),
-			BlockNumber: blockNumber,
-			Timestamp:   timestamp,
-		},
 	}
 }
