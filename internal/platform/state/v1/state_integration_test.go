@@ -111,7 +111,6 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 
 			for mintInBlock := 0; mintInBlock < mintsInBlock; mintInBlock++ {
 				mintId := block*mintsInBlock + mintInBlock
-				fmt.Println("test checkpoint", "mintId", mintId, "block", block, "mintsInBlock", mintsInBlock)
 
 				owner := common.HexToAddress("0xB200110583D9d9F5E041FcEe024886bd00996691")
 				tokenId := big.NewInt(int64(mintId))

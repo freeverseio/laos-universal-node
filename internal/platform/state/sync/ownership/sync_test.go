@@ -69,40 +69,6 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	}
 }
 
-func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
-	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockStorage := mock.NewMockService(mockCtrl)
-	mockStorageTransaction := mock.NewMockTx(mockCtrl)
-	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
-
-	stateService := v1.NewStateService(mockStorage)
-	tx, err := stateService.NewTransaction()
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-
-	contract := "0x123"
-	mockStorageTransaction.EXPECT().Set([]byte("ownership_contract_evo_current_index_"+contract), []byte("50")).Return(nil)
-
-	err = tx.SetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract), uint64(50))
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-	mockStorageTransaction.EXPECT().Get([]byte("ownership_contract_evo_current_index_"+contract)).Return([]byte("50"), nil)
-
-	result, err := tx.GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract))
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-
-	if result != 50 {
-		t.Fatalf("got %d, expecting %d", result, 50)
-	}
-}
-
 func TestGetAllStoredBlockNumbers(t *testing.T) {
 	t.Parallel()
 
