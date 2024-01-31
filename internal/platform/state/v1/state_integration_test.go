@@ -36,7 +36,7 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 		contracts := tx.GetAllERC721UniversalContracts()
 		fmt.Println("c", contracts)
 
-		err = tx.LoadMerkleTrees(contract)
+		err = tx.LoadContractTrees(contract)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
@@ -57,7 +57,7 @@ func TestDeleteOrphanRootTags(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.LoadMerkleTrees(contract)
+		err = tx.LoadContractTrees(contract)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
@@ -83,7 +83,7 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 
 		expectedErr := fmt.Sprintf("contract address is " + common.Address{}.String())
 
-		err = tx.LoadMerkleTrees(common.HexToAddress("0x0"))
+		err = tx.LoadContractTrees(common.HexToAddress("0x0"))
 		if err == nil {
 			t.Errorf("got no error while an error was expected")
 		}
@@ -104,7 +104,7 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
-			err = tx.LoadMerkleTrees(contract)
+			err = tx.LoadContractTrees(contract)
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
@@ -141,7 +141,7 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 		if err != nil {
 			t.Fatal("got error when no error was expected 3", err.Error())
 		}
-		err = tx.LoadMerkleTrees(contract)
+		err = tx.LoadContractTrees(contract)
 		if err != nil {
 			t.Fatal("got error when no error was expected 3", err.Error())
 		}
@@ -168,21 +168,19 @@ func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), []model.MintedWithExternalURI{
-			{
-				Slot:        big.NewInt(1),
-				To:          common.HexToAddress("0x3"),
-				TokenURI:    "tokenURI",
-				TokenId:     big.NewInt(1),
-				BlockNumber: 100,
-				Timestamp:   1000,
-				TxIndex:     1,
-			},
+		err = tx.StoreMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), model.MintedWithExternalURI{
+			Slot:        big.NewInt(1),
+			To:          common.HexToAddress("0x3"),
+			TokenURI:    "tokenURI",
+			TokenId:     big.NewInt(1),
+			BlockNumber: 100,
+			Timestamp:   1000,
+			TxIndex:     1,
 		})
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-		events, err := tx.GetMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex())
+		events, err := tx.GetMintedWithExternalURIEvents(common.HexToAddress("0x500").Hex(), 100)
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}

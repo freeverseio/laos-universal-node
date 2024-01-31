@@ -10,11 +10,10 @@ import (
 )
 
 const (
-	contractEvoCurrentIndexPrefix = "ownership_contract_evo_current_index_"
-	lastBlock                     = "ownership_last_block"
-	ownershipBlockTag             = "ownership_block_"
-	blockNumberDigits             = 18
-	numberOfBlocksToKeep          = 250
+	lastBlock            = "ownership_last_block"
+	ownershipBlockTag    = "ownership_block_"
+	blockNumberDigits    = 18
+	numberOfBlocksToKeep = 250
 )
 
 type service struct {
@@ -50,21 +49,6 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
 	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
 	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
-}
-
-func (s *service) SetCurrentEvoEventsIndexForOwnershipContract(contract string, number uint64) error {
-	return s.tx.Set([]byte(contractEvoCurrentIndexPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(number, 10)))
-}
-
-func (s *service) GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error) {
-	value, err := s.tx.Get([]byte(contractEvoCurrentIndexPrefix + strings.ToLower(contract)))
-	if err != nil {
-		return 0, err
-	}
-	if value == nil {
-		value = []byte("0")
-	}
-	return strconv.ParseUint(string(value), 10, 64)
 }
 
 func (s *service) GetAllStoredBlockNumbers() ([]uint64, error) {

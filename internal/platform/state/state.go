@@ -35,8 +35,10 @@ type State interface {
 	TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
-	LoadMerkleTrees(contractAddress common.Address) error
-	LoadContractState(contract common.Address) error
+	LoadContractTrees(contractAddress common.Address) error
+	UpdateContractState(contract common.Address) error
+	SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error
+	GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error)
 	Get(key string) ([]byte, error)
 	TagRoot(blockNumber int64) error
 	DeleteRootTag(blockNumber int64) error
@@ -54,14 +56,11 @@ type OwnershipContractState interface {
 }
 
 type EvolutionContractState interface {
-	GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error)
-	StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error
+	GetMintedWithExternalURIEvents(contract string, blockNumber uint64) ([]model.MintedWithExternalURI, error)
+	StoreMintedWithExternalURIEvents(contract string, event model.MintedWithExternalURI) error
 }
 
 type OwnershipSyncState interface {
-	SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error
-	GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error)
-
 	SetLastOwnershipBlock(block model.Block) error
 	GetLastOwnershipBlock() (model.Block, error)
 	GetOwnershipBlock(blockNumber uint64) (model.Block, error)
@@ -72,6 +71,9 @@ type OwnershipSyncState interface {
 }
 
 type EvolutionSyncState interface {
+	SetNextEvoEventBlock(contract string, blockNumber uint64) error
+	GetNextEvoEventBlock(contract string, blockNumber uint64) (uint64, error)
+
 	SetLastEvoBlock(block model.Block) error
 	GetLastEvoBlock() (model.Block, error)
 }

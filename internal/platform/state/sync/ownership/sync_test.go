@@ -87,13 +87,13 @@ func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
 	contract := "0x123"
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_contract_evo_current_index_"+contract), []byte("50")).Return(nil)
 
-	err = tx.SetCurrentEvoEventsIndexForOwnershipContract(contract, uint64(50))
+	err = tx.SetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract), uint64(50))
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
 	mockStorageTransaction.EXPECT().Get([]byte("ownership_contract_evo_current_index_"+contract)).Return([]byte("50"), nil)
 
-	result, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
+	result, err := tx.GetLastProcessedEvoBlockForOwnershipContract(common.HexToAddress(contract))
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}

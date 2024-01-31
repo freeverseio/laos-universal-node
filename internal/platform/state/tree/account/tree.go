@@ -26,10 +26,11 @@ const (
 // AccountData defines the roots from enumerated, enumerated total and ownership merkle trees
 // placed in data of the leaf of the tree
 type AccountData struct {
-	EnumeratedRoot      common.Hash
-	EnumeratedTotalRoot common.Hash
-	OwnershipRoot       common.Hash
-	TotalSupply         int64
+	EnumeratedRoot        common.Hash
+	EnumeratedTotalRoot   common.Hash
+	OwnershipRoot         common.Hash
+	TotalSupply           int64
+	LastProcessedEvoBlock uint64
 }
 
 // Tree defines interface for the account tree
@@ -71,6 +72,7 @@ func NewTree(store storage.Tx) (Tree, error) {
 
 // SetAccountData updates the MerkleTreeRoots
 func (b *tree) SetAccountData(data *AccountData, address common.Address) error {
+	slog.Debug("SetAccountData", "data", data, "address", address.String())
 	buf, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -81,7 +83,13 @@ func (b *tree) SetAccountData(data *AccountData, address common.Address) error {
 		return err
 	}
 
-	return b.mt.SetLeaf(address.Big(), hash)
+	err = b.mt.SetLeaf(address.Big(), hash)
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("accountTree", "HEAD", b.Root().String())
+	return setHeadRoot(b.store, b.Root())
 }
 
 // AccountData returns the merkle trees roots

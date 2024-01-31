@@ -143,7 +143,10 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCReque
 }
 
 func isContractStored(contractAddress string, stateService state.Service) (bool, error) {
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return false, fmt.Errorf("error creating a new transaction: %w", err)
+	}
 	defer tx.Discard()
 	return tx.HasERC721UniversalContract(contractAddress)
 }

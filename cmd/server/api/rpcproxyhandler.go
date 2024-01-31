@@ -94,7 +94,10 @@ func getJsonRPCResponse(r *http.Response) (*RPCResponse, error) {
 }
 
 func getBlockNumberFromDb(stateService state.Service) (string, error) {
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return "", fmt.Errorf("error creating a new transaction: %w", err)
+	}
 	defer tx.Discard()
 	block, err := tx.GetLastOwnershipBlock()
 	if err != nil {

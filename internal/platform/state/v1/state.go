@@ -117,9 +117,48 @@ func (t *tx) setTreesForContract(
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
 }
 
+func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
+	// TODO this transaction should be committed only if we want to permanently store the new root as the head
+	// (when reorgs happens)
+	// If we just want to read the state at current root we should not commit this transaction
+	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
+	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
+	slog.Debug("LoadContractState", "contract", contract.String())
+
+	accountData, err := t.accountTree.AccountData(contract)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
+	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	ownershipTree.SetRoot(accountData.OwnershipRoot)
+
+	return nil
+}
+
 // TODO check if it can be merged with LoadContractState
-// LoadMerkleTrees loads the merkle trees in memory for contractAddress
-func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
+// LoadContractTrees loads the merkle trees in memory for contractAddress
+func (t *tx) LoadContractTrees(contractAddress common.Address) error {
+	slog.Debug("LoadContractTrees", "contract", contractAddress.String())
 	if !t.isTreeSetForContract(contractAddress) {
 		ownTree, enumTree, enumTotTree, err := t.createTreesForContract(contractAddress)
 		if err != nil {
@@ -127,7 +166,7 @@ func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
 		}
 		t.setTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
 	}
-	return nil
+	return t.loadContractStateFromAccountTree(contractAddress)
 }
 
 // OwnerOf returns the owner of the token
@@ -347,75 +386,61 @@ func (t *tx) Checkout(blockNumber int64) error {
 	return t.accountTree.Checkout(blockNumber)
 }
 
-func (t *tx) LoadContractState(contract common.Address) error {
-	// TODO this transaction should be committed only if we want to permanently store the new root as the head
-	// (when reorgs happens)
-	// If we just want to read the state at current root we should not commit this transaction
-	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
-	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
-	slog.Debug("Checkout", "contract", contract.String())
+func (t *tx) UpdateContractState(contract common.Address) error {
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
 
+	enumeratedRoot := enumeratedTree.Root()
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTotalRoot := enumeratedTotalTree.Root()
+	totalSupply := enumeratedTotalTree.TotalSupply()
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	ownershipRoot := ownershipTree.Root()
+
+	slog.Debug("UpdatingContractState in the account tree",
+		"contract", contract.String(),
+		"enumeratedRoot", enumeratedRoot.String(),
+		"enumeratedTotalRoot", enumeratedTotalRoot.String(),
+		"ownershipRoot", ownershipRoot.String(), "totalSupply", totalSupply)
+
+	accountData := account.AccountData{
+		EnumeratedRoot:      enumeratedRoot,
+		EnumeratedTotalRoot: enumeratedTotalRoot,
+		OwnershipRoot:       ownershipRoot,
+		TotalSupply:         totalSupply,
+	}
+
+	return t.accountTree.SetAccountData(&accountData, contract)
+}
+
+func (t *tx) SetLastProcessedEvoBlockForOwnershipContract(contract common.Address, blockNumber uint64) error {
+	slog.Debug("SetLastProcessedEvoBlockForOwnershipContract", "contract", contract.String())
 	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
 		return err
 	}
-
-	enumeratedTree, ok := t.enumeratedTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
-
-	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
-	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
-
-	ownershipTree, ok := t.ownershipTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	ownershipTree.SetRoot(accountData.OwnershipRoot)
-
-	return nil
+	accountData.LastProcessedEvoBlock = blockNumber
+	return t.accountTree.SetAccountData(accountData, contract)
 }
 
-func (t *tx) SetContractState(contract common.Address) error {
-	// TODO this transaction should be committed only if we want to permanently store the new root as the head
-	// (when reorgs happens)
-	// If we just want to read the state at current root we should not commit this transaction
-	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
-	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
-	slog.Debug("Set contract state", "contract", contract.String())
-
-	enumeratedTree, ok := t.enumeratedTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
+func (t *tx) GetLastProcessedEvoBlockForOwnershipContract(contract common.Address) (uint64, error) {
+	accountData, err := t.accountTree.AccountData(contract)
+	if err != nil {
+		return 0, err
 	}
-
-	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	ownershipTree, ok := t.ownershipTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	accountData := account.AccountData{
-		EnumeratedRoot:      enumeratedTree.Root(),
-		EnumeratedTotalRoot: enumeratedTotalTree.Root(),
-		OwnershipRoot:       ownershipTree.Root(),
-		TotalSupply:         enumeratedTotalTree.TotalSupply(),
-	}
-
-	return t.accountTree.SetAccountData(&accountData, contract)
+	return accountData.LastProcessedEvoBlock, nil
 }
 
 // Discards transaction

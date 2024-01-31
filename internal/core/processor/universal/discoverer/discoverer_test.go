@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 
 	cDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
@@ -145,7 +144,7 @@ func TestDiscoverContractsErrorOnScanning(t *testing.T) {
 		scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))).
 			Return([]scan.EventNewERC721Universal{event}, errorOnScanning)
 
-		err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
+		_, err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
 		assertError(t, expectedError, err)
 	})
 }
@@ -179,7 +178,7 @@ func TestDiscoverContractsErrorOnValidating(t *testing.T) {
 			Return([]scan.EventNewERC721Universal{event}, nil)
 		validator.EXPECT().Validate(event).Return(expectedContract, errorOnValidation)
 
-		err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
+		_, err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
 		assertError(t, nil, err)
 	})
 }
@@ -220,57 +219,10 @@ func TestDiscoverContractsErrorOnStoring(t *testing.T) {
 		tx.EXPECT().StoreERC721UniversalContracts([]model.ERC721UniversalContract{expectedContract}).
 			Return(errorOnStoringUniversalContract)
 
-		err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
+		_, err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
 		assertError(t, expectedError, err)
 	})
 }
-
-func TestDiscoverContractsErrMintEvents(t *testing.T) {
-	t.Parallel()
-
-	t.Run("error on get minted events for universal contract", func(t *testing.T) {
-		t.Parallel()
-
-		event := scan.EventNewERC721Universal{
-			BaseURI:            "https://uloc.io/GlobalConsensus(3)/Parachain(9999)/AccountKey20(0x0000000000000000000000000000000000000000)/",
-			BlockNumber:        123,
-			NewContractAddress: common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
-		}
-		expectedContract := model.ERC721UniversalContract{
-			Address:           common.HexToAddress("0xc3dd09d5387fa0ab798e0adc152d15b8d1a299df"),
-			CollectionAddress: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-			BlockNumber:       123,
-		}
-		errorOnGetMintedEvents := fmt.Errorf("error on getting minted events")
-		expectedError := fmt.Errorf("error on getting minted events")
-
-		startingBlock := uint64(100)
-		lastBlock := uint64(200)
-
-		ctx := context.TODO()
-		tx, client, scanner, validator := createMocks(t)
-
-		d := cDiscoverer.New(client, []string{}, scanner, validator)
-
-		// Mock the scanner's ScanNewUniversalEvents method
-		scanner.EXPECT().ScanNewUniversalEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock))).
-			Return([]scan.EventNewERC721Universal{event}, nil)
-
-		validator.EXPECT().Validate(event).Return(expectedContract, nil)
-
-		tx.EXPECT().StoreERC721UniversalContracts([]model.ERC721UniversalContract{expectedContract}).
-			Return(nil)
-
-		tx.EXPECT().LoadMerkleTrees(expectedContract.Address).Return(nil).Times(1)
-		mintedEvents := getMockMintedEvents(120, 5)
-		tx.EXPECT().GetMintedWithExternalURIEvents(expectedContract.CollectionAddress.String()).
-			Return(mintedEvents, errorOnGetMintedEvents)
-
-		err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
-		assertError(t, expectedError, err)
-	})
-}
-
 func TestDiscoverContractsSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -304,19 +256,11 @@ func TestDiscoverContractsSuccess(t *testing.T) {
 		tx.EXPECT().StoreERC721UniversalContracts([]model.ERC721UniversalContract{expectedContract}).
 			Return(nil)
 
-		tx.EXPECT().LoadMerkleTrees(expectedContract.Address).Return(nil).Times(1)
-
-		mintedEvents := getMockMintedEvents(120, 5)
-		tx.EXPECT().GetMintedWithExternalURIEvents(expectedContract.CollectionAddress.String()).
-			Return(mintedEvents, nil)
-
-		client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(event.BlockNumber))).Return(&types.Header{Time: 130}, nil) // contract discovered after minted event
-		tx.EXPECT().Mint(event.NewContractAddress, &mintedEvents[0]).Return(nil)
-		tx.EXPECT().SetCurrentEvoEventsIndexForOwnershipContract(event.NewContractAddress.String(), uint64(1)).Return(nil)
-		tx.EXPECT().TagRoot(event.NewContractAddress, int64(event.BlockNumber)).Return(nil)
-
-		err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
+		contracts, err := d.DiscoverContracts(ctx, tx, startingBlock, lastBlock)
 		assertError(t, nil, err)
+		if contracts[event.NewContractAddress] != 123 {
+			t.Fatalf("expected new contract %v, got %v", event.NewContractAddress, contracts[event.NewContractAddress])
+		}
 	})
 }
 
