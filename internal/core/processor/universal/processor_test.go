@@ -179,7 +179,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 		blockHeaderFromChain         *types.Header
 		blockDataFromDB              model.Block
 		discoverReturn               bool
-		updateReturn                 map[string][]model.ERC721Transfer
+		updateReturn                 map[uint64]map[string][]model.ERC721Transfer
 		expectedError                error
 		expectedTxCommit             int
 		expectedNumberOfReorgCheck   int
@@ -201,10 +201,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
-			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			discoverReturn:             false,
+			updateReturn:               make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError:              nil,
 			expectedTxCommit:           1,
 			expectedNumberOfReorgCheck: 1,
@@ -227,9 +225,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
 			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			updateReturn:   make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError: universal.ReorgError{
 				Block:       90,
 				ChainHash:   common.HexToHash("0x62055b9639cbed71604205301891afe40ae0fe4f57ceadbf35d9a476361c48ed"),
@@ -254,10 +250,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
-			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			discoverReturn:             false,
+			updateReturn:               make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError:              nil,
 			expectedTxCommit:           1,
 			expectedNumberOfReorgCheck: 0,
@@ -284,8 +278,9 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			discoverer.EXPECT().ShouldDiscover(tx, tt.startingBlock, tt.blockDataFromDB.Number).Return(tt.discoverReturn, nil)
 			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
 
-			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(make(map[uint64]map[string][]model.ERC721Transfer), nil)
-			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, nil, tt.updateReturn, tt.startingBlock, tt.blockDataFromDB).Return(nil)
+			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(tt.updateReturn, nil)
+
+			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, make(map[common.Address]uint64), tt.updateReturn, tt.startingBlock, tt.blockDataFromDB).Return(nil)
 
 			tx.EXPECT().Commit().Return(nil).Times(tt.expectedTxCommit)
 			tx.EXPECT().Discard()
