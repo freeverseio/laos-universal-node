@@ -341,7 +341,7 @@ func (t *tx) TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 
 // TagRoot tags roots for all 3 merkle trees at the same block
 func (t *tx) TagRoot(blockNumber int64) error {
-	slog.Debug("TagRoot", "blockNumber", strconv.FormatInt(blockNumber, 10))
+	slog.Info("TagRoot", "blockNumber", strconv.FormatInt(blockNumber, 10))
 	return t.accountTree.TagRoot(blockNumber)
 }
 
