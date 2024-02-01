@@ -89,7 +89,6 @@ func TestSetGetNextNextEvoEventBlock(t *testing.T) {
 		if block != 100 {
 			t.Errorf(`got block %d when 100 was expected`, block)
 		}
-
 	})
 }
 

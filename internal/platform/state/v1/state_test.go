@@ -8,8 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
+	accountTreeMock "github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account/mock"
 	v1 "github.com/freeverseio/laos-universal-node/internal/platform/state/v1"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage/memory"
+	"go.uber.org/mock/gomock"
 )
 
 func TestLoadMerkleTrees(t *testing.T) {
@@ -103,6 +105,28 @@ func TestLoadMerkleTrees(t *testing.T) {
 
 		if tokenOfOwner.Cmp(big.NewInt(1)) != 0 {
 			t.Errorf(`got token of owner "%d" when expected "1"`, tokenOfOwner)
+		}
+	})
+}
+
+func TestCheckout(t *testing.T) {
+	t.Parallel()
+	t.Run(`test checkout`, func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		accountTree := accountTreeMock.NewMockTree(ctrl)
+		defer ctrl.Finish()
+
+		accountTree.EXPECT().Checkout(int64(1)).Return(nil)
+		mem := memory.New()
+		stateService := v1.NewStateService(mem, v1.WithAccountTree(accountTree))
+		transaction, err := stateService.NewTransaction()
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
+		}
+		err = transaction.Checkout(int64(1))
+		if err != nil {
+			t.Fatalf("got error %s when no error was expected", err.Error())
 		}
 	})
 }

@@ -21,14 +21,28 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
+type TxOption func(*tx) error
+
 type service struct {
 	storageService storage.Service
+	options        []TxOption
+}
+
+func WithAccountTree(accountTree account.Tree) TxOption {
+	return func(t *tx) error {
+		if accountTree == nil {
+			return fmt.Errorf("accountTree cannot be nil")
+		}
+		t.accountTree = accountTree
+		return nil
+	}
 }
 
 // NewStateService creates a new state service
-func NewStateService(storageService storage.Service) state.Service {
+func NewStateService(storageService storage.Service, opts ...TxOption) state.Service {
 	return &service{
 		storageService: storageService,
+		options:        opts,
 	}
 }
 
@@ -40,7 +54,7 @@ func (s *service) NewTransaction() (state.Tx, error) {
 		return nil, err
 	}
 
-	return &tx{
+	transaction := &tx{
 		ownershipTrees:         make(map[common.Address]ownership.Tree),
 		enumeratedTrees:        make(map[common.Address]enumerated.Tree),
 		enumeratedTotalTrees:   make(map[common.Address]enumeratedtotal.Tree),
@@ -50,7 +64,14 @@ func (s *service) NewTransaction() (state.Tx, error) {
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
 		OwnershipSyncState:     ownershipSyncState.NewService(storageTx),
 		EvolutionSyncState:     evolutionSyncState.NewService(storageTx),
-	}, nil
+	}
+	for _, opt := range s.options {
+		err := opt(transaction)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return transaction, nil
 }
 
 type tx struct {

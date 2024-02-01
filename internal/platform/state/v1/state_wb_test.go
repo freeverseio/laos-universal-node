@@ -47,7 +47,7 @@ func TestTransfer(t *testing.T) {
 
 	t.Run(`transfer token that is not minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -69,7 +69,7 @@ func TestTransfer(t *testing.T) {
 
 	t.Run(`transfer token that is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, _, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -92,7 +92,7 @@ func TestTransfer(t *testing.T) {
 
 	t.Run(`burn token that is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		eventTransfer := model.ERC721Transfer{
@@ -126,7 +126,7 @@ func TestMinting(t *testing.T) {
 	t.Parallel()
 	t.Run(`mint token`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		enumeratedTotalTree.EXPECT().Mint(big.NewInt(1)).Return(nil)
@@ -159,7 +159,7 @@ func TestTokenURI(t *testing.T) {
 	t.Parallel()
 	t.Run(`tokenURI returns valid string when asset is minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x3"), Minted: true, Idx: 1, TokenURI: "tokenURI"}
@@ -177,7 +177,7 @@ func TestTokenURI(t *testing.T) {
 
 	t.Run(`tokenURI returns an error when asset is not minted`, func(t *testing.T) {
 		t.Parallel()
-		ctrl, _, _, ownershipTree, _, transaction := getMocksAndTransaction(t)
+		ctrl, _, _, ownershipTree, transaction := getMocksAndTransaction(t)
 		defer ctrl.Finish()
 
 		tokenData := ownership.TokenData{SlotOwner: common.HexToAddress("0x0"), Minted: false, Idx: 0, TokenURI: ""}
@@ -198,28 +198,11 @@ func TestTokenURI(t *testing.T) {
 	})
 }
 
-func TestCheckout(t *testing.T) {
-	t.Parallel()
-	t.Run(`test checkout`, func(t *testing.T) {
-		t.Parallel()
-		ctrl, _, _, _, accountTree, transaction := getMocksAndTransaction(t)
-		defer ctrl.Finish()
-
-		accountTree.EXPECT().Checkout(int64(1)).Return(nil)
-
-		err := transaction.Checkout(int64(1))
-		if err != nil {
-			t.Fatalf("got error %s when no error was expected", err.Error())
-		}
-	})
-}
-
 // nolint:gocritic // it complains about more than five results in return but it is OK for the test
 func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
 	enumeratedTree *enumeratedTreeMock.MockTree,
 	enumeratedTotalTree *enumeratedTotalTreeMock.MockTree,
 	ownershipTree *ownershipTreeMock.MockTree,
-	accountTree *accountTreeMock.MockTree,
 	transaction tx,
 ) {
 	t.Helper()
@@ -231,7 +214,7 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
 	enumeratedTree = enumeratedTreeMock.NewMockTree(ctrl)
 	enumeratedTotalTree = enumeratedTotalTreeMock.NewMockTree(ctrl)
 	ownershipTree = ownershipTreeMock.NewMockTree(ctrl)
-	accountTree = accountTreeMock.NewMockTree(ctrl)
+	accountTree := accountTreeMock.NewMockTree(ctrl)
 
 	transaction = tx{
 		ownershipTrees:         make(map[common.Address]ownership.Tree),
@@ -248,5 +231,5 @@ func getMocksAndTransaction(t *testing.T) (ctrl *gomock.Controller,
 	transaction.enumeratedTrees[common.HexToAddress("0x500")] = enumeratedTree
 	transaction.enumeratedTotalTrees[common.HexToAddress("0x500")] = enumeratedTotalTree
 
-	return ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, accountTree, transaction
+	return ctrl, enumeratedTree, enumeratedTotalTree, ownershipTree, transaction
 }
