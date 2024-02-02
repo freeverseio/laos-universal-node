@@ -6,6 +6,7 @@ networks:
     startingBlock: "0"
     blocksMargin: 0
     blocksRange: 10
+    tolerations: universalnode-polygon-mumbai-0
     evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: "0"
     evoBlocksMargin: 0
@@ -17,6 +18,7 @@ networks:
     startingBlock: "0"
     blocksMargin: 0
     blocksRange: 10
+    tolerations: universalnode-polygon-mainnet-0
     evoRpc: https://rpc.klaos.laosfoundation.io/
     evoStartingBlock: "0"
     evoBlocksMargin: 0
