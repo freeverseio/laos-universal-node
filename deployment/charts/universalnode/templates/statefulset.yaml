@@ -61,7 +61,7 @@ spec:
       tolerations:
         - key: "pod"
           operator: "Equal"
-          value: {{ .Values.tolerations }}
+          value: universal-node
           effect: "NoSchedule"
   volumeClaimTemplates:
   - metadata:
