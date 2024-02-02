@@ -70,4 +70,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 2000Gi
+          storage: 2Ti
