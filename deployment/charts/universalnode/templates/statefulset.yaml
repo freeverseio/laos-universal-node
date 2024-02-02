@@ -25,11 +25,11 @@ spec:
             name: rpc
         resources:
           requests:
-            memory: "3Gi"
-            cpu: "1"
+            memory: "8Gi"
+            cpu: "4"
           limits:
-            memory: "6Gi"
-            cpu: "2"
+            memory: "16Gi"
+            cpu: "8"
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},
                 -storage_path=/app/.universalnode,
@@ -58,6 +58,11 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /app/.universalnode
+      tolerations:
+        - key: "pod"
+          operator: "Equal"
+          value: universal-node
+          effect: "NoSchedule"
   volumeClaimTemplates:
   - metadata:
       name: storage
@@ -65,4 +70,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 100Gi
+          storage: 2Ti
