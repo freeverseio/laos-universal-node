@@ -196,7 +196,10 @@ func (s scanner) ScanNewUniversalEvents(ctx context.Context, fromBlock, toBlock 
 		if len(eventLogs[i].Topics) == 0 {
 			continue
 		}
-
+		if len(eventLogs[i].Data) == 0 {
+			continue
+		}
+		
 		if eventLogs[i].Topics[0].Hex() == eventNewERC721UniversalSigHash {
 			newERC721Universal, err := parseNewERC721Universal(&eventLogs[i], &contractAbi)
 			if err != nil {
