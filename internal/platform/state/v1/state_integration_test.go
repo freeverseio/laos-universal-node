@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/dgraph-io/badger/v4/options"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -186,11 +185,8 @@ func createBadger(t *testing.T) *badger.DB {
 	t.Helper()
 	db, err := badger.Open(
 		badger.DefaultOptions("").
-		WithInMemory(true).
-		WithCompression(options.None).
-		WithBlockCacheSize(0).
-		WithBloomFalsePositive(0).
-		WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
+			WithInMemory(true).
+			WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
 	if err != nil {
 		t.Fatalf("error initializing storage: %v", err)
 	}
