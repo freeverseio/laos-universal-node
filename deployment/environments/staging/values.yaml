@@ -1,0 +1,10 @@
+networks:
+  - name: polygon-mainnet
+    host: polygon-mainnet-staging.unode.gorengine.com
+    debug: true
+    startingBlock: 53150000
+    blocksMargin: 0
+    blocksRange: 10
+    evoStartingBlock: 1
+    evoBlocksMargin: 0
+    evoBlocksRange: 1
