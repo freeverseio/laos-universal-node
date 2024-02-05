@@ -42,7 +42,7 @@ func (s *service) SetNextEvoEventBlock(contract string, blockNumber uint64) erro
 	}
 
 	uintValue := uint64(0)
-	if value == nil && len(value) > 0 {
+	if len(value) > 0 {
 		uintValue, err = strconv.ParseUint(string(value), 10, 64)
 		if err != nil {
 			return err

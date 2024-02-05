@@ -147,7 +147,6 @@ func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
 	return nil
 }
 
-// TODO check if it can be merged with LoadContractState
 // LoadContractTrees loads the merkle trees in memory for contractAddress
 func (t *tx) LoadContractTrees(contractAddress common.Address) error {
 	slog.Debug("LoadContractTrees", "contract", contractAddress.String())

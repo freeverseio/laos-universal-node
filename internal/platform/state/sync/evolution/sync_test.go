@@ -90,6 +90,19 @@ func TestSetGetNextNextEvoEventBlock(t *testing.T) {
 			t.Errorf(`got block %d when 100 was expected`, block)
 		}
 
+		err = tx.SetNextEvoEventBlock(common.HexToAddress("0x500").Hex(), 200)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
+		block, err = tx.GetNextEvoEventBlock(common.HexToAddress("0x500").Hex(), 100)
+		if err != nil {
+			t.Errorf(`got error "%v" when no error was expected`, err)
+		}
+
+		if block != 200 {
+			t.Errorf(`got block %d when 100 was expected`, block)
+		}
 	})
 }
 

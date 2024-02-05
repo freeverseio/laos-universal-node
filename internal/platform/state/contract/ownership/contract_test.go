@@ -20,11 +20,11 @@ func TestStoreGetERC721UniversalContracts(t *testing.T) {
 		if err != nil {
 			t.Errorf(`got error "%v" when no error was expected`, err)
 		}
-        uEvent := model.ERC721UniversalContract{
-            Address: common.HexToAddress("0x500"),
-            CollectionAddress:  common.HexToAddress("0x501"),
-            BlockNumber: 10,
-        }
+		uEvent := model.ERC721UniversalContract{
+			Address:           common.HexToAddress("0x500"),
+			CollectionAddress: common.HexToAddress("0x501"),
+			BlockNumber:       10,
+		}
 
 		err = tx.StoreERC721UniversalContracts([]model.ERC721UniversalContract{uEvent})
 		if err != nil {
@@ -32,7 +32,7 @@ func TestStoreGetERC721UniversalContracts(t *testing.T) {
 		}
 
 		contracts := tx.GetAllERC721UniversalContracts()
-		
+
 		if len(contracts) != 1 {
 			t.Errorf(`got %d contracts when 1 was expected`, len(contracts))
 		}

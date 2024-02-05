@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 
@@ -43,7 +42,6 @@ func (s *service) StoreMintedWithExternalURIEvents(contract string, event *model
 }
 
 func (s *service) GetMintedWithExternalURIEvents(contract string, blockNumber uint64) ([]model.MintedWithExternalURI, error) {
-	slog.Debug("GetMintedWithExternalURIEvents", "contract", contract, "blockNumber", blockNumber)
 	key := fmt.Sprintf("%s%s_%s", eventsPrefix,
 		strings.ToLower(contract),
 		formatNumberForSorting(blockNumber, blockNumberDigits))
@@ -54,7 +52,6 @@ func (s *service) GetMintedWithExternalURIEvents(contract string, blockNumber ui
 		return mintedEvents, nil
 	}
 
-	// TODO: this for loop probably can be avoided by decoding the whole slice of events
 	for _, event := range events {
 		var mintedEvent model.MintedWithExternalURI
 		decoder := gob.NewDecoder(bytes.NewBuffer(event))
