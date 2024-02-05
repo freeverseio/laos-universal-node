@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/options"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"golang.org/x/sync/errgroup"
 
@@ -75,7 +76,13 @@ func run() error {
 	c.LogFields()
 
 	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)
-	db, err := badger.Open(badger.DefaultOptions(dbPath).WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
+	db, err := badger.Open(badger.DefaultOptions(dbPath).
+		WithCompression(options.None).
+		WithBlockCacheSize(0).
+		WithBloomFalsePositive(0).
+		WithLoggingLevel(badger.ERROR).
+		WithMemTableSize(1 << 30))
+
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
