@@ -56,7 +56,6 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 		tx := stateService.NewTransaction()
 		events, err := tx.GetMintedWithExternalURIEvents(contract.Hex())
 		assertError(t, nil, err)
-
 		if len(events) != 1 {
 			t.Fatalf("expected 1 event, got %d", len(events))
 		}

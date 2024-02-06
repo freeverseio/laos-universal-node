@@ -303,7 +303,6 @@ func (s scanner) ScanEvents(ctx context.Context, fromBlock, toBlock *big.Int, co
 			}
 		}
 	}
-
 	return parsedEvents, nil
 }
 

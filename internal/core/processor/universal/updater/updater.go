@@ -119,6 +119,8 @@ func (u *updater) UpdateState(
 	return nil
 }
 
+// mergeAndUpdate merges minted events and transfer events and updates the state
+// returns the index of the last processed minted event
 func mergeAndUpdate(ctx context.Context, client blockchain.EthClient, mintedEvents []model.MintedWithExternalURI, modelTransferEvents []model.ERC721Transfer, contract string, tx state.Tx, lastBlockTimestamp uint64) (uint64, error) {
 	ownershipContractEvoEventIndex, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
 	if err != nil {
@@ -191,6 +193,8 @@ func updateStateWithMint(ctx context.Context, client blockchain.EthClient, contr
 	return tx.Mint(common.HexToAddress(contract), mintedEvent)
 }
 
+// getFirstOwnershipBlockAfterMintEvent returns the first ownership block with a timestamp after the mint event
+// meaning it returns the ownership block that corresponds to the mint event
 func getFirstOwnershipBlockAfterMintEvent(ctx context.Context,
 	client blockchain.EthClient,
 	contract string,
@@ -199,14 +203,11 @@ func getFirstOwnershipBlockAfterMintEvent(ctx context.Context,
 ) (uint64, error) {
 	// At this point this function uses GetLastTaggedBlock(). I think the first ownership block after mint event
 	// can be found in a way that is more clean but I will keep it now as is
-
 	slog.Debug("finding the first ownership block after mint event", "mintedEvent", mintedEvent, "contract", contract)
-
 	block, err := tx.GetLastTaggedBlock(common.HexToAddress(contract))
 	if err != nil {
 		return 0, err
 	}
-
 	for {
 		block++
 		header, err := client.HeaderByNumber(ctx, big.NewInt(block))

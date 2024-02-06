@@ -28,7 +28,7 @@ func NewService(tx storage.Tx) *service {
 }
 
 func (s *service) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
-	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	formatedOwnershipBlockNumber := sync.FormatNumberForSorting(blockNumber, blockNumberDigits)
 	// Saving the block with blocknumber as key
 	return sync.SetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber, block)
 }
@@ -48,7 +48,7 @@ func (s *service) GetLastOwnershipBlock() (model.Block, error) {
 }
 
 func (s *service) GetOwnershipBlock(blockNumber uint64) (model.Block, error) {
-	formatedOwnershipBlockNumber := formatBlockNumber(blockNumber, blockNumberDigits)
+	formatedOwnershipBlockNumber := sync.FormatNumberForSorting(blockNumber, blockNumberDigits)
 	return sync.GetBlock(s.tx, ownershipBlockTag+formatedOwnershipBlockNumber)
 }
 
@@ -121,14 +121,4 @@ func (s *service) DeleteOrphanBlockData(blockNumberRef uint64) error {
 	}
 
 	return nil
-}
-
-func formatBlockNumber(blockNumber uint64, blockNumberDigits uint16) string {
-	// Convert the block number to a string
-	blockNumberString := strconv.FormatUint(blockNumber, 10)
-	// Pad with leading zeros if shorter
-	for len(blockNumberString) < int(blockNumberDigits) {
-		blockNumberString = "0" + blockNumberString
-	}
-	return blockNumberString
 }

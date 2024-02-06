@@ -445,7 +445,6 @@ func TestProcessEvoBlockRange(t *testing.T) {
 
 func createMocks(t *testing.T) (*mockTx.MockService, *mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner, *mockRPCRequests.MockLaosRPCRequests) {
 	ctrl := gomock.NewController(t)
-
 	return mockTx.NewMockService(ctrl), mockTx.NewMockTx(ctrl), mockClient.NewMockEthClient(ctrl), mockScan.NewMockScanner(ctrl), mockRPCRequests.NewMockLaosRPCRequests(ctrl)
 }
 
@@ -471,6 +470,7 @@ func createEventMintedWithExternalURI(blockNumber uint64, contract common.Addres
 		Contract:    contract,
 		BlockNumber: blockNumber,
 		Timestamp:   100,
+		TxIndex:     1,
 	}
 
 	adjustedEvent := model.MintedWithExternalURI{
@@ -480,6 +480,7 @@ func createEventMintedWithExternalURI(blockNumber uint64, contract common.Addres
 		TokenId:     big.NewInt(10),
 		BlockNumber: blockNumber,
 		Timestamp:   100,
+		TxIndex:     1,
 	}
 	return event, adjustedEvent
 }
