@@ -1,11 +1,10 @@
 networks:
   - name: polygon-mumbai
-    host: polygon-mumbai-staging.unode.gorengine.com
+    host: polygon-mumbai.unode.gorengine.com
     debug: true
-    startingBlock: 42891324
+    startingBlock: "42891324"
     blocksMargin: 0
     blocksRange: 10
-    evoStartingBlock: 1
+    evoStartingBlock: "1"
     evoBlocksMargin: 0
     evoBlocksRange: 1
-

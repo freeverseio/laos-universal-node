@@ -2,27 +2,27 @@ networks:
   - name: polygon-mainnet
     host: polygon-mainnet.unode.klaos.laosfoundation.io/ 
     debug: true
-    startingBlock: 50442008
+    startingBlock: "50442008"
     blocksMargin: 0
     blocksRange: 10
-    evoStartingBlock: 1
+    evoStartingBlock: "1"
     evoBlocksMargin: 0
     evoBlocksRange: 1
   - name: polygon-mumbai
     host: polygon-mumbai.unode.klaos.laosfoundation.io/ 
     debug: true
-    startingBlock: 42891324
+    startingBlock: "42891324"
     blocksMargin: 0
     blocksRange: 10
-    evoStartingBlock: 1
+    evoStartingBlock: "1"
     evoBlocksMargin: 0
     evoBlocksRange: 1
   - name: ethereum-mainnet
     host: ethereum-mainnet.unode.klaos.laosfoundation.io/ 
     debug: true
-    startingBlock: 18661200
+    startingBlock: "18661200"
     blocksMargin: 0
     blocksRange: 10
-    evoStartingBlock: 1
+    evoStartingBlock: "1"
     evoBlocksMargin: 0
     evoBlocksRange: 1
