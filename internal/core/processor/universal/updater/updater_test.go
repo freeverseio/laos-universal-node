@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 
+	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	uUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -165,6 +166,51 @@ func TestGetBlockTimestampsParallel(t *testing.T) {
 		_, err := uUpdater.GetBlockTimestampsParallel(context.Background(), client, 10, 10)
 		assertError(t, err, fmt.Errorf("some error"))
 	})
+}
+
+func TestUpdateState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockTx, mockClient, mockScanner := createMocks(t)
+
+	ctx := context.Background()
+	contracts := []string{"0x01", "0x02"}
+	newContracts := map[common.Address]uint64{
+		common.HexToAddress("0x02"): 101,
+	}
+	modelTransferEvents := map[uint64]map[string][]model.ERC721Transfer{}
+	startingBlock := uint64(100)
+	lastBlockData := model.Block{
+		Number: 101,
+	}
+	mockTx.EXPECT().GetCollectionAddress("0x01").Return(common.HexToAddress("0x03"), nil).Times(2)
+	mockTx.EXPECT().GetCollectionAddress("0x02").Return(common.HexToAddress("0x04"), nil).Times(1)
+	mockTx.EXPECT().AccountData(common.HexToAddress("0x01")).Return(&account.AccountData{
+		LastProcessedEvoBlock: 351,
+	}, nil).Times(2)
+	mockTx.EXPECT().GetNextEvoEventBlock(common.HexToAddress("0x03").String(), uint64(351)).Return(uint64(0), nil).Times(2)
+	mockTx.EXPECT().AccountData(common.HexToAddress("0x02")).Return(&account.AccountData{
+		LastProcessedEvoBlock: 351,
+	}, nil).Times(1)
+	mockTx.EXPECT().GetNextEvoEventBlock(common.HexToAddress("0x04").String(), uint64(351)).Return(uint64(0), nil).Times(1)
+	mockTx.EXPECT().TagRoot(int64(100)).Return(nil).Times(1)
+	mockTx.EXPECT().TagRoot(int64(101)).Return(nil).Times(1)
+
+	mockClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(100)).Return(&types.Header{
+		Time:   10,
+		Number: big.NewInt(int64(100)),
+	}, nil)
+	mockClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(101)).Return(&types.Header{
+		Time:   11,
+		Number: big.NewInt(int64(101)),
+	}, nil)
+
+	updater := updater.New(mockClient, mockScanner)
+	err := updater.UpdateState(ctx, mockTx, contracts, newContracts, modelTransferEvents, startingBlock, lastBlockData)
+	if err != nil {
+		t.Errorf("got %v, expected nil", err)
+	}
+
 }
 
 func createMocks(t *testing.T) (*mockTx.MockTx, *mockClient.MockEthClient, *mockScan.MockScanner) {

@@ -102,7 +102,7 @@ func (u *updater) UpdateState(
 	for block := startingBlock; block <= lastBlockData.Number; block++ {
 		blockTime := blockTimestamps[block]
 		for _, contract := range contracts {
-			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; !ok {
+			if blockWhenDiscovered, ok := newContracts[common.HexToAddress(contract)]; ok {
 				if block < blockWhenDiscovered {
 					continue
 				}
