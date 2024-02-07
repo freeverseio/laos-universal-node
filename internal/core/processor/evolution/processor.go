@@ -192,7 +192,7 @@ func storeMintedWithExternalURIEventsByContract(tx state.Tx, events []scan.Event
 				TxIndex:     e.TxIndex,
 			}
 
-			if err := tx.StoreMintedWithExternalURIEvents(e.Contract.String(), externalMintEvent); err != nil {
+			if err := tx.StoreMintedWithExternalURIEvent(e.Contract.String(), externalMintEvent); err != nil {
 				return err
 			}
 

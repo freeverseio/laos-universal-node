@@ -34,7 +34,7 @@ func (s *service) GetLastEvoBlock() (model.Block, error) {
 	return sync.GetBlock(s.tx, lastBlock)
 }
 
-// SetNextEvoEventBlockForOwnershipContract is used by evo processor for storing the next block that has events
+// SetNextEvoEventBlock is used by evo processor for storing the next block that has events
 func (s *service) SetNextEvoEventBlock(contract string, blockNumber uint64) error {
 	value, err := s.tx.Get([]byte(lastEvoEventBlockPrefix + strings.ToLower(contract)))
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *service) SetNextEvoEventBlock(contract string, blockNumber uint64) erro
 	return s.tx.Set([]byte(lastEvoEventBlockPrefix+strings.ToLower(contract)), []byte(strconv.FormatUint(blockNumber, 10)))
 }
 
-// GetNextEvoEventBlockForOwnershipContract is used by universal processor for getting the next block that has events
+// GetNextEvoEventBlock is used by universal processor for getting the next block that has events
 func (s *service) GetNextEvoEventBlock(contract string, blockNumber uint64) (uint64, error) {
 	key := fmt.Sprintf("%s_%s_%s",
 		nextEvoEventBlockPrefix,

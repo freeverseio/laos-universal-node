@@ -297,7 +297,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
+			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(errors.New("error storing events to db"))
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
@@ -326,7 +326,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
+			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
 
 		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
@@ -365,7 +365,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
+			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
 
 		client.EXPECT().
@@ -408,7 +408,7 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Return([]scan.Event{event}, nil)
 
 		tx.EXPECT().
-			StoreMintedWithExternalURIEvents(contract.String(), &adjustedEvent).
+			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
 
 		client.EXPECT().
