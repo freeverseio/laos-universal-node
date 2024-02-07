@@ -9,6 +9,7 @@ mocks:
 	mockgen -source=internal/platform/state/tree/enumerated/tree.go -destination=internal/platform/state/tree/enumerated/mock/tree.go -package=mock
 	mockgen -source=internal/platform/state/tree/enumeratedtotal/tree.go -destination=internal/platform/state/tree/enumeratedtotal/mock/tree.go -package=mock
 	mockgen -source=internal/platform/state/tree/ownership/tree.go -destination=internal/platform/state/tree/ownership/mock/tree.go -package=mock
+	mockgen -source=internal/platform/state/tree/account/tree.go -destination=internal/platform/state/tree/account/mock/tree.go -package=mock
 	mockgen -source=internal/core/processor/evolution/processor.go -destination=internal/core/processor/evolution/mock/processor.go -package=mock
 	mockgen -source=internal/core/processor/evolution/client.go -destination=internal/core/processor/evolution/mock/client.go -package=mock
 	mockgen -source=internal/core/processor/universal/discoverer/validator/validator.go -destination=internal/core/processor/universal/discoverer/validator/mock/validator.go -package=mock

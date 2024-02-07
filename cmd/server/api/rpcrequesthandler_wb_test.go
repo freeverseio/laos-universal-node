@@ -20,7 +20,7 @@ func TestCheckContractInList(t *testing.T) {
 		stateService := mockState.NewMockService(ctrl)
 		tx := mockState.NewMockTx(ctrl)
 
-		stateService.EXPECT().NewTransaction().Return(tx).Times(2)
+		stateService.EXPECT().NewTransaction().Return(tx, nil).Times(2)
 		tx.EXPECT().Discard().Times(2)
 		tx.EXPECT().HasERC721UniversalContract(contract1).Return(true, nil).Times(1)
 		tx.EXPECT().HasERC721UniversalContract(contract2).Return(false, nil).Times(1)

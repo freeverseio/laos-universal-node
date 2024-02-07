@@ -239,7 +239,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 				api.WithRPCProxyHandler(proxyHandler),
 			)
 
-			state.EXPECT().NewTransaction().Return(tx).Times(tc.txCalledTimes)
+			state.EXPECT().NewTransaction().Return(tx, nil).Times(tc.txCalledTimes)
 			tx.EXPECT().Discard().Times(tc.txCalledTimes)
 			tx.EXPECT().
 				HasERC721UniversalContract("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").

@@ -5,24 +5,19 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree"
 	"github.com/freeverseio/laos-universal-node/internal/platform/merkletree/jellyfish"
 	"github.com/freeverseio/laos-universal-node/internal/platform/storage"
 )
 
 const (
-	prefix               = "enumeratedtotal/"
-	treePrefix           = prefix + "tree/"
-	headRootKeyPrefix    = prefix + "head/"
-	totalSupplyPrefix    = prefix + "totalsupply/"
-	tokensPrefix         = prefix + "tokens/"
-	tagPrefix            = prefix + "tags/"
-	totalSupplyTagPrefix = prefix + "tags/totalsupply"
-	lastTagPrefix        = prefix + "lasttag/"
+	prefix       = "enumeratedtotal/"
+	treePrefix   = prefix + "tree/"
+	tokensPrefix = prefix + "tokens/"
 )
 
 // Tree defines interface for enumerated total tree
@@ -31,10 +26,9 @@ type Tree interface {
 	Mint(tokenId *big.Int) error
 	Burn(idx int) error
 	TokenByIndex(idx int) (*big.Int, error)
-	TotalSupply() (int64, error)
-	TagRoot(blockNumber int64) error
-	GetLastTaggedBlock() (int64, error)
-	Checkout(blockNumber int64) error
+	TotalSupply() int64
+	SetTotalSupply(totalSupply int64)
+	SetRoot(root common.Hash)
 }
 
 // EnumeratedTokensTree is used to store enumerated tokens of each owner
@@ -43,10 +37,14 @@ type tree struct {
 	mt       merkletree.MerkleTree
 	store    storage.Tx
 	tx       bool
+	// total supply is currently not store in the tree.
+	// We should measure how much storing it in the tree (in a similar way as in enumerated tree) reduces max tx size.
+	// if not too much I suggest to put in the tree because code would be simpler
+	totalSupply int64
 }
 
 // NewTree creates a new merkleTree with a custom storage
-func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
+func NewTree(contract common.Address, root common.Hash, totalSupply int64, store storage.Tx) (Tree, error) {
 	if contract.Cmp(common.Address{}) == 0 {
 		return nil, errors.New("contract address is " + common.Address{}.String())
 	}
@@ -56,50 +54,31 @@ func NewTree(contract common.Address, store storage.Tx) (Tree, error) {
 		return nil, err
 	}
 
-	root, err := headRoot(contract, store)
-	if err != nil {
-		return nil, err
-	}
-
 	t.SetRoot(root)
 	slog.Debug("enumeratedTotalTree", "HEAD", root.String())
 
-	return &tree{contract, t, store, false}, err
+	return &tree{contract, t, store, false, totalSupply}, err
 }
 
 // Mint creates a new token
 func (b *tree) Mint(tokenId *big.Int) error {
-	totalSupply, err := b.TotalSupply()
+	err := b.SetTokenToIndex(int(b.totalSupply), tokenId)
 	if err != nil {
 		return err
 	}
 
-	err = b.SetTokenToIndex(int(totalSupply), tokenId)
-	if err != nil {
-		return err
-	}
+	b.totalSupply++
 
-	totalSupply++
-	err = b.SetTotalSupply(totalSupply)
-	if err != nil {
-		return err
-	}
-
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return nil
 }
 
 // Burn removes token )
 func (b *tree) Burn(idx int) error {
-	totalSupply, err := b.TotalSupply()
-	if err != nil {
-		return err
-	}
-
-	if idx >= int(totalSupply) {
+	if idx >= int(b.totalSupply) {
 		return errors.New("index out of totalSupply range")
 	}
 
-	tokenId, err := b.TokenByIndex(int(totalSupply - 1))
+	tokenId, err := b.TokenByIndex(int(b.totalSupply - 1))
 	if err != nil {
 		return err
 	}
@@ -109,36 +88,23 @@ func (b *tree) Burn(idx int) error {
 		return err
 	}
 
-	err = b.SetTokenToIndex(int(totalSupply)-1, big.NewInt(0))
+	err = b.SetTokenToIndex(int(b.totalSupply)-1, big.NewInt(0))
 	if err != nil {
 		return err
 	}
 
-	totalSupply--
-	err = b.SetTotalSupply(totalSupply)
-	if err != nil {
-		return err
-	}
+	b.totalSupply--
 
-	return setHeadRoot(b.contract, b.store, b.Root())
+	return nil
 }
 
 // SetTotalSupply sets to total number of token in the contract
-func (b *tree) SetTotalSupply(totalSupply int64) error {
-	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), []byte(strconv.FormatInt(totalSupply, 10)))
+func (b *tree) SetTotalSupply(totalSupply int64) {
+	b.totalSupply = totalSupply
 }
 
-func (b *tree) TotalSupply() (int64, error) {
-	buf, err := b.store.Get([]byte(totalSupplyPrefix + b.contract.String()))
-	if err != nil {
-		return 0, err
-	}
-
-	if len(buf) == 0 {
-		return 0, nil
-	}
-
-	return strconv.ParseInt(string(buf), 10, 64)
+func (b *tree) TotalSupply() int64 {
+	return b.totalSupply
 }
 
 // SetTokenIndex sets the token index
@@ -158,12 +124,7 @@ func (b *tree) SetTokenToIndex(idx int, token *big.Int) error {
 
 // TokenByIndex returns the token by index
 func (b *tree) TokenByIndex(idx int) (*big.Int, error) {
-	totalSupply, err := b.TotalSupply()
-	if err != nil {
-		return nil, err
-	}
-
-	if idx >= int(totalSupply) {
+	if idx >= int(b.totalSupply) {
 		return big.NewInt(0), errors.New("index out of totalSupply range")
 	}
 
@@ -194,95 +155,7 @@ func (b *tree) Root() common.Hash {
 	return b.mt.Root()
 }
 
-func headRoot(contract common.Address, store storage.Tx) (common.Hash, error) {
-	buf, err := store.Get([]byte(headRootKeyPrefix + contract.String()))
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	if len(buf) == 0 {
-		return common.Hash{}, nil
-	}
-
-	return common.BytesToHash(buf), nil
-}
-
-func setHeadRoot(contract common.Address, store storage.Tx, root common.Hash) error {
-	return store.Set([]byte(headRootKeyPrefix+contract.String()), root.Bytes())
-}
-
-// TagRoot stores a root value for the block so that it can be checked later
-func (b *tree) TagRoot(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	root := b.Root()
-	err := b.store.Set([]byte(tagKey), root.Bytes())
-	if err != nil {
-		return err
-	}
-
-	totalSupply, err := b.TotalSupply()
-	if err != nil {
-		return err
-	}
-	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	err = b.store.Set([]byte(tagTotalSupplyKey), []byte(strconv.FormatInt(totalSupply, 10)))
-	if err != nil {
-		return err
-	}
-
-	lastTagKey := lastTagPrefix + b.contract.String()
-	return b.store.Set([]byte(lastTagKey), []byte(strconv.FormatInt(blockNumber, 10)))
-}
-
-func (b *tree) GetLastTaggedBlock() (int64, error) {
-	lastTagKey := lastTagPrefix + b.contract.String()
-	buf, err := b.store.Get([]byte(lastTagKey))
-	if err != nil {
-		return 0, err
-	}
-	if len(buf) == 0 {
-		return 0, nil
-	}
-
-	return strconv.ParseInt(string(buf), 10, 64)
-}
-
-// Checkout sets the current root to the one that is tagged for a blockNumber.
-// TODO: check is it possible to put some repetitive code in all trees in some separate file (utils)
-func (b *tree) Checkout(blockNumber int64) error {
-	tagKey := tagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	buf, err := b.store.Get([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-
-	if len(buf) == 0 {
-		return errors.New("no tag found for this block number " + strconv.FormatInt(blockNumber, 10))
-	}
-
-	newRoot := common.BytesToHash(buf)
-	b.mt.SetRoot(newRoot)
-	err = setHeadRoot(b.contract, b.store, newRoot)
-	if err != nil {
-		return err
-	}
-
-	tagTotalSupplyKey := totalSupplyTagPrefix + b.contract.String() + "/" + strconv.FormatInt(blockNumber, 10)
-	buf, err = b.store.Get([]byte(tagTotalSupplyKey))
-	if err != nil {
-		return err
-	}
-
-	return b.store.Set([]byte(totalSupplyPrefix+b.contract.String()), buf)
-}
-
-// DeleteRootTag deletes root tag without loading the tree
-func DeleteRootTag(tx storage.Tx, contract string, blockNumber int64) error {
-	tagKey := tagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	err := tx.Delete([]byte(tagKey))
-	if err != nil {
-		return err
-	}
-	tagTotalSupplyKey := totalSupplyTagPrefix + contract + "/" + strconv.FormatInt(blockNumber, 10)
-	return tx.Delete([]byte(tagTotalSupplyKey))
+// SetRoot sets the current root to the one that is tagged for a blockNumber.
+func (b *tree) SetRoot(root common.Hash) {
+	b.mt.SetRoot(root)
 }

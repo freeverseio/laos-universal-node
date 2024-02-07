@@ -53,35 +53,6 @@ func (mr *MockTreeMockRecorder) Burn(idx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Burn", reflect.TypeOf((*MockTree)(nil).Burn), idx)
 }
 
-// Checkout mocks base method.
-func (m *MockTree) Checkout(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Checkout", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Checkout indicates an expected call of Checkout.
-func (mr *MockTreeMockRecorder) Checkout(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockTree)(nil).Checkout), blockNumber)
-}
-
-// GetLastTaggedBlock mocks base method.
-func (m *MockTree) GetLastTaggedBlock() (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastTaggedBlock")
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLastTaggedBlock indicates an expected call of GetLastTaggedBlock.
-func (mr *MockTreeMockRecorder) GetLastTaggedBlock() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTree)(nil).GetLastTaggedBlock))
-}
-
 // Mint mocks base method.
 func (m *MockTree) Mint(tokenId *big.Int) error {
 	m.ctrl.T.Helper()
@@ -110,18 +81,28 @@ func (mr *MockTreeMockRecorder) Root() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Root", reflect.TypeOf((*MockTree)(nil).Root))
 }
 
-// TagRoot mocks base method.
-func (m *MockTree) TagRoot(blockNumber int64) error {
+// SetRoot mocks base method.
+func (m *MockTree) SetRoot(root common.Hash) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TagRoot", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "SetRoot", root)
 }
 
-// TagRoot indicates an expected call of TagRoot.
-func (mr *MockTreeMockRecorder) TagRoot(blockNumber any) *gomock.Call {
+// SetRoot indicates an expected call of SetRoot.
+func (mr *MockTreeMockRecorder) SetRoot(root any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TagRoot", reflect.TypeOf((*MockTree)(nil).TagRoot), blockNumber)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRoot", reflect.TypeOf((*MockTree)(nil).SetRoot), root)
+}
+
+// SetTotalSupply mocks base method.
+func (m *MockTree) SetTotalSupply(totalSupply int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTotalSupply", totalSupply)
+}
+
+// SetTotalSupply indicates an expected call of SetTotalSupply.
+func (mr *MockTreeMockRecorder) SetTotalSupply(totalSupply any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTotalSupply", reflect.TypeOf((*MockTree)(nil).SetTotalSupply), totalSupply)
 }
 
 // TokenByIndex mocks base method.
@@ -140,12 +121,11 @@ func (mr *MockTreeMockRecorder) TokenByIndex(idx any) *gomock.Call {
 }
 
 // TotalSupply mocks base method.
-func (m *MockTree) TotalSupply() (int64, error) {
+func (m *MockTree) TotalSupply() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TotalSupply")
 	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // TotalSupply indicates an expected call of TotalSupply.

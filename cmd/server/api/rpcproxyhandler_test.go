@@ -142,7 +142,7 @@ func TestPostRpcHandler(t *testing.T) {
 
 			state := stateMock.NewMockService(ctrl)
 			tx := stateMock.NewMockTx(ctrl)
-			state.EXPECT().NewTransaction().Return(tx).AnyTimes()
+			state.EXPECT().NewTransaction().Return(tx, nil).AnyTimes()
 			tx.EXPECT().Discard().AnyTimes()
 			tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: uint64(1001)}, nil).AnyTimes()
 

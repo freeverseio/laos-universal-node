@@ -89,7 +89,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			ctx := context.TODO()
 			stateService, tx, client, _, _, _ := createMocks(t)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastOwnershipBlock().Return(tt.startingBlockData, tt.startingBlockError)
 			tx.EXPECT().Discard()
 			if tt.userProvidedBlock == 0 && tt.startingBlockData.Number == 0 && tt.startingBlockError == nil {
@@ -179,7 +179,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 		blockHeaderFromChain         *types.Header
 		blockDataFromDB              model.Block
 		discoverReturn               bool
-		updateReturn                 map[string][]model.ERC721Transfer
+		updateReturn                 map[uint64]map[string][]model.ERC721Transfer
 		expectedError                error
 		expectedTxCommit             int
 		expectedNumberOfReorgCheck   int
@@ -201,10 +201,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
-			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			discoverReturn:             false,
+			updateReturn:               make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError:              nil,
 			expectedTxCommit:           1,
 			expectedNumberOfReorgCheck: 1,
@@ -227,9 +225,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
 			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			updateReturn:   make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError: universal.ReorgError{
 				Block:       90,
 				ChainHash:   common.HexToHash("0x62055b9639cbed71604205301891afe40ae0fe4f57ceadbf35d9a476361c48ed"),
@@ -254,10 +250,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 				Number: 100,
 				Hash:   common.HexToHash("0xb07e1289b32edefd8f3c702d016fb73c81d5950b2ebc790ad9d2cb8219066b4c"),
 			},
-			discoverReturn: false,
-			updateReturn: map[string][]model.ERC721Transfer{
-				"contract": {},
-			},
+			discoverReturn:             false,
+			updateReturn:               make(map[uint64]map[string][]model.ERC721Transfer),
 			expectedError:              nil,
 			expectedTxCommit:           1,
 			expectedNumberOfReorgCheck: 0,
@@ -272,7 +266,7 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			stateService, tx, client, scanner, discoverer, updater := createMocks(t)
 			p := universal.NewProcessor(client, stateService, scanner, &config.Config{}, discoverer, updater)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.startingBlock))).Return(tt.blockHeaderFromChain, nil)
 
@@ -285,7 +279,8 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
 
 			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(tt.updateReturn, nil)
-			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, tt.updateReturn, tt.blockDataFromDB).Return(nil)
+
+			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, make(map[common.Address]uint64), tt.updateReturn, tt.startingBlock, tt.blockDataFromDB).Return(nil)
 
 			tx.EXPECT().Commit().Return(nil).Times(tt.expectedTxCommit)
 			tx.EXPECT().Discard()
@@ -331,7 +326,7 @@ func TestIsEvoSyncedWithOwnership(t *testing.T) {
 			client.EXPECT().HeaderByNumber(ctx, big.NewInt(int64(tt.TimeOwnership))).
 				Return(&types.Header{Number: big.NewInt(100), Time: tt.TimeOwnership}, nil)
 
-			stateService.EXPECT().NewTransaction().Return(tx)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: tt.TimeEvo, Timestamp: tt.TimeEvo}, nil)
 			tx.EXPECT().Discard()
 
@@ -450,9 +445,9 @@ func TestRecoverFromReorg(t *testing.T) {
 			for _, header := range tt.getBlockHeadersL1 {
 				client.EXPECT().HeaderByNumber(ctx, header.Number).Return(header, nil).Times(1)
 			}
-			stateService.EXPECT().NewTransaction().Return(tx).Times(1 + len(tt.getAllContracts))
+			stateService.EXPECT().NewTransaction().Return(tx, nil).Times(1)
 			tx.EXPECT().Discard().Times(1)
-			tx.EXPECT().Commit().Times(len(tt.getAllContracts) + 1)
+			tx.EXPECT().Commit().Times(1)
 			tx.EXPECT().GetAllStoredBlockNumbers().Return(tt.getAllStoredBlockNumbers, nil).Times(1)
 			for i := 0; i < int(tt.numberOfRecursions); i++ {
 				block := tt.getBlockHeadersDB[i]
@@ -461,15 +456,13 @@ func TestRecoverFromReorg(t *testing.T) {
 					Hash:   block.Hash(),
 				}, nil).Times(1)
 			}
-			tx.EXPECT().GetAllERC721UniversalContracts().Return(tt.getAllContracts).Times(1)
+
 			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanBlockData(tt.safeBlockNumber).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanRootTags(int64(tt.safeBlockNumber)+1, int64(tt.startingBlock)).Return(nil).Times(1)
 
-			for _, contract := range tt.getAllContracts {
-				tx.EXPECT().LoadMerkleTrees(common.HexToAddress(contract)).Return(nil).Times(1)
-				tx.EXPECT().Checkout(common.HexToAddress(contract), int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
-			}
+			tx.EXPECT().Checkout(int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
+
 			p := universal.NewProcessor(client, stateService, nil, &config.Config{}, nil, nil)
 			block, err := p.RecoverFromReorg(ctx, tt.startingBlock)
 			if (err != nil) != (tt.expectedError != nil) {

@@ -53,8 +53,9 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, nil, err)
 
-		tx := stateService.NewTransaction()
-		events, err := tx.GetMintedWithExternalURIEvents(contract.Hex())
+		tx, err := stateService.NewTransaction()
+		assertError(t, nil, err)
+		events, err := tx.GetMintedWithExternalURIEvents(contract.Hex(), 120)
 		assertError(t, nil, err)
 
 		if len(events) != 1 {
@@ -109,8 +110,9 @@ func TestProcessEvoBlockRangeWithBadger100Events(t *testing.T) {
 		err := p.ProcessEvoBlockRange(ctx, startingBlock, lastBlockData.Number)
 		assertError(t, nil, err)
 
-		tx := stateService.NewTransaction()
-		e, err := tx.GetMintedWithExternalURIEvents(contract.Hex())
+		tx, err := stateService.NewTransaction()
+		assertError(t, nil, err)
+		e, err := tx.GetMintedWithExternalURIEvents(contract.Hex(), 120)
 		assertError(t, nil, err)
 		if len(e) != 100 {
 			t.Fatalf("expected 100 events, got %d", len(e))

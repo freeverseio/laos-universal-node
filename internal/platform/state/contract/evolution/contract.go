@@ -27,26 +27,26 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-func (s *service) StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error {
-	for _, event := range events {
-		var buf bytes.Buffer
-		encoder := gob.NewEncoder(&buf)
-		if err := encoder.Encode(event); err != nil {
-			return err
-		}
-		key := fmt.Sprintf("%s%s_%s_%s", eventsPrefix,
-			strings.ToLower(contract),
-			formatNumberForSorting(event.BlockNumber, blockNumberDigits),
-			formatNumberForSorting(event.TxIndex, txIndexDigits))
-		if errSet := s.tx.Set([]byte(key), buf.Bytes()); errSet != nil {
-			return errSet
-		}
+func (s *service) StoreMintedWithExternalURIEvent(contract string, event *model.MintedWithExternalURI) error {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(event); err != nil {
+		return err
 	}
-	return nil
+	key := fmt.Sprintf("%s%s_%s_%s", eventsPrefix,
+		strings.ToLower(contract),
+		formatNumberForSorting(event.BlockNumber, blockNumberDigits),
+		formatNumberForSorting(event.TxIndex, txIndexDigits))
+
+	return s.tx.Set([]byte(key), buf.Bytes())
 }
 
-func (s *service) GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error) {
-	events := s.tx.GetValuesWithPrefix([]byte(eventsPrefix + strings.ToLower(contract) + "_"))
+func (s *service) GetMintedWithExternalURIEvents(contract string, blockNumber uint64) ([]model.MintedWithExternalURI, error) {
+	key := fmt.Sprintf("%s%s_%s", eventsPrefix,
+		strings.ToLower(contract),
+		formatNumberForSorting(blockNumber, blockNumberDigits))
+
+	events := s.tx.GetValuesWithPrefix([]byte(key))
 	var mintedEvents []model.MintedWithExternalURI
 	if len(events) == 0 {
 		return mintedEvents, nil

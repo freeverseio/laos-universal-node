@@ -25,9 +25,12 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	mockStorage := mock.NewMockService(mockCtrl)
 	mockStorageTransaction := mock.NewMockTx(mockCtrl)
 	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
-
+	mockStorageTransaction.EXPECT().Get([]byte("accounthead/")).Return(nil, nil)
 	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		t.Fatalf("got error %s, expecting no error", err.Error())
+	}
 
 	block := model.Block{
 		Number:    1,
@@ -42,7 +45,7 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_last_block"), buf.Bytes()).Return(nil)
 	mockStorageTransaction.EXPECT().Set([]byte("ownership_block_000000000000000001"), buf.Bytes())
 
-	err := tx.SetLastOwnershipBlock(block)
+	err = tx.SetLastOwnershipBlock(block)
 	if err != nil {
 		t.Fatalf("got error %s, expecting no error", err.Error())
 	}
@@ -63,37 +66,6 @@ func TestSetGetLastOwnershipBlock(t *testing.T) {
 
 	if newBlock.Hash != block.Hash {
 		t.Fatalf("got block hash %s, expecting %s", newBlock.Hash.String(), block.Hash.String())
-	}
-}
-
-func TestSetGetCurrentEvoEventsIndexForOwnershipContract(t *testing.T) {
-	t.Parallel()
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockStorage := mock.NewMockService(mockCtrl)
-	mockStorageTransaction := mock.NewMockTx(mockCtrl)
-	mockStorage.EXPECT().NewTransaction().Return(mockStorageTransaction)
-
-	stateService := v1.NewStateService(mockStorage)
-	tx := stateService.NewTransaction()
-
-	contract := "0x123"
-	mockStorageTransaction.EXPECT().Set([]byte("ownership_contract_evo_current_index_"+contract), []byte("50")).Return(nil)
-
-	err := tx.SetCurrentEvoEventsIndexForOwnershipContract(contract, uint64(50))
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-	mockStorageTransaction.EXPECT().Get([]byte("ownership_contract_evo_current_index_"+contract)).Return([]byte("50"), nil)
-
-	result, err := tx.GetCurrentEvoEventsIndexForOwnershipContract(contract)
-	if err != nil {
-		t.Fatalf("got error %s, expecting no error", err.Error())
-	}
-
-	if result != 50 {
-		t.Fatalf("got %d, expecting %d", result, 50)
 	}
 }
 

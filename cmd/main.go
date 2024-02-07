@@ -76,7 +76,6 @@ func run() error {
 
 	// "WithMemTableSize" increases MemTableSize to 1GB (1<<30 is 1GB). This increases the transaction size to about 153MB (15% of MemTableSize)
 	db, err := badger.Open(badger.DefaultOptions(dbPath).WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
-
 	if err != nil {
 		return fmt.Errorf("error initializing storage: %w", err)
 	}
@@ -132,8 +131,12 @@ func run() error {
 			case <-ctx.Done():
 				return nil
 			case <-ticker.C:
-				tx := stateService.NewTransaction()
-				err := tx.DeleteOldStoredBlockNumbers()
+				tx, err := stateService.NewTransaction()
+				if err != nil {
+					slog.Error("error occurred while creating new transaction", "err", err.Error())
+					return err
+				}
+				err = tx.DeleteOldStoredBlockNumbers()
 				if err != nil {
 					slog.Error("error occurred while cleaning stored block numbers", "err", err.Error())
 				}

@@ -6,11 +6,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account"
 )
 
 // Service interface is used for initializing and terminating state transaction.
 type Service interface {
-	NewTransaction() Tx
+	NewTransaction() (Tx, error)
 }
 
 // Tx interface wraps all the available actions for state
@@ -35,13 +36,13 @@ type State interface {
 	TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 	Transfer(contract common.Address, eventTransfer *model.ERC721Transfer) error
 	Mint(contract common.Address, mintEvent *model.MintedWithExternalURI) error
-	LoadMerkleTrees(contractAddress common.Address) error
-	Get(key string) ([]byte, error)
-	TagRoot(contract common.Address, blockNumber int64) error
-	DeleteRootTag(contract common.Address, blockNumber int64) error
+	LoadContractTrees(contractAddress common.Address) error
+	UpdateContractState(contract common.Address, lastProcessedEvoBlock uint64) error
+	AccountData(contract common.Address) (*account.AccountData, error)
+	TagRoot(blockNumber int64) error
 	DeleteOrphanRootTags(formBlock, toBlock int64) error
-	GetLastTaggedBlock(contract common.Address) (int64, error)
-	Checkout(contract common.Address, blockNumber int64) error
+	GetLastTaggedBlock() (int64, error)
+	Checkout(blockNumber int64) error
 }
 
 type OwnershipContractState interface {
@@ -53,14 +54,11 @@ type OwnershipContractState interface {
 }
 
 type EvolutionContractState interface {
-	GetMintedWithExternalURIEvents(contract string) ([]model.MintedWithExternalURI, error)
-	StoreMintedWithExternalURIEvents(contract string, events []model.MintedWithExternalURI) error
+	GetMintedWithExternalURIEvents(contract string, blockNumber uint64) ([]model.MintedWithExternalURI, error)
+	StoreMintedWithExternalURIEvent(contract string, event *model.MintedWithExternalURI) error
 }
 
 type OwnershipSyncState interface {
-	SetCurrentEvoEventsIndexForOwnershipContract(contract string, blockNumber uint64) error
-	GetCurrentEvoEventsIndexForOwnershipContract(contract string) (uint64, error)
-
 	SetLastOwnershipBlock(block model.Block) error
 	GetLastOwnershipBlock() (model.Block, error)
 	GetOwnershipBlock(blockNumber uint64) (model.Block, error)
@@ -71,6 +69,9 @@ type OwnershipSyncState interface {
 }
 
 type EvolutionSyncState interface {
+	SetNextEvoEventBlock(contract string, blockNumber uint64) error
+	GetNextEvoEventBlock(contract string, blockNumber uint64) (uint64, error)
+
 	SetLastEvoBlock(block model.Block) error
 	GetLastEvoBlock() (model.Block, error)
 }

@@ -6,14 +6,15 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 	evolutionContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/evolution"
 	ownershipContractState "github.com/freeverseio/laos-universal-node/internal/platform/state/contract/ownership"
 	evolutionSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/evolution"
 	ownershipSyncState "github.com/freeverseio/laos-universal-node/internal/platform/state/sync/ownership"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/account"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumerated"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/enumeratedtotal"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state/tree/ownership"
@@ -32,18 +33,24 @@ func NewStateService(storageService storage.Service) state.Service {
 }
 
 // Creates a new state transaction
-func (s *service) NewTransaction() state.Tx {
+func (s *service) NewTransaction() (state.Tx, error) {
 	storageTx := s.storageService.NewTransaction()
+	accountTree, err := account.NewTree(storageTx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &tx{
 		ownershipTrees:         make(map[common.Address]ownership.Tree),
 		enumeratedTrees:        make(map[common.Address]enumerated.Tree),
 		enumeratedTotalTrees:   make(map[common.Address]enumeratedtotal.Tree),
+		accountTree:            accountTree,
 		tx:                     storageTx,
 		OwnershipContractState: ownershipContractState.NewService(storageTx),
 		EvolutionContractState: evolutionContractState.NewService(storageTx),
 		OwnershipSyncState:     ownershipSyncState.NewService(storageTx),
 		EvolutionSyncState:     evolutionSyncState.NewService(storageTx),
-	}
+	}, nil
 }
 
 type tx struct {
@@ -51,6 +58,7 @@ type tx struct {
 	ownershipTrees       map[common.Address]ownership.Tree
 	enumeratedTrees      map[common.Address]enumerated.Tree
 	enumeratedTotalTrees map[common.Address]enumeratedtotal.Tree
+	accountTree          account.Tree
 	state.OwnershipContractState
 	state.EvolutionContractState
 	state.OwnershipSyncState
@@ -71,18 +79,22 @@ func (t *tx) createTreesForContract(contract common.Address) (
 	err error,
 ) {
 	slog.Debug("creating trees for contract", "contract", contract.String())
-
-	ownershipTree, err = ownership.NewTree(contract, t.tx)
+	accountData, err := t.accountTree.AccountData(contract)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTree, err = enumerated.NewTree(contract, t.tx)
+	ownershipTree, err = ownership.NewTree(contract, accountData.OwnershipRoot, t.tx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, t.tx)
+	enumeratedTree, err = enumerated.NewTree(contract, accountData.EnumeratedRoot, t.tx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	enumeratedTotalTree, err = enumeratedtotal.NewTree(contract, accountData.EnumeratedTotalRoot, accountData.TotalSupply, t.tx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -104,16 +116,49 @@ func (t *tx) setTreesForContract(
 	t.enumeratedTotalTrees[contract] = enumeratedTotalTree
 }
 
-// LoadMerkleTrees loads the merkle trees in memory for contractAddress
-func (t *tx) LoadMerkleTrees(contractAddress common.Address) error {
+func (t *tx) loadContractStateFromAccountTree(contract common.Address) error {
+	slog.Debug("LoadContractState", "contract", contract.String())
+
+	accountData, err := t.accountTree.AccountData(contract)
+	if err != nil {
+		return err
+	}
+
+	enumeratedTree, ok := t.enumeratedTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	ownershipTree, ok := t.ownershipTrees[contract]
+	if !ok {
+		return fmt.Errorf("contract %s does not exist", contract.String())
+	}
+
+	enumeratedTotalTree.SetRoot(accountData.EnumeratedTotalRoot)
+	enumeratedTotalTree.SetTotalSupply(accountData.TotalSupply)
+	enumeratedTree.SetRoot(accountData.EnumeratedRoot)
+	ownershipTree.SetRoot(accountData.OwnershipRoot)
+
+	return nil
+}
+
+// LoadContractTrees loads the merkle trees in memory for contractAddress
+func (t *tx) LoadContractTrees(contractAddress common.Address) error {
+	slog.Debug("LoadContractTrees", "contract", contractAddress.String())
 	if !t.isTreeSetForContract(contractAddress) {
 		ownTree, enumTree, enumTotTree, err := t.createTreesForContract(contractAddress)
 		if err != nil {
 			return err
 		}
 		t.setTreesForContract(contractAddress, ownTree, enumTree, enumTotTree)
+		return nil // when creating new trees we load contract state directly
 	}
-	return nil
+	return t.loadContractStateFromAccountTree(contractAddress)
 }
 
 // OwnerOf returns the owner of the token
@@ -196,12 +241,7 @@ func (t *tx) Transfer(contract common.Address, eventTransfer *model.ERC721Transf
 			return fmt.Errorf("contract %s does not exist", contract.String())
 		}
 
-		totalSupply, err := enumeratedTotalTree.TotalSupply()
-		if err != nil {
-			return err
-		}
-
-		tokenIdLast, err := enumeratedTotalTree.TokenByIndex(int(totalSupply) - 1)
+		tokenIdLast, err := enumeratedTotalTree.TokenByIndex(int(enumeratedTotalTree.TotalSupply()) - 1)
 		if err != nil {
 			return err
 		}
@@ -236,17 +276,12 @@ func (t *tx) Mint(contract common.Address, mintEvent *model.MintedWithExternalUR
 		return err
 	}
 
-	totalSupply, err := enumeratedTotalTree.TotalSupply()
-	if err != nil {
-		return err
-	}
-
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = ownershipTree.Mint(mintEvent, int(totalSupply)-1)
+	err = ownershipTree.Mint(mintEvent, int(enumeratedTotalTree.TotalSupply())-1)
 	if err != nil {
 		return err
 	}
@@ -271,7 +306,7 @@ func (t *tx) TotalSupply(contract common.Address) (int64, error) {
 		return 0, fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	return enumeratedTotalTree.TotalSupply()
+	return enumeratedTotalTree.TotalSupply(), nil
 }
 
 // TokenByIndex returns the token at the index
@@ -304,96 +339,47 @@ func (t *tx) TokenURI(contract common.Address, tokenId *big.Int) (string, error)
 }
 
 // TagRoot tags roots for all 3 merkle trees at the same block
-func (t *tx) TagRoot(contract common.Address, blockNumber int64) error {
-	slog.Debug("TagRoot", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
-	enumeratedTree, ok := t.enumeratedTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	err := enumeratedTree.TagRoot(blockNumber)
-	if err != nil {
-		return err
-	}
-
-	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	err = enumeratedTotalTree.TagRoot(blockNumber)
-	if err != nil {
-		return err
-	}
-
-	ownershipTree, ok := t.ownershipTrees[contract]
-	if !ok {
-		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	return ownershipTree.TagRoot(blockNumber)
+func (t *tx) TagRoot(blockNumber int64) error {
+	slog.Info("TagRoot", "blockNumber", strconv.FormatInt(blockNumber, 10))
+	return t.accountTree.TagRoot(blockNumber)
 }
 
-func (t *tx) GetLastTaggedBlock(contract common.Address) (int64, error) {
-	slog.Debug("GetLastTaggedBlock", "contract", contract.String())
-	enumeratedTree, ok := t.enumeratedTrees[contract]
-	if !ok {
-		return 0, fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	return enumeratedTree.GetLastTaggedBlock()
+func (t *tx) GetLastTaggedBlock() (int64, error) {
+	slog.Debug("GetLastTaggedBlock")
+	return t.accountTree.GetLastTaggedBlock()
 }
 
-func (t *tx) DeleteRootTag(contract common.Address, blockNumber int64) error {
-	slog.Debug("DeleteRootTag", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
-	err := enumerated.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
-	if err != nil {
-		return err
-	}
-
-	err = enumeratedtotal.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
-	if err != nil {
-		return err
-	}
-
-	return ownership.DeleteRootTag(t.tx, contract.Hex(), blockNumber)
+func (t *tx) deleteRootTag(blockNumber int64) error {
+	slog.Debug("DeleteRootTag", "blockNumber", strconv.FormatInt(blockNumber, 10))
+	return t.accountTree.DeleteRootTag(blockNumber)
 }
 
-// DeleteOrphanRootTag deletes the root tags from all 3 merkle trees
+// DeleteOrphanRootTag deletes the root tags from account merkle tree
 // starting from the blockNumber until the most recent tagged block
-// for all contracts
 func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
-	contracts := t.GetAllERC721UniversalContracts()
-	// Process each contract
-	for _, contract := range contracts {
-		for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
-			err := t.DeleteRootTag(common.HexToAddress(contract), blockNumber)
-			if err != nil {
-				return fmt.Errorf("error deleting root tag for contract %s at block %d: %s", contract, blockNumber, err.Error())
-			}
+	for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
+		if err := t.deleteRootTag(blockNumber); err != nil {
+			return fmt.Errorf("error deleting root tag at block %d: %s", blockNumber, err.Error())
 		}
 	}
 	return nil
 }
 
 // Checkout sets the current roots to those tagged for the block
-// If no tag for the block exists, it searches for the first block in the past that has the tag.
-func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
+func (t *tx) Checkout(blockNumber int64) error {
 	// TODO this transaction should be committed only if we want to permanently store the new root as the head
 	// (when reorgs happens)
 	// If we just want to read the state at current root we should not commit this transaction
 	// probably the easiest and cleanest solution would be to write separate functions for creating transactions
 	// NewTransactionForRead and NewTransactionForWrite instead of NewTransaction
+	return t.accountTree.Checkout(blockNumber)
+}
 
-	slog.Debug("Checkout", "contract", contract.String(), "blockNumber", strconv.FormatInt(blockNumber, 10))
+// UpdateContractState updates the contract state in the account tree
+func (t *tx) UpdateContractState(contract common.Address, lastProcessedEvoBlock uint64) error {
 	enumeratedTree, ok := t.enumeratedTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
-	}
-
-	err := enumeratedTree.Checkout(blockNumber)
-	if err != nil {
-		return err
 	}
 
 	enumeratedTotalTree, ok := t.enumeratedTotalTrees[contract]
@@ -401,17 +387,25 @@ func (t *tx) Checkout(contract common.Address, blockNumber int64) error {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	err = enumeratedTotalTree.Checkout(blockNumber)
-	if err != nil {
-		return err
-	}
-
 	ownershipTree, ok := t.ownershipTrees[contract]
 	if !ok {
 		return fmt.Errorf("contract %s does not exist", contract.String())
 	}
 
-	return ownershipTree.Checkout(blockNumber)
+	accountData := account.AccountData{
+		EnumeratedRoot:        enumeratedTree.Root(),
+		EnumeratedTotalRoot:   enumeratedTotalTree.Root(),
+		OwnershipRoot:         ownershipTree.Root(),
+		TotalSupply:           enumeratedTotalTree.TotalSupply(),
+		LastProcessedEvoBlock: lastProcessedEvoBlock,
+	}
+
+	slog.Debug("UpdatingContractState in the account tree", "accountData", accountData)
+	return t.accountTree.SetAccountData(&accountData, contract)
+}
+
+func (t *tx) AccountData(contract common.Address) (*account.AccountData, error) {
+	return t.accountTree.AccountData(contract)
 }
 
 // Discards transaction
@@ -422,15 +416,4 @@ func (t *tx) Discard() {
 // Commits transaction
 func (t *tx) Commit() error {
 	return t.tx.Commit()
-}
-
-func (t *tx) Get(key string) ([]byte, error) {
-	value, err := t.tx.Get([]byte(key))
-	if err != nil {
-		if err == badger.ErrKeyNotFound {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return value, nil
 }
