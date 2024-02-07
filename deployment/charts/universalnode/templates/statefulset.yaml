@@ -25,16 +25,27 @@ spec:
             name: rpc
         resources:
           requests:
-            memory: "3Gi"
-            cpu: "1"
+            memory: "8Gi"
+            cpu: "4"
           limits:
-            memory: "6Gi"
-            cpu: "2"
+            memory: "16Gi"
+            cpu: "8"
+        env:
+          - name: OWNERSHIP_RPC
+            valueFrom:
+              secretKeyRef:
+                name: laos-bigbang-secrets
+                key: ownershipRpc-{{ .Values.name }}
+          - name: EVO_RPC
+            valueFrom:
+              secretKeyRef:
+                name: laos-bigbang-secrets
+                key: evoRpc-{{ .Values.name }}
         command: [ "./universalnode" ]
         args: [ -contracts={{ .Values.contracts }},
                 -storage_path=/app/.universalnode,
-                -rpc={{ .Values.rpc }},
-                -evo_rpc={{ .Values.evoRpc }},
+                -rpc=$(OWNERSHIP_RPC),
+                -evo_rpc=$(EVO_RPC),
                 {{ if hasKey .Values  "startingBlock" }}
                 -starting_block={{ .Values.startingBlock }},
                 {{ end }}
@@ -58,6 +69,11 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /app/.universalnode
+      tolerations:
+        - key: "pod"
+          operator: "Equal"
+          value: universal-node
+          effect: "NoSchedule"
   volumeClaimTemplates:
   - metadata:
       name: storage
@@ -65,4 +81,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 100Gi
+          storage: 2Ti
