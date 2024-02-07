@@ -349,7 +349,7 @@ func (t *tx) GetLastTaggedBlock() (int64, error) {
 	return t.accountTree.GetLastTaggedBlock()
 }
 
-func (t *tx) DeleteRootTag(blockNumber int64) error {
+func (t *tx) deleteRootTag(blockNumber int64) error {
 	slog.Debug("DeleteRootTag", "blockNumber", strconv.FormatInt(blockNumber, 10))
 	return t.accountTree.DeleteRootTag(blockNumber)
 }
@@ -358,7 +358,7 @@ func (t *tx) DeleteRootTag(blockNumber int64) error {
 // starting from the blockNumber until the most recent tagged block
 func (t *tx) DeleteOrphanRootTags(formBlock, toBlock int64) error {
 	for blockNumber := formBlock; blockNumber <= toBlock; blockNumber++ {
-		if err := t.DeleteRootTag(blockNumber); err != nil {
+		if err := t.deleteRootTag(blockNumber); err != nil {
 			return fmt.Errorf("error deleting root tag at block %d: %s", blockNumber, err.Error())
 		}
 	}

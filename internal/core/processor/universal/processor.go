@@ -77,10 +77,9 @@ func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 }
 
 // RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
-// It will checkout merkle tree for each contract in its own transaction.
-// It will set the last ownership block to the block without reorg and delete all block hashes after the block without reorg.
-// It will return the block without reorg.
-// It will return an error if any error occurs.
+// It will set the last ownership block to the block without reorg and delete all block hashes and block numbers after the block without reorg.
+// It will checkout the merkle tree at the block without reorg, commit the transaction to flush the data to disk,
+// and return the block without reorg.
 func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
 	// Start a transaction
 	tx, err := p.stateService.NewTransaction()
@@ -106,7 +105,7 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if errDeleteOrphanBlockData := tx.DeleteOrphanBlockData(blockWithoutReorg.Number); errDeleteOrphanBlockData != nil {
 		return nil, errDeleteOrphanBlockData
 	}
-	// // deleting all root tags after the block without reorg
+	// deleting all root tags after the block without reorg
 	if errDeleteOrphanRootTags := tx.DeleteOrphanRootTags(int64(blockWithoutReorg.Number)+1, int64(currentBlock)); errDeleteOrphanRootTags != nil {
 		return nil, errDeleteOrphanRootTags
 	}
@@ -267,7 +266,6 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		}
 	}
 
-	// TODO add startingBlock argument
 	err = p.updater.UpdateState(ctx, tx, contracts, newContracts, transferEvents, startingBlock, lastBlockData)
 	if err != nil {
 		return err
@@ -285,7 +283,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	// During the initial iteration, no hash is stored in the database, so this code block is bypassed.
 	if (previousLastBlockDB.Hash != common.Hash{}) {
 		// we check the previously stored last block and check if it is still on the same branch as the current last block
-		// otherwise we return an reorg error
+		// otherwise we return a reorg error
 		err = p.checkBlockForReorg(ctx, previousLastBlockDB)
 		if err != nil {
 			return err

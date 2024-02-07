@@ -180,20 +180,6 @@ func (mr *MockTxMockRecorder) DeleteOrphanRootTags(formBlock, toBlock any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanRootTags", reflect.TypeOf((*MockTx)(nil).DeleteOrphanRootTags), formBlock, toBlock)
 }
 
-// DeleteRootTag mocks base method.
-func (m *MockTx) DeleteRootTag(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRootTag", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteRootTag indicates an expected call of DeleteRootTag.
-func (mr *MockTxMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockTx)(nil).DeleteRootTag), blockNumber)
-}
-
 // Discard mocks base method.
 func (m *MockTx) Discard() {
 	m.ctrl.T.Helper()
@@ -678,20 +664,6 @@ func (m *MockState) DeleteOrphanRootTags(formBlock, toBlock int64) error {
 func (mr *MockStateMockRecorder) DeleteOrphanRootTags(formBlock, toBlock any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanRootTags", reflect.TypeOf((*MockState)(nil).DeleteOrphanRootTags), formBlock, toBlock)
-}
-
-// DeleteRootTag mocks base method.
-func (m *MockState) DeleteRootTag(blockNumber int64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRootTag", blockNumber)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteRootTag indicates an expected call of DeleteRootTag.
-func (mr *MockStateMockRecorder) DeleteRootTag(blockNumber any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRootTag", reflect.TypeOf((*MockState)(nil).DeleteRootTag), blockNumber)
 }
 
 // GetLastTaggedBlock mocks base method.
