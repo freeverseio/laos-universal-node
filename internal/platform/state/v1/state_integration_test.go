@@ -97,10 +97,11 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 		// but that test is slower so I am not putting it for such big number
 		contract := common.HexToAddress("0x500")
 		db := createBadger(t)
-		blocks := 1
-		mintsInBlock := 1000
-		for block := 0; block < blocks; block++ {
-			tx, err := createBadgerTransaction(t, db)
+		blocks := 50
+		mintsInBlock := 300
+		tx, err := createBadgerTransaction(t, db)
+		for block := 1; block < blocks; block++ {
+			fmt.Println("block", block)
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
@@ -130,13 +131,13 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 					t.Fatal("got error when no error was expected 1", err.Error())
 				}
 			}
-			err = tx.Commit()
-			if err != nil {
-				t.Fatal("got error when no error was expected 2", err.Error())
-			}
-		}
 
-		tx, err := createBadgerTransaction(t, db)
+		}
+		err = tx.Commit()
+		if err != nil {
+			t.Fatal("got error when no error was expected 2", err.Error())
+		}
+		tx, err = createBadgerTransaction(t, db)
 		if err != nil {
 			t.Fatal("got error when no error was expected 3", err.Error())
 		}
@@ -201,8 +202,8 @@ func TestStoreAngGetMintedWithExternalURIEvents(t *testing.T) {
 func createBadger(t *testing.T) *badger.DB {
 	t.Helper()
 	db, err := badger.Open(
-		badger.DefaultOptions("").
-			WithInMemory(true).
+		badger.DefaultOptions("./tmp").
+			WithInMemory(false).
 			WithLoggingLevel(badger.ERROR).WithMemTableSize(1 << 30))
 	if err != nil {
 		t.Fatalf("error initializing storage: %v", err)
