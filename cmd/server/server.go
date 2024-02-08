@@ -84,7 +84,7 @@ func New(opts ...ServerOption) (*Server, error) {
 func (s Server) ListenAndServe(ctx context.Context, rpcUrl, evoRpcUrl, addr string, stateService state.Service) error {
 	s.httpServer.SetAddr(addr)
 
-	handler := api.NewGlobalRPCHandler(rpcUrl)
+	handler := api.NewGlobalRPCHandler(rpcUrl, evoRpcUrl)
 	router := mux.NewRouter()
 	s.httpServer.SetHandler(api.Routes(handler, router, stateService))
 	slog.Info("server listening", "address", addr)

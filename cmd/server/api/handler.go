@@ -53,7 +53,11 @@ func (h *GlobalRPCHandler) GetRPCProxyHandler() ProxyHandler {
 	return h.rpcProxyHandler
 }
 
-type UniversalMintingRPCHandler struct{}
+type UniversalMintingRPCHandler struct {
+	rpcUrl                string
+	proxyRPCMethodManager RPCMethodManager
+	httpClient            HTTPClientInterface // Inject the HTTP client interface here
+}
 
 type RPCProxyHandler struct {
 	rpcUrl                string
@@ -119,14 +123,18 @@ func WithRPCProxyHandler(handler ProxyHandler) HandlerOption {
 	}
 }
 
-func NewGlobalRPCHandler(rpcUrl string, opts ...HandlerOption) *GlobalRPCHandler {
+func NewGlobalRPCHandler(rpcUrl, evoRpcUrl string, opts ...HandlerOption) *GlobalRPCHandler {
 	httpClient := &HTTPClientWrapper{
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 	handler := &GlobalRPCHandler{
-		universalMintingRPCHandler: &UniversalMintingRPCHandler{},
+		universalMintingRPCHandler: &UniversalMintingRPCHandler{
+			rpcUrl:                evoRpcUrl,
+			proxyRPCMethodManager: NewProxyRPCMethodManager(),
+			httpClient:            httpClient,
+		},
 		rpcProxyHandler: &RPCProxyHandler{
 			rpcUrl:                rpcUrl,
 			httpClient:            httpClient,

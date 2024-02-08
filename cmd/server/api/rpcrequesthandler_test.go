@@ -234,6 +234,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 
 			handler := api.NewGlobalRPCHandler(
 				"https://example.com/",
+				"https://example.com/",
 				api.WithHttpClient(mockHttpClient),
 				api.WithUniversalMintingRPCHandler(universalHandler),
 				api.WithRPCProxyHandler(proxyHandler),
