@@ -226,7 +226,7 @@ func TestPostRPCRequestHandler(t *testing.T) {
 			mockHttpClient := mock.NewMockHTTPClientInterface(ctrl)
 
 			if len(tc.mockResponse) > 0 {
-				universalHandler.EXPECT().HandleUniversalMinting(gomock.Any(), gomock.Any()).Return(tc.mockResponse[0]).Times(tc.expectedUniversalMintingHandlerCalledTimes)
+				universalHandler.EXPECT().HandleUniversalMinting(gomock.Any(), gomock.Any(), gomock.Any()).Return(tc.mockResponse[0]).Times(tc.expectedUniversalMintingHandlerCalledTimes)
 			}
 			if len(tc.mockResponseProxy) > 0 {
 				proxyHandler.EXPECT().HandleProxyRPC(gomock.Any(), gomock.Any(), gomock.Any()).Return(tc.mockResponseProxy[0]).Times(tc.expectedProxyHandlerCalledTimes)

@@ -23,13 +23,13 @@ func (h *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
 
 type RPCHandler interface {
 	HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse
-	HandleUniversalMinting(req JSONRPCRequest) RPCResponse
+	HandleUniversalMinting(r *http.Request, req JSONRPCRequest) RPCResponse
 	PostRPCRequestHandler(w http.ResponseWriter, r *http.Request)
 	SetStateService(stateService state.Service)
 }
 
 type RPCUniversalHandler interface {
-	HandleUniversalMinting(req JSONRPCRequest, stateService state.Service) RPCResponse
+	HandleUniversalMinting(r *http.Request, req JSONRPCRequest, stateService state.Service) RPCResponse
 }
 
 type ProxyHandler interface {
@@ -54,9 +54,31 @@ func (h *GlobalRPCHandler) GetRPCProxyHandler() ProxyHandler {
 }
 
 type UniversalMintingRPCHandler struct {
-	rpcUrl                string
-	proxyRPCMethodManager RPCMethodManager
-	httpClient            HTTPClientInterface // Inject the HTTP client interface here
+	rpcUrl           string
+	rpcMethodManager RPCMethodManager
+	httpClient       HTTPClientInterface // Inject the HTTP client interface here
+}
+
+type UniversalMintingRPCHandlerOption func(*UniversalMintingRPCHandler)
+
+func NewUniversalMintingRPCHandler(ops ...UniversalMintingRPCHandlerOption) RPCUniversalHandler {
+	h := &UniversalMintingRPCHandler{}
+	for _, op := range ops {
+		op(h)
+	}
+	return h
+}
+
+func WithRPCMethodManager(rpcMethodManager RPCMethodManager) UniversalMintingRPCHandlerOption {
+	return func(h *UniversalMintingRPCHandler) {
+		h.rpcMethodManager = rpcMethodManager
+	}
+}
+
+func WithEvoHttpClient(client HTTPClientInterface) UniversalMintingRPCHandlerOption {
+	return func(h *UniversalMintingRPCHandler) {
+		h.httpClient = client
+	}
 }
 
 type RPCProxyHandler struct {
@@ -99,6 +121,18 @@ func (h *RPCProxyHandler) GetHttpClient() HTTPClientInterface {
 	return h.httpClient
 }
 
+func (h *UniversalMintingRPCHandler) SetHttpClient(client HTTPClientInterface) {
+	h.httpClient = client
+}
+
+func (h *UniversalMintingRPCHandler) GetRpcUrl() string {
+	return h.rpcUrl
+}
+
+func (h *UniversalMintingRPCHandler) GetHttpClient() HTTPClientInterface {
+	return h.httpClient
+}
+
 func (h *GlobalRPCHandler) SetStateService(stateService state.Service) {
 	h.stateService = stateService
 }
@@ -131,10 +165,11 @@ func NewGlobalRPCHandler(rpcUrl, evoRpcUrl string, opts ...HandlerOption) *Globa
 	}
 	handler := &GlobalRPCHandler{
 		universalMintingRPCHandler: &UniversalMintingRPCHandler{
-			rpcUrl:                evoRpcUrl,
-			proxyRPCMethodManager: NewProxyRPCMethodManager(),
-			httpClient:            httpClient,
+			rpcUrl:           evoRpcUrl,
+			rpcMethodManager: NewProxyRPCMethodManager(),
+			httpClient:       httpClient,
 		},
+
 		rpcProxyHandler: &RPCProxyHandler{
 			rpcUrl:                rpcUrl,
 			httpClient:            httpClient,

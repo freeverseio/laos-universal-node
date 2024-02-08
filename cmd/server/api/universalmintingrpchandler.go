@@ -1,10 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -13,7 +16,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
+func (h *UniversalMintingRPCHandler) HandleUniversalMinting(r *http.Request, jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
 		return blockNumber(stateService, jsonRPCRequest.ID)
@@ -53,7 +56,7 @@ func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONR
 		case erc721.TokenByIndex:
 			return tokenByIndex(calldata, params, blockNumber, stateService, jsonRPCRequest.ID)
 		case erc721.TokenURI:
-			return tokenURI(calldata, params, blockNumber, stateService, jsonRPCRequest.ID)
+			return h.tokenURI(r, calldata, params, blockNumber, stateService, jsonRPCRequest)
 		case erc721.SupportsInterface:
 			return supportsInterface(jsonRPCRequest.ID)
 		}
@@ -165,30 +168,49 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
-	tokenID, err := getParamBigInt(callData, "tokenId")
+func (h *UniversalMintingRPCHandler) tokenURI(r *http.Request, callData erc721.CallData, params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, req JSONRPCRequest) RPCResponse {
+	// TODO convert
+	errBlockTag := h.rpcMethodManager.ReplaceBlockTag(&req, RPCMethodEthCall, blockNumber)
+	if errBlockTag != nil {
+		return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
+	}
+	// JSONRPCRequest to []byte
+	body, err := json.Marshal(req)
 	if err != nil {
-		slog.Error("error getting tokenId", "err", err)
-		return getErrorResponse(err, id)
+		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err), req.ID)
+	}
+	// Prepare the request to the BC node
+	proxyReq, err := http.NewRequest(r.Method, h.rpcUrl, io.NopCloser(bytes.NewReader(body)))
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error creating request: %w", err), req.ID)
+	}
+	// Forward headers the request
+	for name, values := range r.Header {
+		for _, value := range values {
+			// we don't want to forward the Accept-Encoding header because we don't want to receive a encoded response (e.g. gzip)
+			if name != "Accept-Encoding" {
+				proxyReq.Header.Set(name, value)
+			}
+		}
+	}
+	// Send the request to the Ethereum node
+	resp, err := h.GetHttpClient().Do(proxyReq)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error sending request: %w", err), req.ID)
+	}
+	defer func() {
+		errClose := resp.Body.Close()
+		if errClose != nil {
+			slog.Error("error closing response body", "err", errClose)
+		}
+	}() // Check error on Close
+
+	response, err := getJsonRPCResponse(resp)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err), req.ID)
 	}
 
-	tx, err := stateService.NewTransaction()
-	if err != nil {
-		return getErrorResponse(err, id)
-	}
-	defer tx.Discard()
-	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
-	if err != nil {
-		slog.Error("error creating merkle trees", "err", err)
-		return getErrorResponse(err, id)
-	}
-	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
-	if err != nil {
-		slog.Error("error retrieving token URI", "err", err)
-		return getErrorResponse(err, id)
-	}
-	encodedValue, err := erc721.AbiEncodeString(tokenURI)
-	return getResponse(encodedValue, id, err)
+	return *response
 }
 
 func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
