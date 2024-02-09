@@ -42,7 +42,7 @@ type Config struct {
 func Load() (*Config, error) {
 	defaultStoragePath := getDefaultStoragePath()
 
-	blocksRange := flag.Uint("blocks_range", 50, "Amount of blocks the scanner processes")
+	blocksRange := flag.Uint("blocks_range", 10, "Amount of blocks the scanner processes")
 	blocksMargin := flag.Uint("blocks_margin", 0, "Number of blocks to assume finality")
 	evoBlocksRange := flag.Uint("evo_blocks_range", 1, "Amount of blocks the scanner processes on the evolution chain")
 	evoBlocksMargin := flag.Uint("evo_blocks_margin", 0, "Number of blocks to assume finality on the evolution chain")
@@ -60,8 +60,8 @@ func Load() (*Config, error) {
 	flag.Parse()
 
 	//check if evoBlocksRange is less than 10 otherwise return an error
-	if *evoBlocksRange > 10 {
-		return nil, fmt.Errorf("evo_blocks_range can not be bigger than 10")
+	if *evoBlocksRange > 1 {
+		return nil, fmt.Errorf("evo_blocks_range can not be bigger than 1")
 	}
 
 	c := &Config{

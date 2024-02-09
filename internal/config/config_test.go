@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 	// Do not run this test in parallel because it modifies the global state
 	t.Run("loads config with default values", func(t *testing.T) {
 		resetFlagSet() // Reset the flag set before defining new flags
-		args := []string{"cmd", "--evo_blocks_range=2"}
+		args := []string{"cmd", "--evo_blocks_range=1"}
 		os.Args = args
 		c, err := config.Load()
 		if err != nil {
@@ -80,19 +80,19 @@ func TestLoadConfig(t *testing.T) {
 		if c == nil {
 			t.Fatalf("got nil config while a config was expected")
 		}
-		if c.EvoBlocksRange != 2 {
-			t.Errorf("got evo blocks range %d, expected 2", c.EvoBlocksRange) // Fixed assertion to match expected behavior
+		if c.EvoBlocksRange != 1 {
+			t.Errorf("got evo blocks range %d, expected 1", c.EvoBlocksRange) // Fixed assertion to match expected behavior
 		}
 	})
-	t.Run("fails when evo blocks range is greater than 10", func(t *testing.T) {
+	t.Run("fails when evo blocks range is greater than 1", func(t *testing.T) {
 		resetFlagSet() // Reset the flag set before defining new flags
-		args := []string{"cmd", "--evo_blocks_range=11"}
+		args := []string{"cmd", "--evo_blocks_range=2"}
 		os.Args = args
 		_, err := config.Load()
 		if err == nil {
 			t.Fatalf("got no error while an error was expected")
 		}
-		expectedErr := "evo_blocks_range can not be bigger than 10"
+		expectedErr := "evo_blocks_range can not be bigger than 1"
 		if err.Error() != expectedErr {
 			t.Fatalf(`got error "%s", expected "%s"`, err.Error(), expectedErr)
 		}
