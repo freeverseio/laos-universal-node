@@ -59,7 +59,7 @@ func Load() (*Config, error) {
 
 	flag.Parse()
 
-	//check if evoBlocksRange is less than 10 otherwise return an error
+	// until the application is in beta, evoBlocksRange must not be bigger than 1
 	if *evoBlocksRange > 1 {
 		return nil, fmt.Errorf("evo_blocks_range can not be bigger than 1")
 	}
