@@ -27,6 +27,19 @@ func New(c *config.Config, client blockchain.EthClient) Worker {
 }
 
 func (w *worker) Run(ctx context.Context) error {
+
+	// check last mapped own block from db
+
+	// if no block is mapped, start from the beginning
+	// compare own starting block with evo starting block
+	// we take the oldest and start mapping from there
+
+	// find the first evo block (from the oldest block timestamp)
+	// -> find own block number for the evo block timestamp
+	// -> map the key own block to value evo block
+	// evo block ++
+	// ...
+
 	return nil
 }
 
@@ -62,9 +75,5 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64) (uint64, error) 
 		}
 	}
 
-	if right < left {
-		return right, nil
-	}
-
-	return left, nil
+	return right + 1, nil
 }
