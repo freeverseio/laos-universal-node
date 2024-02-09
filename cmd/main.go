@@ -43,7 +43,10 @@ func main() {
 }
 
 func run() error {
-	c := config.Load()
+	c, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("error loading config: %w", err)
+	}
 	setLogger(c.Debug)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)

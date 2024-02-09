@@ -39,12 +39,12 @@ type Config struct {
 	Debug                 bool
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	defaultStoragePath := getDefaultStoragePath()
 
-	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
+	blocksRange := flag.Uint("blocks_range", 10, "Amount of blocks the scanner processes")
 	blocksMargin := flag.Uint("blocks_margin", 0, "Number of blocks to assume finality")
-	evoBlocksRange := flag.Uint("evo_blocks_range", 100, "Amount of blocks the scanner processes on the evolution chain")
+	evoBlocksRange := flag.Uint("evo_blocks_range", 1, "Amount of blocks the scanner processes on the evolution chain")
 	evoBlocksMargin := flag.Uint("evo_blocks_margin", 0, "Number of blocks to assume finality on the evolution chain")
 	contracts := flag.String("contracts", "", "Comma-separated list of the web3 addresses of the smart contracts to scan")
 	debug := flag.Bool("debug", false, "Set logs to debug level")
@@ -58,6 +58,10 @@ func Load() *Config {
 	storagePath := flag.String("storage_path", defaultStoragePath, "Path to the storage folder")
 
 	flag.Parse()
+
+	if *evoBlocksRange > 1 {
+		return nil, fmt.Errorf("evo_blocks_range can not be bigger than 1")
+	}
 
 	c := &Config{
 		BlocksMargin:          *blocksMargin,
@@ -79,7 +83,7 @@ func Load() *Config {
 		c.Contracts = strings.Split(*contracts, ",")
 	}
 
-	return c
+	return c, nil
 }
 
 func (c *Config) LogFields() {
