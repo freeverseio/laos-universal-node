@@ -61,7 +61,7 @@ func Load() (*Config, error) {
 
 	//check if evoBlocksRange is less than 10 otherwise return an error
 	if *evoBlocksRange > 10 {
-		return nil, fmt.Errorf("evo_blocks_range should be less than 10")
+		return nil, fmt.Errorf("evo_blocks_range can not be bigger than 10")
 	}
 
 	c := &Config{
