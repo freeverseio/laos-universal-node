@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 		if err == nil {
 			t.Fatalf("got no error while an error was expected")
 		}
-		expectedErr := "evo_blocks_range should be less than 10"
+		expectedErr := "evo_blocks_range can not be bigger than 10"
 		if err.Error() != expectedErr {
 			t.Fatalf(`got error "%s", expected "%s"`, err.Error(), expectedErr)
 		}
