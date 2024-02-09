@@ -44,7 +44,7 @@ func Load() *Config {
 
 	blocksRange := flag.Uint("blocks_range", 100, "Amount of blocks the scanner processes")
 	blocksMargin := flag.Uint("blocks_margin", 0, "Number of blocks to assume finality")
-	evoBlocksRange := flag.Uint("evo_blocks_range", 100, "Amount of blocks the scanner processes on the evolution chain")
+	evoBlocksRange := flag.Uint("evo_blocks_range", 1, "Amount of blocks the scanner processes on the evolution chain")
 	evoBlocksMargin := flag.Uint("evo_blocks_margin", 0, "Number of blocks to assume finality on the evolution chain")
 	contracts := flag.String("contracts", "", "Comma-separated list of the web3 addresses of the smart contracts to scan")
 	debug := flag.Bool("debug", false, "Set logs to debug level")
