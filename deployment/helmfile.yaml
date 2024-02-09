@@ -14,7 +14,13 @@ environments:
   development:
     values:
     - ./environments/dev/values.yaml
-
+  staging:
+    values:
+    - ./environments/staging/values.yaml
+  production:
+    values:
+    - ./environments/prod/values.yaml
+---
 releases:
 {{ range .Values.networks }}
   - name: universalnode-{{ .name }}
