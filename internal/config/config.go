@@ -39,7 +39,7 @@ type Config struct {
 	Debug                 bool
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	defaultStoragePath := getDefaultStoragePath()
 
 	blocksRange := flag.Uint("blocks_range", 50, "Amount of blocks the scanner processes")
@@ -58,6 +58,11 @@ func Load() *Config {
 	storagePath := flag.String("storage_path", defaultStoragePath, "Path to the storage folder")
 
 	flag.Parse()
+
+	//check if evoBlocksRange is less than 10 otherwise return an error
+	if *evoBlocksRange > 10 {
+		return nil, fmt.Errorf("evo_blocks_range should be less than 10")
+	}
 
 	c := &Config{
 		BlocksMargin:          *blocksMargin,
@@ -79,7 +84,7 @@ func Load() *Config {
 		c.Contracts = strings.Split(*contracts, ",")
 	}
 
-	return c
+	return c, nil
 }
 
 func (c *Config) LogFields() {

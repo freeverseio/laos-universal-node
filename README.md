@@ -31,7 +31,7 @@ For more information, see [pre-commit](./git/pre-commit).
 
 #### Versioning and Constraints
 
-- **Evo Range:** For now it must be explicitly set to 1.
+- **Evo Range:** For now it must not be changed. Default value is 1.
 - **Tag Version:** The codebase should be tagged as “0.1”, reflecting its current stage.
 
 ### Project Status
@@ -42,8 +42,8 @@ Please note, the LAOS Universal Node is in its Beta phase and is not yet ready f
 
 To ensure optimal performance of the LAOS Universal Node, your system should meet the following specifications:
 
-- **CPU:** 8 vCPUs
-- **Memory:** 16GB RAM
-- **Storage:** 1TB
+- **CPU:** minimum: 4 vCPU / recommended: 6 vCPU
+- **Memory:** minimum: 10 GB RAM / recommended: 12 GB RA
+- **Storage:** minimum: 512 GB / recommended: 1 TB
 
 We're excited to see how you'll leverage the LAOS Universal Node. Your feedback and contributions are invaluable as we strive to revolutionize the NFT landscape.
