@@ -6,7 +6,7 @@ The LAOS Universal Node is a decentralized node built using Go, focusing primari
 
 It allows users to mint assets on any EVM-Compatible Chain without paying gas fees on those chains.
 
-## Run your own Node
+## Running Your Own Node
 
 You can start and sync the universal node locally with the following command:
 ```
@@ -19,12 +19,31 @@ We are actively working to address this in future updates. Your understanding an
 
 ## Contributing
 
-Contributions to the LAOS Universal Node project are welcome. When you work on this repo, you adhere to the following rules:
+We welcome your contributions to the LAOS Universal Node project. By participating, you agree to adhere to our guidelines:
 
-### Git
+### Git Practices
 
-#### Pre-commit hook
+#### Pre-commit Hook
 
-Run `cp git/pre-commit ./.git/hooks/pre-commit` to copy the pre-commit hook to your `.git` folder. This runs a few important checks whenever you have something to commit.
+Ensure code quality by running `cp git/pre-commit ./.git/hooks/pre-commit`, integrating our pre-commit hook into your workflow. This executes several crucial checks prior to committing changes.
 
-For further details, check [pre-commit](./git/pre-commit).
+For more information, see [pre-commit](./git/pre-commit).
+
+#### Versioning and Constraints
+
+- **Evo Range:** For now it must be explicitly set to 1.
+- **Tag Version:** The codebase should be tagged as “0.1”, reflecting its current stage.
+
+### Project Status
+
+Please note, the LAOS Universal Node is in its Beta phase and is not yet ready for production use. We're dedicated to refining its functionalities for a seamless experience in the future.
+
+### Minimum System Requirements
+
+To ensure optimal performance of the LAOS Universal Node, your system should meet the following specifications:
+
+- **CPU:** 8 vCPUs
+- **Memory:** 16GB RAM
+- **Storage:** 1TB
+
+We're excited to see how you'll leverage the LAOS Universal Node. Your feedback and contributions are invaluable as we strive to revolutionize the NFT landscape.
