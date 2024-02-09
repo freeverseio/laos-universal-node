@@ -29,10 +29,11 @@ Ensure code quality by running `cp git/pre-commit ./.git/hooks/pre-commit`, inte
 
 For more information, see [pre-commit](./git/pre-commit).
 
-#### Versioning and Constraints
+#### Argument Constraints
 
-- **Evo Range:** For now it must not be changed. Default value is 1.
-- **Tag Version:** The codebase should be tagged as “0.1”, reflecting its current stage.
+- **Block Range:** Recommended ownership chain block range is 10. Default value is 10.
+- **Evo Block Range:** For now the block range for the evolution chain must not be changed. Default value is 1.
+
 
 ### Project Status
 
