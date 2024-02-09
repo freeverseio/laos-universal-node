@@ -178,7 +178,6 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 		{
 			name: "Should execute TokenURI",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx, httpClient *mock.MockHTTPClientInterface, rpcMethodManager *mock.MockRPCMethodManager) {
-				//setUpTransactionMocks(t, storage, tx)
 				setUpHttpClientMocks(t, httpClient, `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`, nil)
 				setUpMockRpcMethodManager(t, rpcMethodManager, api.JSONRPCRequest{}, api.RPCMethodEthCall, "latest")
 			},
@@ -267,7 +266,7 @@ func setUpHttpClientMocks(t *testing.T, httpClient *mock.MockHTTPClientInterface
 	}
 }
 
-func setUpMockRpcMethodManager(t *testing.T, rpcMethodManager *mock.MockRPCMethodManager, req api.JSONRPCRequest, method api.RPCMethod, blockNumber string) {
+func setUpMockRpcMethodManager(t *testing.T, rpcMethodManager *mock.MockRPCMethodManager, _ api.JSONRPCRequest, method api.RPCMethod, blockNumber string) {
 	t.Helper()
 	rpcMethodManager.EXPECT().ReplaceBlockTag(gomock.Any(), method, blockNumber).Return(nil).Times(1)
 }

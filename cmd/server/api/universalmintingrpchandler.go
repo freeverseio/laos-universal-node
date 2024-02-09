@@ -56,7 +56,7 @@ func (h *UniversalMintingRPCHandler) HandleUniversalMinting(r *http.Request, jso
 		case erc721.TokenByIndex:
 			return tokenByIndex(calldata, params, blockNumber, stateService, jsonRPCRequest.ID)
 		case erc721.TokenURI:
-			return h.tokenURI(r, calldata, params, blockNumber, stateService, jsonRPCRequest)
+			return h.tokenURI(r, blockNumber, stateService, jsonRPCRequest)
 		case erc721.SupportsInterface:
 			return supportsInterface(jsonRPCRequest.ID)
 		}
@@ -168,7 +168,7 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func (h *UniversalMintingRPCHandler) tokenURI(r *http.Request, callData erc721.CallData, params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, req JSONRPCRequest) RPCResponse {
+func (h *UniversalMintingRPCHandler) tokenURI(r *http.Request, blockNumber string, _ state.Service, req JSONRPCRequest) RPCResponse {
 	// TODO convert
 	errBlockTag := h.rpcMethodManager.ReplaceBlockTag(&req, RPCMethodEthCall, blockNumber)
 	if errBlockTag != nil {
