@@ -43,7 +43,7 @@ Please note, the LAOS Universal Node is in its Beta phase and is not yet ready f
 To ensure optimal performance of the LAOS Universal Node, your system should meet the following specifications:
 
 - **CPU:** minimum: 4 vCPU / recommended: 6 vCPU
-- **Memory:** minimum: 10 GB RAM / recommended: 12 GB RA
+- **Memory:** minimum: 10 GB RAM / recommended: 12 GB RAM
 - **Storage:** minimum: 512 GB / recommended: 1 TB
 
 We're excited to see how you'll leverage the LAOS Universal Node. Your feedback and contributions are invaluable as we strive to revolutionize the NFT landscape.
