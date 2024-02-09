@@ -17,11 +17,11 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockClient := mockClient.NewMockEthClient(ctrl)
+	client := mockClient.NewMockEthClient(ctrl)
 
 	// Setup your worker with the mock client
-	config := &config.Config{WaitingTime: 5 * time.Second}
-	w := blockmapper.New(config, mockClient)
+	conf := &config.Config{WaitingTime: 5 * time.Second}
+	w := blockmapper.New(conf, client)
 
 	// Mock responses
 	latestBlock := uint64(100)
@@ -33,8 +33,8 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 		Number: big.NewInt(50),
 		Time:   95000,
 	}
-	mockClient.EXPECT().HeaderByNumber(context.Background(), nil).Return(latestBlockHeader, nil).Times(1)
-	mockClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(50)).Return(midBlockHeader, nil).Times(1)
+	client.EXPECT().HeaderByNumber(context.Background(), nil).Return(latestBlockHeader, nil).Times(1)
+	client.EXPECT().HeaderByNumber(context.Background(), big.NewInt(50)).Return(midBlockHeader, nil).Times(1)
 
 	// Test for a timestamp that should return the mid block
 	targetTimestamp := int64(95000)

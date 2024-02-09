@@ -38,7 +38,6 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64) (uint64, error) 
 		right uint64
 	)
 
-	// Get the latest block to establish the upper bound
 	header, err := bs.client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return 0, err
@@ -53,18 +52,16 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64) (uint64, error) 
 		}
 		midTimestamp := midHeader.Time
 
-		// Check if midTimestamp matches the target
-		if midTimestamp < uint64(targetTimestamp) {
+		switch {
+		case midTimestamp < uint64(targetTimestamp):
 			left = mid + 1
-		} else if midTimestamp > uint64(targetTimestamp) {
+		case midTimestamp > uint64(targetTimestamp):
 			right = mid - 1
-		} else {
-			// Exact match found, return this block number
+		default:
 			return mid, nil
 		}
 	}
 
-	// Return the closest smaller block number if exact match is not found
 	if right < left {
 		return right, nil
 	}
