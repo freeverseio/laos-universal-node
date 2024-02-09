@@ -179,12 +179,12 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			name: "Should execute TokenURI",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx, httpClient *mock.MockHTTPClientInterface, rpcMethodManager *mock.MockRPCMethodManager) {
 				//setUpTransactionMocks(t, storage, tx)
-				setUpHttpClientMocks(t, httpClient, "mytoken", nil)
+				setUpHttpClientMocks(t, httpClient, `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`, nil)
 				setUpMockRpcMethodManager(t, rpcMethodManager, api.JSONRPCRequest{}, api.RPCMethodEthCall, "latest")
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000064","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
-				validateResponse(t, rr, http.StatusOK, nil, getJsonRawMessagePointer("1"))
+				validateResponse(t, rr, http.StatusOK, getHexJsonRawMessagePointer("0x00477777730000000000"), getJsonRawMessagePointer("1"))
 			},
 		},
 
@@ -218,7 +218,6 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			)
 
 			result := h.HandleUniversalMinting(request, jsonRquest, storage)
-			fmt.Println(result)
 			tt.validate(t, result)
 		})
 	}
