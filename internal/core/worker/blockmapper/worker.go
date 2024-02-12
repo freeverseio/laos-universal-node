@@ -9,20 +9,20 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 )
 
-type BlockFactor int
+type BlockCorrectionFactor int
 
 const (
-	OwershipBlockFactor BlockFactor = 1
-	EvoChainBlockFactor BlockFactor = -1
+	OwershipBlockFactor BlockCorrectionFactor = 1
+	EvoChainBlockFactor BlockCorrectionFactor = -1
 )
 
-func (b BlockFactor) UiInt64() uint64 {
+func (b BlockCorrectionFactor) UiInt64() uint64 {
 	return uint64(int(b))
 }
 
 type Worker interface {
 	Run(ctx context.Context) error
-	SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, factor BlockFactor) (uint64, error)
+	SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, factor BlockCorrectionFactor) (uint64, error)
 }
 
 type worker struct {
@@ -57,7 +57,7 @@ func (w *worker) Run(ctx context.Context) error {
 
 // SearchBlockByTimestamp performs a binary search to find the block number for a given timestamp.
 // It assumes block timestamps are strictly increasing.
-func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, factor BlockFactor) (uint64, error) {
+func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, factor BlockCorrectionFactor) (uint64, error) {
 	var (
 		left  uint64 = 0
 		right uint64
