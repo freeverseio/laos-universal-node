@@ -62,10 +62,10 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 		// Test for a timestamp that should return the mid block
 		// 1707491201 ts own -> 53316112
 		// 1707491202 ts evo -> 510371
-		targetTimestamp := int64(1707491202)
+		targetTimestamp := int64(1707491201)
 		expectedBlockNumber := uint64(53316113)
 		startTime := time.Now()
-		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp)
+		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.OwershipBlockFactor)
 		duration := time.Since(startTime)
 		fmt.Println("Duration: ", duration)
 		if err != nil {
@@ -75,28 +75,28 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 			t.Errorf("got %v, expected %v", blockNumber, expectedBlockNumber)
 		}
 	})
-	// t.Run("with timestamp 1707487609", func(t *testing.T) {
+	t.Run("with timestamp 1707487609", func(t *testing.T) {
 
-	// 	client, err := ethclient.Dial("https://rpc.klaos.laosfoundation.io/")
-	// 	if err != nil {
-	// 		t.Errorf("Unexpected error: %v", err)
-	// 	}
-	// 	// Setup your worker with the mock client
-	// 	conf := &config.Config{WaitingTime: 5 * time.Second}
-	// 	w := blockmapper.New(conf, client)
+		client, err := ethclient.Dial("https://rpc.klaos.laosfoundation.io/")
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		// Setup your worker with the mock client
+		conf := &config.Config{WaitingTime: 5 * time.Second}
+		w := blockmapper.New(conf, client)
 
-	// 	// Test for a timestamp that should return the mid block
-	// 	targetTimestamp := int64(1707491201)
-	// 	expectedBlockNumber := uint64(510371)
-	// 	startTime := time.Now()
-	// 	blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp)
-	// 	duration := time.Since(startTime)
-	// 	fmt.Println("Duration: ", duration)
-	// 	if err != nil {
-	// 		t.Errorf("Unexpected error: %v", err)
-	// 	}
-	// 	if blockNumber != expectedBlockNumber {
-	// 		t.Errorf("got %v, expected %v", blockNumber, expectedBlockNumber)
-	// 	}
-	// })
+		// Test for a timestamp that should return the mid block
+		targetTimestamp := int64(1707491202)
+		expectedBlockNumber := uint64(510371)
+		startTime := time.Now()
+		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.EvoChainBlockFactor)
+		duration := time.Since(startTime)
+		fmt.Println("Duration: ", duration)
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if blockNumber != expectedBlockNumber {
+			t.Errorf("got %v, expected %v", blockNumber, expectedBlockNumber)
+		}
+	})
 }
