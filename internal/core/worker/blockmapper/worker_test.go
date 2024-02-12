@@ -47,7 +47,12 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(200), Time: 200000}, // Latest block header
 				{Number: big.NewInt(100), Time: 100000},
 				{Number: big.NewInt(49), Time: 50000},
-				{Number: big.NewInt(74), Time: 95000}, // Final check
+				{Number: big.NewInt(74), Time: 95001},
+				{Number: big.NewInt(61), Time: 75000},
+				{Number: big.NewInt(67), Time: 85000},
+				{Number: big.NewInt(70), Time: 88000},
+				{Number: big.NewInt(72), Time: 89000},
+				{Number: big.NewInt(73), Time: 94991},
 			},
 			targetTimestamp:     95000,
 			correctionFunction:  blockmapper.EvoChainBlockCorrectionFunc,
@@ -63,7 +68,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(162), Time: 170000},
 				{Number: big.NewInt(168), Time: 175000},
 				{Number: big.NewInt(171), Time: 178000},
-				{Number: big.NewInt(173), Time: 179900},
+				{Number: big.NewInt(173), Time: 179900}, // expected block for ts 180000
 				{Number: big.NewInt(174), Time: 180900},
 			},
 			targetTimestamp:     180000,
@@ -76,7 +81,12 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(200), Time: 200000}, // Latest block header
 				{Number: big.NewInt(100), Time: 100000},
 				{Number: big.NewInt(49), Time: 50000},
-				{Number: big.NewInt(74), Time: 95000}, // Final check
+				{Number: big.NewInt(74), Time: 95001},
+				{Number: big.NewInt(61), Time: 75000},
+				{Number: big.NewInt(67), Time: 85000},
+				{Number: big.NewInt(70), Time: 88000},
+				{Number: big.NewInt(72), Time: 89000},
+				{Number: big.NewInt(73), Time: 94991},
 			},
 			targetTimestamp:     95000,
 			correctionFunction:  blockmapper.OwershipBlockCorrectionFunc,
@@ -93,7 +103,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(168), Time: 175000},
 				{Number: big.NewInt(171), Time: 178000},
 				{Number: big.NewInt(173), Time: 179900},
-				{Number: big.NewInt(174), Time: 180900},
+				{Number: big.NewInt(174), Time: 180900}, // expected block for ts 180000
 			},
 			targetTimestamp:     180000,
 			correctionFunction:  blockmapper.OwershipBlockCorrectionFunc,
