@@ -23,13 +23,10 @@ func (b BlockCorrectionFactor) UiInt64() uint64 {
 type correctionFuncType func(uint64, bool) uint64
 
 var OwershipBlockCorrectionFunc correctionFuncType = func(blockNumber uint64, sameTimestamp bool) uint64 {
-	return blockNumber + OwershipBlockFactor.UiInt64()
+	return blockNumber
 }
 
 var EvoChainBlockCorrectionFunc correctionFuncType = func(blockNumber uint64, sameTimestamp bool) uint64 {
-	if sameTimestamp {
-		return blockNumber
-	}
 	return blockNumber + EvoChainBlockFactor.UiInt64()
 }
 
@@ -89,7 +86,6 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchai
 			return 0, err
 		}
 		midTimestamp := midHeader.Time
-
 		switch {
 		case midTimestamp < uint64(targetTimestamp):
 			left = mid + 1
@@ -100,5 +96,5 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchai
 		}
 	}
 
-	return correctionFunc(right, false), nil
+	return correctionFunc(left, false), nil
 }
