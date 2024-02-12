@@ -10,6 +10,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/worker/blockmapper"
 	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
+	"github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
@@ -17,8 +18,8 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 	tests := []struct {
 		name                string
 		blockHeaders        []*types.Header // Add block headers slice
-		targetTimestamp     int64
-		correctionFunction  func(uint64) uint64
+		targetTimestamp     uint64
+		correctionFunction  blockmapper.BlockCorrectionFactor
 		expectedBlockNumber uint64
 	}{
 		{
@@ -28,7 +29,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(50), Time: 95000},   // Mid block header
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwershipBlockCorrectionFunc,
+			correctionFunction:  blockmapper.OwershipBlockFactor,
 			expectedBlockNumber: 50,
 		},
 		{
@@ -38,7 +39,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(50), Time: 95000},   // Mid block header
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.EvoChainBlockCorrectionFunc,
+			correctionFunction:  blockmapper.EvoBlockFactor,
 			expectedBlockNumber: 49,
 		},
 		{
@@ -55,7 +56,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(73), Time: 94991},
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.EvoChainBlockCorrectionFunc,
+			correctionFunction:  blockmapper.EvoBlockFactor,
 			expectedBlockNumber: 73,
 		},
 		{
@@ -72,7 +73,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(174), Time: 180900},
 			},
 			targetTimestamp:     180000,
-			correctionFunction:  blockmapper.EvoChainBlockCorrectionFunc,
+			correctionFunction:  blockmapper.EvoBlockFactor,
 			expectedBlockNumber: 173,
 		},
 		{
@@ -89,7 +90,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(73), Time: 94991},
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwershipBlockCorrectionFunc,
+			correctionFunction:  blockmapper.OwershipBlockFactor,
 			expectedBlockNumber: 74,
 		},
 		{
@@ -106,7 +107,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(174), Time: 180900}, // expected block for ts 180000
 			},
 			targetTimestamp:     180000,
-			correctionFunction:  blockmapper.OwershipBlockCorrectionFunc,
+			correctionFunction:  blockmapper.OwershipBlockFactor,
 			expectedBlockNumber: 174,
 		},
 	}
@@ -116,7 +117,8 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			client := mockClient.NewMockEthClient(ctrl)
+			ownClient, evoClient := mockClient.NewMockEthClient(ctrl), mockClient.NewMockEthClient(ctrl)
+			stateService := mock.NewMockService(ctrl)
 
 			// Setup mock responses for HeaderByNumber
 			for i, header := range tt.blockHeaders {
@@ -124,13 +126,13 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				if i == 0 {
 					numberArg = nil // The first call expects the latest block header
 				}
-				client.EXPECT().HeaderByNumber(context.Background(), numberArg).Return(header, nil).Times(1)
+				ownClient.EXPECT().HeaderByNumber(context.Background(), numberArg).Return(header, nil).Times(1)
 			}
 
 			conf := &config.Config{WaitingTime: 5 * time.Second}
-			w := blockmapper.New(conf, client)
+			w := blockmapper.New(conf, ownClient, evoClient, stateService)
 
-			blockNumber, err := w.SearchBlockByTimestamp(tt.targetTimestamp, client, tt.correctionFunction)
+			blockNumber, err := w.SearchBlockByTimestamp(tt.targetTimestamp, ownClient, tt.correctionFunction)
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}

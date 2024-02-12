@@ -109,6 +109,7 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if errDeleteOrphanRootTags := tx.DeleteOrphanRootTags(int64(blockWithoutReorg.Number)+1, int64(currentBlock)); errDeleteOrphanRootTags != nil {
 		return nil, errDeleteOrphanRootTags
 	}
+	// TODO set block without reorg as last mapped block
 
 	err = tx.Checkout(int64(blockWithoutReorg.Number))
 	if err != nil {

@@ -67,7 +67,7 @@ func executeEvoBlockRange(ctx context.Context, w *worker, startingBlock uint64) 
 	if lastBlock < startingBlock {
 		slog.Debug("evolution worker, last calculated block is behind starting block, waiting...",
 			"lastBlock", lastBlock, "startingBlock", startingBlock)
-		shared.WaitBeforeNextScan(ctx, w.waitingTime)
+		shared.Wait(ctx, w.waitingTime)
 		return startingBlock - 1, nil // return lastBlock from previous range to avoid skipping a block
 	}
 

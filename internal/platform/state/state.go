@@ -66,6 +66,10 @@ type OwnershipSyncState interface {
 	GetAllStoredBlockNumbers() ([]uint64, error)
 	DeleteOldStoredBlockNumbers() error
 	DeleteOrphanBlockData(blockNumberRef uint64) error
+	SetLastMappedOwnershipBlockNumber(blockNumber uint64) error
+	SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock uint64) error
+	GetLastMappedOwnershipBlockNumber() (uint64, error)
+	GetMappedOwnershipBlockNumber(blockNumber uint64) (uint64, error)
 }
 
 type EvolutionSyncState interface {

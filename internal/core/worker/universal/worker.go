@@ -94,7 +94,7 @@ func (w *worker) executeUniversalBlockRange(ctx context.Context,
 		if lastBlock < startingBlock {
 			slog.Debug("last calculated block is behind starting block, waiting...",
 				"lastBlock", lastBlock, "startingBlock", startingBlock)
-			shared.WaitBeforeNextScan(ctx, w.waitingTime)
+			shared.Wait(ctx, w.waitingTime)
 			return startingBlock - 1, true, nil // return lastBlock from previous range to avoid skipping a block
 		}
 	}
@@ -107,7 +107,7 @@ func (w *worker) executeUniversalBlockRange(ctx context.Context,
 
 	if !evoSynced {
 		slog.Debug("evolution chain is not synced with ownership chain, waiting...")
-		shared.WaitBeforeNextScan(ctx, w.waitingTime)
+		shared.Wait(ctx, w.waitingTime)
 		return lastBlock, false, nil
 	}
 

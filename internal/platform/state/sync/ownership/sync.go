@@ -1,6 +1,7 @@
 package ownership
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -10,10 +11,12 @@ import (
 )
 
 const (
-	lastBlock            = "ownership_last_block"
-	ownershipBlockTag    = "ownership_block_"
-	blockNumberDigits    = 18
-	numberOfBlocksToKeep = 250
+	lastBlock                = "ownership_last_block"
+	ownershipBlockTag        = "ownership_block_"
+	lastMappedOwnershipBlock = "mapped_ownership_last_block"
+	mappedOwnershipBlock     = "mapped_ownership_block_"
+	blockNumberDigits        = 18
+	numberOfBlocksToKeep     = 250
 )
 
 type service struct {
@@ -24,6 +27,34 @@ func NewService(tx storage.Tx) *service {
 	return &service{
 		tx: tx,
 	}
+}
+
+// TODO move the mapping methods to another package?
+func (s *service) SetLastMappedOwnershipBlockNumber(blockNumber uint64) error {
+	return s.tx.Set([]byte(lastMappedOwnershipBlock), []byte(strconv.FormatUint(blockNumber, 10)))
+}
+
+func (s *service) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock uint64) error {
+	return s.tx.Set([]byte(mappedOwnershipBlock+fmt.Sprint(ownershipBlock)), []byte(strconv.FormatUint(evoBlock, 10)))
+}
+
+func (s *service) GetLastMappedOwnershipBlockNumber() (uint64, error) {
+	return s.getBlockNumber(lastMappedOwnershipBlock)
+}
+
+func (s *service) GetMappedOwnershipBlockNumber(blockNumber uint64) (uint64, error) {
+	return s.getBlockNumber(mappedOwnershipBlock + fmt.Sprint(blockNumber))
+}
+
+func (s *service) getBlockNumber(key string) (uint64, error) {
+	value, err := s.tx.Get([]byte(key))
+	if err != nil {
+		return 0, err
+	}
+	if value == nil {
+		return 0, nil
+	}
+	return strconv.ParseUint(string(value), 10, 64)
 }
 
 func (s *service) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
