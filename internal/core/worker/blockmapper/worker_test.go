@@ -65,7 +65,7 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 		targetTimestamp := int64(1707491201)
 		expectedBlockNumber := uint64(53316113)
 		startTime := time.Now()
-		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.OwershipBlockFactor)
+		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.OwershipBlockCorrectionFunc)
 		duration := time.Since(startTime)
 		fmt.Println("Duration: ", duration)
 		if err != nil {
@@ -89,7 +89,7 @@ func TestSearchBlockByTimestamp(t *testing.T) {
 		targetTimestamp := int64(1707491202)
 		expectedBlockNumber := uint64(510371)
 		startTime := time.Now()
-		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.EvoChainBlockFactor)
+		blockNumber, err := w.SearchBlockByTimestamp(targetTimestamp, client, blockmapper.EvoChainBlockCorrectionFunc)
 		duration := time.Since(startTime)
 		fmt.Println("Duration: ", duration)
 		if err != nil {
