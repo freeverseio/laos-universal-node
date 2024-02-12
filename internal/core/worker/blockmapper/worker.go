@@ -20,19 +20,19 @@ func (b BlockCorrectionFactor) UiInt64() uint64 {
 	return uint64(int(b))
 }
 
-type correctionFuncType func(uint64, bool) uint64
+type correctionFuncType func(uint64) uint64
 
-var OwershipBlockCorrectionFunc correctionFuncType = func(blockNumber uint64, sameTimestamp bool) uint64 {
+var OwershipBlockCorrectionFunc correctionFuncType = func(blockNumber uint64) uint64 {
 	return blockNumber
 }
 
-var EvoChainBlockCorrectionFunc correctionFuncType = func(blockNumber uint64, sameTimestamp bool) uint64 {
+var EvoChainBlockCorrectionFunc correctionFuncType = func(blockNumber uint64) uint64 {
 	return blockNumber + EvoChainBlockFactor.UiInt64()
 }
 
 type Worker interface {
 	Run(ctx context.Context) error
-	SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, correctionFunction func(uint64, bool) uint64) (uint64, error)
+	SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, correctionFunction func(uint64) uint64) (uint64, error)
 }
 
 type worker struct {
@@ -67,7 +67,7 @@ func (w *worker) Run(ctx context.Context) error {
 
 // SearchBlockByTimestamp performs a binary search to find the block number for a given timestamp.
 // It assumes block timestamps are strictly increasing.
-func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, correctionFunc func(uint64, bool) uint64) (uint64, error) {
+func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchain.EthClient, correctionFunc func(uint64) uint64) (uint64, error) {
 	var (
 		left  uint64 = 0
 		right uint64
@@ -92,9 +92,9 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchai
 		case midTimestamp > uint64(targetTimestamp):
 			right = mid - 1
 		default:
-			return correctionFunc(mid, true), nil
+			return correctionFunc(mid), nil
 		}
 	}
 
-	return correctionFunc(left, false), nil
+	return correctionFunc(left), nil
 }
