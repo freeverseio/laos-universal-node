@@ -96,9 +96,8 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchai
 		case midTimestamp > uint64(targetTimestamp):
 			right = mid - 1
 		default:
-			return correctionFunc(mid, true), nil // Apply the correction function here
+			return correctionFunc(mid, true), nil
 		}
 	}
 
-	return correctionFunc(right, false), nil // Apply the correction function here
-}
+	return correctionFunc(right, false), nil
