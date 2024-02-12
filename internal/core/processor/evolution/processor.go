@@ -124,7 +124,7 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 		}
 		slog.Debug("block not finalized, waiting for finality", "block", lastBlock)
 
-		shared.WaitBeforeNextRequest(ctx, p.waitingTime)
+		p.waitBeforeNextRequest(ctx)
 	}
 
 	events, err := p.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
@@ -222,4 +222,13 @@ func (p *processor) hasBlockFinalize(blockNumber *big.Int) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (p *processor) waitBeforeNextRequest(ctx context.Context) {
+	timer := time.NewTimer(p.waitingTime)
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+	case <-timer.C:
+	}
 }

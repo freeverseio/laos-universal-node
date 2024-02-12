@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -19,6 +18,7 @@ type BlockHelper struct {
 	startingBlock uint64
 }
 
+// TODO move the block helper to another package as it's used by the block mapper worker too?
 func NewBlockHelper(client blockchain.EthClient, stateService state.Service, blocksRange, blocksMargin, startingBlock uint64) *BlockHelper {
 	return &BlockHelper{
 		client:        client,
@@ -85,13 +85,4 @@ func (b *BlockHelper) getInitStartingBlock(ctx context.Context, startingBlockDat
 
 	slog.Debug("using latestBlock from blockchain as startingBlock", "startingBlock", l1LatestBlock)
 	return l1LatestBlock, nil
-}
-
-func WaitBeforeNextRequest(ctx context.Context, waitingTime time.Duration) {
-	timer := time.NewTimer(waitingTime)
-	select {
-	case <-ctx.Done():
-		timer.Stop()
-	case <-timer.C:
-	}
 }
