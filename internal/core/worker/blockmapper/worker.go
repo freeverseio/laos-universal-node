@@ -101,3 +101,4 @@ func (bs *worker) SearchBlockByTimestamp(targetTimestamp int64, client blockchai
 	}
 
 	return correctionFunc(right, false), nil
+}
