@@ -311,19 +311,19 @@ func (mr *MockTxMockRecorder) GetLastTaggedBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTaggedBlock", reflect.TypeOf((*MockTx)(nil).GetLastTaggedBlock))
 }
 
-// GetMappedOwnershipBlockNumber mocks base method.
-func (m *MockTx) GetMappedOwnershipBlockNumber(blockNumber uint64) (uint64, error) {
+// GetMappedEvoBlockNumber mocks base method.
+func (m *MockTx) GetMappedEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMappedOwnershipBlockNumber", blockNumber)
+	ret := m.ctrl.Call(m, "GetMappedEvoBlockNumber", ownershipBlockNumber)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetMappedOwnershipBlockNumber indicates an expected call of GetMappedOwnershipBlockNumber.
-func (mr *MockTxMockRecorder) GetMappedOwnershipBlockNumber(blockNumber any) *gomock.Call {
+// GetMappedEvoBlockNumber indicates an expected call of GetMappedEvoBlockNumber.
+func (mr *MockTxMockRecorder) GetMappedEvoBlockNumber(ownershipBlockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMappedOwnershipBlockNumber", reflect.TypeOf((*MockTx)(nil).GetMappedOwnershipBlockNumber), blockNumber)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMappedEvoBlockNumber", reflect.TypeOf((*MockTx)(nil).GetMappedEvoBlockNumber), ownershipBlockNumber)
 }
 
 // GetMintedWithExternalURIEvents mocks base method.
@@ -471,20 +471,6 @@ func (mr *MockTxMockRecorder) SetLastOwnershipBlock(block any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetLastOwnershipBlock), block)
 }
 
-// SetMappedOwnershipBlockNumber mocks base method.
-func (m *MockTx) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMappedOwnershipBlockNumber", ownershipBlock, evoBlock)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetMappedOwnershipBlockNumber indicates an expected call of SetMappedOwnershipBlockNumber.
-func (mr *MockTxMockRecorder) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMappedOwnershipBlockNumber", reflect.TypeOf((*MockTx)(nil).SetMappedOwnershipBlockNumber), ownershipBlock, evoBlock)
-}
-
 // SetNextEvoEventBlock mocks base method.
 func (m *MockTx) SetNextEvoEventBlock(contract string, blockNumber uint64) error {
 	m.ctrl.T.Helper()
@@ -511,6 +497,20 @@ func (m *MockTx) SetOwnershipBlock(blockNumber uint64, block model.Block) error 
 func (mr *MockTxMockRecorder) SetOwnershipBlock(blockNumber, block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockTx)(nil).SetOwnershipBlock), blockNumber, block)
+}
+
+// SetOwnershipEvoBlockMapping mocks base method.
+func (m *MockTx) SetOwnershipEvoBlockMapping(ownershipBlockNumber, evoBlockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipEvoBlockMapping", ownershipBlockNumber, evoBlockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipEvoBlockMapping indicates an expected call of SetOwnershipEvoBlockMapping.
+func (mr *MockTxMockRecorder) SetOwnershipEvoBlockMapping(ownershipBlockNumber, evoBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipEvoBlockMapping", reflect.TypeOf((*MockTx)(nil).SetOwnershipEvoBlockMapping), ownershipBlockNumber, evoBlockNumber)
 }
 
 // StoreERC721UniversalContracts mocks base method.
@@ -1128,19 +1128,19 @@ func (mr *MockOwnershipSyncStateMockRecorder) GetLastOwnershipBlock() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetLastOwnershipBlock))
 }
 
-// GetMappedOwnershipBlockNumber mocks base method.
-func (m *MockOwnershipSyncState) GetMappedOwnershipBlockNumber(blockNumber uint64) (uint64, error) {
+// GetMappedEvoBlockNumber mocks base method.
+func (m *MockOwnershipSyncState) GetMappedEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMappedOwnershipBlockNumber", blockNumber)
+	ret := m.ctrl.Call(m, "GetMappedEvoBlockNumber", ownershipBlockNumber)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetMappedOwnershipBlockNumber indicates an expected call of GetMappedOwnershipBlockNumber.
-func (mr *MockOwnershipSyncStateMockRecorder) GetMappedOwnershipBlockNumber(blockNumber any) *gomock.Call {
+// GetMappedEvoBlockNumber indicates an expected call of GetMappedEvoBlockNumber.
+func (mr *MockOwnershipSyncStateMockRecorder) GetMappedEvoBlockNumber(ownershipBlockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMappedOwnershipBlockNumber", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetMappedOwnershipBlockNumber), blockNumber)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMappedEvoBlockNumber", reflect.TypeOf((*MockOwnershipSyncState)(nil).GetMappedEvoBlockNumber), ownershipBlockNumber)
 }
 
 // GetOwnershipBlock mocks base method.
@@ -1186,20 +1186,6 @@ func (mr *MockOwnershipSyncStateMockRecorder) SetLastOwnershipBlock(block any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLastOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetLastOwnershipBlock), block)
 }
 
-// SetMappedOwnershipBlockNumber mocks base method.
-func (m *MockOwnershipSyncState) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMappedOwnershipBlockNumber", ownershipBlock, evoBlock)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetMappedOwnershipBlockNumber indicates an expected call of SetMappedOwnershipBlockNumber.
-func (mr *MockOwnershipSyncStateMockRecorder) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMappedOwnershipBlockNumber", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetMappedOwnershipBlockNumber), ownershipBlock, evoBlock)
-}
-
 // SetOwnershipBlock mocks base method.
 func (m *MockOwnershipSyncState) SetOwnershipBlock(blockNumber uint64, block model.Block) error {
 	m.ctrl.T.Helper()
@@ -1212,6 +1198,20 @@ func (m *MockOwnershipSyncState) SetOwnershipBlock(blockNumber uint64, block mod
 func (mr *MockOwnershipSyncStateMockRecorder) SetOwnershipBlock(blockNumber, block any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipBlock", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetOwnershipBlock), blockNumber, block)
+}
+
+// SetOwnershipEvoBlockMapping mocks base method.
+func (m *MockOwnershipSyncState) SetOwnershipEvoBlockMapping(ownershipBlockNumber, evoBlockNumber uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOwnershipEvoBlockMapping", ownershipBlockNumber, evoBlockNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOwnershipEvoBlockMapping indicates an expected call of SetOwnershipEvoBlockMapping.
+func (mr *MockOwnershipSyncStateMockRecorder) SetOwnershipEvoBlockMapping(ownershipBlockNumber, evoBlockNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnershipEvoBlockMapping", reflect.TypeOf((*MockOwnershipSyncState)(nil).SetOwnershipEvoBlockMapping), ownershipBlockNumber, evoBlockNumber)
 }
 
 // MockEvolutionSyncState is a mock of EvolutionSyncState interface.

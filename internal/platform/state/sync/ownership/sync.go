@@ -34,7 +34,7 @@ func (s *service) SetLastMappedOwnershipBlockNumber(blockNumber uint64) error {
 	return s.tx.Set([]byte(lastMappedOwnershipBlock), []byte(strconv.FormatUint(blockNumber, 10)))
 }
 
-func (s *service) SetMappedOwnershipBlockNumber(ownershipBlock, evoBlock uint64) error {
+func (s *service) SetOwnershipEvoBlockMapping(ownershipBlock, evoBlock uint64) error {
 	return s.tx.Set([]byte(mappedOwnershipBlock+fmt.Sprint(ownershipBlock)), []byte(strconv.FormatUint(evoBlock, 10)))
 }
 
@@ -42,8 +42,8 @@ func (s *service) GetLastMappedOwnershipBlockNumber() (uint64, error) {
 	return s.getBlockNumber(lastMappedOwnershipBlock)
 }
 
-func (s *service) GetMappedOwnershipBlockNumber(blockNumber uint64) (uint64, error) {
-	return s.getBlockNumber(mappedOwnershipBlock + fmt.Sprint(blockNumber))
+func (s *service) GetMappedEvoBlockNumber(ownershipBlock uint64) (uint64, error) {
+	return s.getBlockNumber(mappedOwnershipBlock + fmt.Sprint(ownershipBlock))
 }
 
 func (s *service) getBlockNumber(key string) (uint64, error) {
