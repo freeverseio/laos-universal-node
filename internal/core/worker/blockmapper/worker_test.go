@@ -29,7 +29,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(50), Time: 95000},   // Mid block header
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwershipBlockFactor,
+			correctionFunction:  blockmapper.OwnershipBlockFactor,
 			expectedBlockNumber: 50,
 		},
 		{
@@ -90,7 +90,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(73), Time: 94991},
 			},
 			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwershipBlockFactor,
+			correctionFunction:  blockmapper.OwnershipBlockFactor,
 			expectedBlockNumber: 74,
 		},
 		{
@@ -107,7 +107,7 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(174), Time: 180900}, // expected block for ts 180000
 			},
 			targetTimestamp:     180000,
-			correctionFunction:  blockmapper.OwershipBlockFactor,
+			correctionFunction:  blockmapper.OwnershipBlockFactor,
 			expectedBlockNumber: 174,
 		},
 	}
