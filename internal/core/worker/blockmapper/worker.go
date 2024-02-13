@@ -172,7 +172,6 @@ func (w *worker) getInitialEvoBlock(ctx context.Context) (uint64, error) {
 	// if the user-defined ownership block was produced before the user-defined evolution block,
 	// look for the evolution block corresponding to that ownership block in time
 	if ownershipHeader.Time < evoHeader.Time {
-		// TODO is it ok to have the ownershipStartingBlock as lower bound?
 		evoBlock, err = w.SearchBlockByTimestamp(ownershipHeader.Time, w.clientEvo, EvoBlockFactor)
 		if err != nil {
 			return 0, fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
