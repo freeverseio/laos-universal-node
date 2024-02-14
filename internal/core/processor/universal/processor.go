@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	blockHelper "github.com/freeverseio/laos-universal-node/internal/core/block/helper"
+	shared "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
@@ -44,7 +44,7 @@ type processor struct {
 	client       blockchain.EthClient
 	stateService state.Service
 	scanner      scan.Scanner
-	*blockHelper.Helper
+	*shared.BlockHelper
 	discoverer contractDiscoverer.Discoverer
 	updater    contractUpdater.Updater
 }
@@ -60,7 +60,7 @@ func NewProcessor(client blockchain.EthClient,
 		client:       client,
 		stateService: stateService,
 		scanner:      scanner,
-		Helper: blockHelper.New(
+		BlockHelper: shared.NewBlockHelper(
 			client,
 			stateService,
 			uint64(c.BlocksRange),

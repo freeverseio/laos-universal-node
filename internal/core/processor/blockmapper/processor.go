@@ -6,8 +6,8 @@ import (
 	"math/big"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/core/block/helper"
 	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
+	shared "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
@@ -18,8 +18,8 @@ type Processor interface {
 }
 
 type processor struct {
-	ownershipBlockHelper *helper.Helper
-	evoBlockHelper       *helper.Helper
+	ownershipBlockHelper *shared.BlockHelper
+	evoBlockHelper       *shared.BlockHelper
 	ownershipClient      blockchain.EthClient
 	evoClient            blockchain.EthClient
 	blockSearch          search.Search
@@ -30,14 +30,14 @@ func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stat
 	return &processor{
 		ownershipClient: ownershipClient,
 		evoClient:       evoClient,
-		ownershipBlockHelper: helper.New(
+		ownershipBlockHelper: shared.NewBlockHelper(
 			ownershipClient,
 			stateService,
 			uint64(c.BlocksRange),
 			uint64(c.BlocksMargin),
 			c.StartingBlock,
 		),
-		evoBlockHelper: helper.New(
+		evoBlockHelper: shared.NewBlockHelper(
 			evoClient,
 			stateService,
 			uint64(c.EvoBlocksRange),
