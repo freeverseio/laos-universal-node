@@ -1,25 +1,25 @@
-package blockmapper_test
+package search_test
 
 import (
 	"context"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/internal/config"
-	"github.com/freeverseio/laos-universal-node/internal/core/worker/blockmapper"
+	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
 	mockClient "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
-	"github.com/freeverseio/laos-universal-node/internal/platform/state/mock"
 	"go.uber.org/mock/gomock"
 )
 
-func TestSearchBlockByTimestampTableTest(t *testing.T) {
+func TestGetBlockByTimestamp(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
-		blockHeaders        []*types.Header // Add block headers slice
+		blockHeaders        []*types.Header
 		targetTimestamp     uint64
-		correctionFunction  blockmapper.BlockCorrectionFactor
+		targetFunc          func(s search.Search, ctx context.Context, ts uint64) (uint64, error)
+		evoClientCalls      int
+		ownClientCalls      int
 		expectedBlockNumber uint64
 	}{
 		{
@@ -28,8 +28,12 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(100), Time: 100000}, // Latest block header
 				{Number: big.NewInt(50), Time: 95000},   // Mid block header
 			},
-			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwnershipBlockFactor,
+			targetTimestamp: 95000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetOwnershipBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      1,
+			evoClientCalls:      0,
 			expectedBlockNumber: 50,
 		},
 		{
@@ -38,12 +42,16 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(100), Time: 100000}, // Latest block header
 				{Number: big.NewInt(50), Time: 95000},   // Mid block header
 			},
-			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.EvoBlockFactor,
+			targetTimestamp: 95000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetEvolutionBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      0,
+			evoClientCalls:      1,
 			expectedBlockNumber: 49,
 		},
 		{
-			name: "should find blocknumber in evo chain from ownship timestamp with timestamp on the left side",
+			name: "should find blocknumber in evo chain from ownership timestamp with timestamp on the left side",
 			blockHeaders: []*types.Header{
 				{Number: big.NewInt(200), Time: 200000}, // Latest block header
 				{Number: big.NewInt(100), Time: 100000},
@@ -55,12 +63,16 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(72), Time: 89000},
 				{Number: big.NewInt(73), Time: 94991},
 			},
-			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.EvoBlockFactor,
+			targetTimestamp: 95000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetEvolutionBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      0,
+			evoClientCalls:      1,
 			expectedBlockNumber: 73,
 		},
 		{
-			name: "should find blocknumber in evo chain from ownship timestamp with timestamp on the right side",
+			name: "should find blocknumber in evo chain from ownership timestamp with timestamp on the right side",
 			blockHeaders: []*types.Header{
 				{Number: big.NewInt(200), Time: 200000}, // Latest block header
 				{Number: big.NewInt(100), Time: 100000},
@@ -72,8 +84,12 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(173), Time: 179900}, // expected block for ts 180000
 				{Number: big.NewInt(174), Time: 180900},
 			},
-			targetTimestamp:     180000,
-			correctionFunction:  blockmapper.EvoBlockFactor,
+			targetTimestamp: 180000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetEvolutionBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      0,
+			evoClientCalls:      1,
 			expectedBlockNumber: 173,
 		},
 		{
@@ -89,8 +105,12 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(72), Time: 89000},
 				{Number: big.NewInt(73), Time: 94991},
 			},
-			targetTimestamp:     95000,
-			correctionFunction:  blockmapper.OwnershipBlockFactor,
+			targetTimestamp: 95000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetOwnershipBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      1,
+			evoClientCalls:      0,
 			expectedBlockNumber: 74,
 		},
 		{
@@ -106,19 +126,23 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				{Number: big.NewInt(173), Time: 179900},
 				{Number: big.NewInt(174), Time: 180900}, // expected block for ts 180000
 			},
-			targetTimestamp:     180000,
-			correctionFunction:  blockmapper.OwnershipBlockFactor,
+			targetTimestamp: 180000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetOwnershipBlockByTimestamp(ctx, ts)
+			},
+			ownClientCalls:      1,
+			evoClientCalls:      0,
 			expectedBlockNumber: 174,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			ownClient, evoClient := mockClient.NewMockEthClient(ctrl), mockClient.NewMockEthClient(ctrl)
-			stateService := mock.NewMockService(ctrl)
 
 			// Setup mock responses for HeaderByNumber
 			for i, header := range tt.blockHeaders {
@@ -126,13 +150,13 @@ func TestSearchBlockByTimestampTableTest(t *testing.T) {
 				if i == 0 {
 					numberArg = nil // The first call expects the latest block header
 				}
-				ownClient.EXPECT().HeaderByNumber(context.Background(), numberArg).Return(header, nil).Times(1)
+				ownClient.EXPECT().HeaderByNumber(context.Background(), numberArg).Return(header, nil).Times(tt.ownClientCalls)
+				evoClient.EXPECT().HeaderByNumber(context.Background(), numberArg).Return(header, nil).Times(tt.evoClientCalls)
 			}
 
-			conf := &config.Config{WaitingTime: 5 * time.Second}
-			w := blockmapper.New(conf, ownClient, evoClient, stateService)
+			s := search.New(ownClient, evoClient)
 
-			blockNumber, err := w.SearchBlockByTimestamp(tt.targetTimestamp, ownClient, tt.correctionFunction)
+			blockNumber, err := tt.targetFunc(s, context.Background(), tt.targetTimestamp)
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}

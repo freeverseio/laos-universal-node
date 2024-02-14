@@ -9,26 +9,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
 	sharedProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-type BlockCorrectionFactor int
-
-const (
-	OwnershipBlockFactor BlockCorrectionFactor = 0
-	EvoBlockFactor       BlockCorrectionFactor = -1
-)
-
-func (b BlockCorrectionFactor) uint64() uint64 {
-	return uint64(b)
-}
-
 type Worker interface {
 	Run(ctx context.Context)
-	SearchBlockByTimestamp(targetTimestamp uint64, client blockchain.EthClient, correctionFactor BlockCorrectionFactor, startingPoint ...uint64) (uint64, error)
 }
 
 type worker struct {
@@ -37,6 +26,7 @@ type worker struct {
 	evoBlockHelper       *sharedProcessor.BlockHelper
 	clientOwnership      blockchain.EthClient
 	clientEvo            blockchain.EthClient
+	blockSearch          search.Search
 	stateService         state.Service
 }
 
@@ -59,6 +49,7 @@ func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stat
 			uint64(c.EvoBlocksMargin),
 			c.EvoStartingBlock,
 		),
+		blockSearch:  search.New(ownershipClient, evoClient),
 		stateService: stateService,
 	}
 }
@@ -124,7 +115,7 @@ func (w *worker) ExecuteMapping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error occurred retrieving block number %d from evolution chain %w:", evoBlock, err)
 	}
-	toMapOwnershipBlock, err := w.SearchBlockByTimestamp(evoHeader.Time, w.clientOwnership, OwnershipBlockFactor, lastMappedOwnershipBlock)
+	toMapOwnershipBlock, err := w.blockSearch.GetOwnershipBlockByTimestamp(ctx, evoHeader.Time, lastMappedOwnershipBlock)
 	if err != nil {
 		return fmt.Errorf("error occurred searching for ownership block number by target timestamp %d (evolution block number %d): %w",
 			evoHeader.Time, evoBlock, err)
@@ -172,45 +163,11 @@ func (w *worker) getInitialEvoBlock(ctx context.Context) (uint64, error) {
 	// if the user-defined ownership block was produced before the user-defined evolution block,
 	// look for the evolution block corresponding to that ownership block in time
 	if ownershipHeader.Time < evoHeader.Time {
-		evoBlock, err = w.SearchBlockByTimestamp(ownershipHeader.Time, w.clientEvo, EvoBlockFactor)
+		evoBlock, err = w.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownershipHeader.Time)
 		if err != nil {
 			return 0, fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
 				ownershipHeader.Time, ownershipStartingBlock, err)
 		}
 	}
 	return evoBlock, nil
-}
-
-// SearchBlockByTimestamp performs a binary search to find the block number for a given timestamp.
-// It assumes block timestamps are strictly increasing.
-func (w *worker) SearchBlockByTimestamp(targetTimestamp uint64, client blockchain.EthClient, correctionFactor BlockCorrectionFactor, startingPoint ...uint64) (uint64, error) {
-	var left, right uint64
-	if len(startingPoint) > 0 {
-		left = startingPoint[0]
-	}
-
-	header, err := client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return 0, err
-	}
-	right = header.Number.Uint64()
-
-	for left <= right {
-		mid := left + (right-left)/2
-		midHeader, err := client.HeaderByNumber(context.Background(), new(big.Int).SetUint64(mid))
-		if err != nil {
-			return 0, err
-		}
-		midTimestamp := midHeader.Time
-		switch {
-		case midTimestamp < targetTimestamp:
-			left = mid + 1
-		case midTimestamp > targetTimestamp:
-			right = mid - 1
-		default:
-			return mid + correctionFactor.uint64(), nil
-		}
-	}
-
-	return left + correctionFactor.uint64(), nil
 }
