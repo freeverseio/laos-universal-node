@@ -11,6 +11,31 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+var (
+	headersLeftSide = []*types.Header{
+		{Number: big.NewInt(200), Time: 200000}, // Latest block header
+		{Number: big.NewInt(100), Time: 100000},
+		{Number: big.NewInt(150), Time: 160000},
+		{Number: big.NewInt(175), Time: 185000},
+		{Number: big.NewInt(162), Time: 170000},
+		{Number: big.NewInt(168), Time: 175000},
+		{Number: big.NewInt(171), Time: 178000},
+		{Number: big.NewInt(173), Time: 179900}, // expected block for ts 180000
+		{Number: big.NewInt(174), Time: 180900},
+	}
+	headersRightSide = []*types.Header{
+		{Number: big.NewInt(200), Time: 200000}, // Latest block header
+		{Number: big.NewInt(100), Time: 100000},
+		{Number: big.NewInt(49), Time: 50000},
+		{Number: big.NewInt(74), Time: 95001},
+		{Number: big.NewInt(61), Time: 75000},
+		{Number: big.NewInt(67), Time: 85000},
+		{Number: big.NewInt(70), Time: 88000},
+		{Number: big.NewInt(72), Time: 89000},
+		{Number: big.NewInt(73), Time: 94991},
+	}
+)
+
 func TestGetBlockByTimestamp(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -51,18 +76,8 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			expectedBlockNumber: 49,
 		},
 		{
-			name: "should find blocknumber in evo chain from ownership timestamp with timestamp on the left side",
-			blockHeaders: []*types.Header{
-				{Number: big.NewInt(200), Time: 200000}, // Latest block header
-				{Number: big.NewInt(100), Time: 100000},
-				{Number: big.NewInt(49), Time: 50000},
-				{Number: big.NewInt(74), Time: 95001},
-				{Number: big.NewInt(61), Time: 75000},
-				{Number: big.NewInt(67), Time: 85000},
-				{Number: big.NewInt(70), Time: 88000},
-				{Number: big.NewInt(72), Time: 89000},
-				{Number: big.NewInt(73), Time: 94991},
-			},
+			name:            "should find blocknumber in evo chain from ownership timestamp with timestamp on the left side",
+			blockHeaders:    headersRightSide,
 			targetTimestamp: 95000,
 			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
 				return s.GetEvolutionBlockByTimestamp(ctx, ts)
@@ -72,18 +87,8 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			expectedBlockNumber: 73,
 		},
 		{
-			name: "should find blocknumber in evo chain from ownership timestamp with timestamp on the right side",
-			blockHeaders: []*types.Header{
-				{Number: big.NewInt(200), Time: 200000}, // Latest block header
-				{Number: big.NewInt(100), Time: 100000},
-				{Number: big.NewInt(150), Time: 160000},
-				{Number: big.NewInt(175), Time: 185000},
-				{Number: big.NewInt(162), Time: 170000},
-				{Number: big.NewInt(168), Time: 175000},
-				{Number: big.NewInt(171), Time: 178000},
-				{Number: big.NewInt(173), Time: 179900}, // expected block for ts 180000
-				{Number: big.NewInt(174), Time: 180900},
-			},
+			name:            "should find blocknumber in evo chain from ownership timestamp with timestamp on the right side",
+			blockHeaders:    headersLeftSide,
 			targetTimestamp: 180000,
 			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
 				return s.GetEvolutionBlockByTimestamp(ctx, ts)
@@ -93,18 +98,8 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			expectedBlockNumber: 173,
 		},
 		{
-			name: "should find blocknumber in own chain from evo timestamp with timestamp on the left side",
-			blockHeaders: []*types.Header{
-				{Number: big.NewInt(200), Time: 200000}, // Latest block header
-				{Number: big.NewInt(100), Time: 100000},
-				{Number: big.NewInt(49), Time: 50000},
-				{Number: big.NewInt(74), Time: 95001},
-				{Number: big.NewInt(61), Time: 75000},
-				{Number: big.NewInt(67), Time: 85000},
-				{Number: big.NewInt(70), Time: 88000},
-				{Number: big.NewInt(72), Time: 89000},
-				{Number: big.NewInt(73), Time: 94991},
-			},
+			name:            "should find blocknumber in ownership chain from evo timestamp with timestamp on the left side",
+			blockHeaders:    headersRightSide,
 			targetTimestamp: 95000,
 			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
 				return s.GetOwnershipBlockByTimestamp(ctx, ts)
@@ -114,18 +109,8 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			expectedBlockNumber: 74,
 		},
 		{
-			name: "should find blocknumber in ownership chain with timestamp of evo right side",
-			blockHeaders: []*types.Header{
-				{Number: big.NewInt(200), Time: 200000}, // Latest block header
-				{Number: big.NewInt(100), Time: 100000},
-				{Number: big.NewInt(150), Time: 160000},
-				{Number: big.NewInt(175), Time: 185000},
-				{Number: big.NewInt(162), Time: 170000},
-				{Number: big.NewInt(168), Time: 175000},
-				{Number: big.NewInt(171), Time: 178000},
-				{Number: big.NewInt(173), Time: 179900},
-				{Number: big.NewInt(174), Time: 180900}, // expected block for ts 180000
-			},
+			name:            "should find blocknumber in ownership chain with timestamp of evo right side",
+			blockHeaders:    headersLeftSide,
 			targetTimestamp: 180000,
 			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
 				return s.GetOwnershipBlockByTimestamp(ctx, ts)
