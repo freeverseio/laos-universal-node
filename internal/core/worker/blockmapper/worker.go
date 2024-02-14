@@ -9,8 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	"github.com/freeverseio/laos-universal-node/internal/core/block/helper"
 	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
-	sharedProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	shared "github.com/freeverseio/laos-universal-node/internal/core/worker"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
@@ -22,8 +22,8 @@ type Worker interface {
 
 type worker struct {
 	waitingTime          time.Duration
-	ownershipBlockHelper *sharedProcessor.BlockHelper
-	evoBlockHelper       *sharedProcessor.BlockHelper
+	ownershipBlockHelper *helper.Helper
+	evoBlockHelper       *helper.Helper
 	clientOwnership      blockchain.EthClient
 	clientEvo            blockchain.EthClient
 	blockSearch          search.Search
@@ -35,14 +35,14 @@ func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stat
 		waitingTime:     c.WaitingTime,
 		clientOwnership: ownershipClient,
 		clientEvo:       evoClient,
-		ownershipBlockHelper: sharedProcessor.NewBlockHelper(
+		ownershipBlockHelper: helper.New(
 			ownershipClient,
 			stateService,
 			uint64(c.BlocksRange),
 			uint64(c.BlocksMargin),
 			c.StartingBlock,
 		),
-		evoBlockHelper: sharedProcessor.NewBlockHelper(
+		evoBlockHelper: helper.New(
 			evoClient,
 			stateService,
 			uint64(c.EvoBlocksRange),

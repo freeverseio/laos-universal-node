@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/freeverseio/laos-universal-node/internal/config"
-	shared "github.com/freeverseio/laos-universal-node/internal/core/processor"
+	blockHelper "github.com/freeverseio/laos-universal-node/internal/core/block/helper"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
@@ -39,7 +39,7 @@ type processor struct {
 	scanner      scan.Scanner
 	laosHTTP     LaosRPCRequests
 	waitingTime  time.Duration
-	*shared.BlockHelper
+	*blockHelper.Helper
 }
 
 func NewProcessor(client blockchain.EthClient,
@@ -54,7 +54,7 @@ func NewProcessor(client blockchain.EthClient,
 		scanner:      scanner,
 		laosHTTP:     laosHTTP,
 		waitingTime:  c.WaitingRPCRequestTime,
-		BlockHelper: shared.NewBlockHelper(
+		Helper: blockHelper.New(
 			client,
 			stateService,
 			uint64(c.EvoBlocksRange),
