@@ -81,7 +81,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			expectedStartingBlock uint64
 			blockNumberTimes      int
 			getLastBlockFunc      func(*stateMock.MockTx) *gomock.Call
-			targetFunc            func(shared.BlockHelper, context.Context) (uint64, error)
+			targetFunc            func(*shared.BlockHelper, context.Context) (uint64, error)
 		}{
 			{
 				name:                  "should use ownership starting block from storage",
@@ -93,7 +93,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 10}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
@@ -107,12 +107,12 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
 			{
-				name:                  "should use latest block from evo chain when no starting block provided",
+				name:                  "should use latest block from ownership chain when no starting block provided",
 				startingBlockData:     model.Block{Number: 0},
 				userStartingBlock:     0,
 				chainLatestBlock:      30,
@@ -121,7 +121,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
@@ -135,7 +135,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 10}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -149,7 +149,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -163,7 +163,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -184,7 +184,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				mockClient.EXPECT().BlockNumber(context.Background()).Return(tt.chainLatestBlock, nil).Times(tt.blockNumberTimes)
 
 				helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, tt.userStartingBlock)
-				actualStartingBlock, err := tt.targetFunc(*helper, context.Background())
+				actualStartingBlock, err := tt.targetFunc(helper, context.Background())
 				if err != nil {
 					t.Fatalf("got error '%v' while no error was expected", err)
 				}
@@ -195,151 +195,156 @@ func TestGetInitStartingBlock(t *testing.T) {
 		}
 	})
 
-	t.Run("GetOwnershipInitStartingBlock errors", func(t *testing.T) {
+	t.Run("GetInitStartingBlock errors", func(t *testing.T) {
 		t.Parallel()
 		t.Run("should return error when creating transaction fails", func(t *testing.T) {
 			t.Parallel()
-			errMsg := fmt.Errorf("state service failed")
-			expectedErr := fmt.Errorf("error creating a new transaction: %w", errMsg)
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
-
-			mockStateService.EXPECT().NewTransaction().Return(nil, errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetOwnershipInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
+			tests := []struct {
+				name       string
+				targetFunc func(*shared.BlockHelper, context.Context) (uint64, error)
+			}{
+				{
+					name: "on evo init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetEvoInitStartingBlock(c)
+					},
+				},
+				{
+					name: "on ownership init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetOwnershipInitStartingBlock(c)
+					},
+				},
 			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+			for _, tt := range tests {
+				tt := tt
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					errMsg := fmt.Errorf("state service failed")
+					expectedErr := fmt.Errorf("error creating a new transaction: %w", errMsg)
+
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					mockClient, mockStateService := getMocks(ctrl)
+
+					mockStateService.EXPECT().NewTransaction().Return(nil, errMsg)
+
+					helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
+					_, err := tt.targetFunc(helper, context.Background())
+					if err == nil {
+						t.Fatalf("got no error when '%v' was expected", expectedErr)
+					}
+					if err.Error() != expectedErr.Error() {
+						t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+					}
+				})
 			}
 		})
-
 		t.Run("should return error when retrieving starting block from storage fails", func(t *testing.T) {
 			t.Parallel()
-			errMsg := fmt.Errorf("storage failed")
-			expectedErr := fmt.Errorf("error retrieving the current block from storage: %w", errMsg)
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
-
-			mockStateService.EXPECT().NewTransaction().Return(tx, nil)
-			tx.EXPECT().Discard()
-			tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetOwnershipInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
+			tests := []struct {
+				name             string
+				targetFunc       func(*shared.BlockHelper, context.Context) (uint64, error)
+				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
+			}{
+				{
+					name: "on evo init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetEvoInitStartingBlock(c)
+					},
+					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
+						return tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
+					},
+				},
+				{
+					name: "on ownership init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetOwnershipInitStartingBlock(c)
+					},
+					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
+						return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
+					},
+				},
 			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+			for _, tt := range tests {
+				tt := tt
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					errMsg := fmt.Errorf("storage failed")
+					expectedErr := fmt.Errorf("error retrieving the current block from storage: %w", errMsg)
+
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					mockClient, mockStateService := getMocks(ctrl)
+					tx := stateMock.NewMockTx(ctrl)
+
+					mockStateService.EXPECT().NewTransaction().Return(tx, nil)
+					tx.EXPECT().Discard()
+					tt.getLastBlockFunc(tx)
+
+					helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
+					_, err := tt.targetFunc(helper, context.Background())
+					if err == nil {
+						t.Fatalf("got no error when '%v' was expected", expectedErr)
+					}
+					if err.Error() != expectedErr.Error() {
+						t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+					}
+				})
 			}
 		})
-
 		t.Run("should return error when retrieving latest block from chain fails", func(t *testing.T) {
 			t.Parallel()
-			errMsg := fmt.Errorf("node unavailable")
-			expectedErr := fmt.Errorf("error retrieving the latest block from chain: %w", errMsg)
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
-
-			mockStateService.EXPECT().NewTransaction().Return(tx, nil)
-			tx.EXPECT().Discard()
-			tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, nil)
-			mockClient.EXPECT().BlockNumber(context.Background()).Return(uint64(0), errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetOwnershipInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
+			tests := []struct {
+				name             string
+				targetFunc       func(*shared.BlockHelper, context.Context) (uint64, error)
+				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
+			}{
+				{
+					name: "on evo init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetEvoInitStartingBlock(c)
+					},
+					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
+						return tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, nil)
+					},
+				},
+				{
+					name: "on ownership init starting block",
+					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+						return b.GetOwnershipInitStartingBlock(c)
+					},
+					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
+						return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, nil)
+					},
+				},
 			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
-			}
-		})
-	})
-}
+			for _, tt := range tests {
+				tt := tt
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					errMsg := fmt.Errorf("node unavailable")
+					expectedErr := fmt.Errorf("error retrieving the latest block from chain: %w", errMsg)
 
-func TestGetEvoInitStartingBlock(t *testing.T) {
-	t.Parallel()
-	t.Run("GetEvoInitStartingBlock errors", func(t *testing.T) {
-		t.Parallel()
-		t.Run("should return error when creating transaction fails", func(t *testing.T) {
-			t.Parallel()
-			errMsg := fmt.Errorf("state service failed")
-			expectedErr := fmt.Errorf("error creating a new transaction: %w", errMsg)
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					mockClient, mockStateService := getMocks(ctrl)
+					tx := stateMock.NewMockTx(ctrl)
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
+					mockStateService.EXPECT().NewTransaction().Return(tx, nil)
+					tx.EXPECT().Discard()
+					tt.getLastBlockFunc(tx)
+					mockClient.EXPECT().BlockNumber(context.Background()).Return(uint64(0), errMsg)
 
-			mockStateService.EXPECT().NewTransaction().Return(nil, errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetEvoInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
-			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
-			}
-		})
-
-		t.Run("should return error when retrieving starting block from storage fails", func(t *testing.T) {
-			t.Parallel()
-			errMsg := fmt.Errorf("storage failed")
-			expectedErr := fmt.Errorf("error retrieving the current block from storage: %w", errMsg)
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
-
-			mockStateService.EXPECT().NewTransaction().Return(tx, nil)
-			tx.EXPECT().Discard()
-			tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetEvoInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
-			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
-			}
-		})
-
-		t.Run("should return error when retrieving latest block from chain fails", func(t *testing.T) {
-			t.Parallel()
-			errMsg := fmt.Errorf("node unavailable")
-			expectedErr := fmt.Errorf("error retrieving the latest block from chain: %w", errMsg)
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockClient, mockStateService := getMocks(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
-
-			mockStateService.EXPECT().NewTransaction().Return(tx, nil)
-			tx.EXPECT().Discard()
-			tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, nil)
-			mockClient.EXPECT().BlockNumber(context.Background()).Return(uint64(0), errMsg)
-
-			helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
-			_, err := helper.GetEvoInitStartingBlock(context.Background())
-			if err == nil {
-				t.Fatalf("got no error when '%v' was expected", expectedErr)
-			}
-			if err.Error() != expectedErr.Error() {
-				t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+					helper := shared.NewBlockHelper(mockClient, mockStateService, 100, 10, 0)
+					_, err := tt.targetFunc(helper, context.Background())
+					if err == nil {
+						t.Fatalf("got no error when '%v' was expected", expectedErr)
+					}
+					if err.Error() != expectedErr.Error() {
+						t.Fatalf("got error message '%s', expected '%s'", expectedErr.Error(), err.Error())
+					}
+				})
 			}
 		})
 	})
