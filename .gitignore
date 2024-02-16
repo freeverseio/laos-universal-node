@@ -33,9 +33,6 @@ erc721_contracts.txt
 # OS X specific files
 .DS_Store
 
-# local k8 config
-deployment/environments/local/*
-
 # DB-related files
 *.log
 *.vlog
