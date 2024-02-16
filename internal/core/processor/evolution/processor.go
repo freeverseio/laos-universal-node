@@ -39,7 +39,7 @@ type processor struct {
 	scanner      scan.Scanner
 	laosHTTP     LaosRPCRequests
 	waitingTime  time.Duration
-	*shared.BlockHelper
+	shared.BlockHelper
 }
 
 func NewProcessor(client blockchain.EthClient,

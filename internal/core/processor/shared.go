@@ -10,7 +10,13 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-type BlockHelper struct {
+type BlockHelper interface {
+	GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error)
+	GetOwnershipInitStartingBlock(ctx context.Context) (uint64, error)
+	GetEvoInitStartingBlock(ctx context.Context) (uint64, error)
+}
+
+type blockHelper struct {
 	client        blockchain.EthClient
 	stateService  state.Service
 	blocksRange   uint64
@@ -18,8 +24,8 @@ type BlockHelper struct {
 	startingBlock uint64
 }
 
-func NewBlockHelper(client blockchain.EthClient, stateService state.Service, blocksRange, blocksMargin, startingBlock uint64) *BlockHelper {
-	return &BlockHelper{
+func NewBlockHelper(client blockchain.EthClient, stateService state.Service, blocksRange, blocksMargin, startingBlock uint64) BlockHelper {
+	return &blockHelper{
 		client:        client,
 		stateService:  stateService,
 		blocksRange:   blocksRange,
@@ -28,7 +34,7 @@ func NewBlockHelper(client blockchain.EthClient, stateService state.Service, blo
 	}
 }
 
-func (h *BlockHelper) GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error) {
+func (h *blockHelper) GetLastBlock(ctx context.Context, startingBlock uint64) (uint64, error) {
 	l1LatestBlock, err := h.client.BlockNumber(ctx)
 	if err != nil {
 		slog.Error("error retrieving the latest block", "err", err.Error())
@@ -38,7 +44,7 @@ func (h *BlockHelper) GetLastBlock(ctx context.Context, startingBlock uint64) (u
 	return min(startingBlock+h.blocksRange, l1LatestBlock-h.blocksMargin), nil
 }
 
-func (h *BlockHelper) GetOwnershipInitStartingBlock(ctx context.Context) (uint64, error) {
+func (h *blockHelper) GetOwnershipInitStartingBlock(ctx context.Context) (uint64, error) {
 	tx, err := h.stateService.NewTransaction()
 	if err != nil {
 		return 0, fmt.Errorf("error creating a new transaction: %w", err)
@@ -52,7 +58,7 @@ func (h *BlockHelper) GetOwnershipInitStartingBlock(ctx context.Context) (uint64
 	return h.getInitStartingBlock(ctx, startingBlockData)
 }
 
-func (h *BlockHelper) GetEvoInitStartingBlock(ctx context.Context) (uint64, error) {
+func (h *blockHelper) GetEvoInitStartingBlock(ctx context.Context) (uint64, error) {
 	tx, err := h.stateService.NewTransaction()
 	if err != nil {
 		return 0, fmt.Errorf("error creating a new transaction: %w", err)
@@ -66,7 +72,7 @@ func (h *BlockHelper) GetEvoInitStartingBlock(ctx context.Context) (uint64, erro
 	return h.getInitStartingBlock(ctx, startingBlockData)
 }
 
-func (h *BlockHelper) getInitStartingBlock(ctx context.Context, startingBlockData model.Block) (uint64, error) {
+func (h *blockHelper) getInitStartingBlock(ctx context.Context, startingBlockData model.Block) (uint64, error) {
 	if startingBlockData.Number != 0 {
 		slog.Debug("ignoring user provided starting block, using last updated block from storage", "startingBlock", startingBlockData.Number)
 		return startingBlockData.Number + 1, nil

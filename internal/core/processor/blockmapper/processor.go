@@ -18,8 +18,8 @@ type Processor interface {
 }
 
 type processor struct {
-	ownershipBlockHelper *shared.BlockHelper
-	evoBlockHelper       *shared.BlockHelper
+	ownershipBlockHelper shared.BlockHelper
+	evoBlockHelper       shared.BlockHelper
 	ownershipClient      blockchain.EthClient
 	evoClient            blockchain.EthClient
 	blockSearch          search.Search

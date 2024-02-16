@@ -81,7 +81,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			expectedStartingBlock uint64
 			blockNumberTimes      int
 			getLastBlockFunc      func(*stateMock.MockTx) *gomock.Call
-			targetFunc            func(*shared.BlockHelper, context.Context) (uint64, error)
+			targetFunc            func(shared.BlockHelper, context.Context) (uint64, error)
 		}{
 			{
 				name:                  "should use ownership starting block from storage",
@@ -93,7 +93,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 10}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
@@ -107,7 +107,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
@@ -121,7 +121,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
 				},
 			},
@@ -135,7 +135,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 10}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -149,7 +149,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -163,7 +163,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
 					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
-				targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
 				},
 			},
@@ -201,17 +201,17 @@ func TestGetInitStartingBlock(t *testing.T) {
 			t.Parallel()
 			tests := []struct {
 				name       string
-				targetFunc func(*shared.BlockHelper, context.Context) (uint64, error)
+				targetFunc func(shared.BlockHelper, context.Context) (uint64, error)
 			}{
 				{
 					name: "on evo init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetEvoInitStartingBlock(c)
 					},
 				},
 				{
 					name: "on ownership init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetOwnershipInitStartingBlock(c)
 					},
 				},
@@ -244,12 +244,12 @@ func TestGetInitStartingBlock(t *testing.T) {
 			t.Parallel()
 			tests := []struct {
 				name             string
-				targetFunc       func(*shared.BlockHelper, context.Context) (uint64, error)
+				targetFunc       func(shared.BlockHelper, context.Context) (uint64, error)
 				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
 			}{
 				{
 					name: "on evo init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetEvoInitStartingBlock(c)
 					},
 					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
@@ -258,7 +258,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				},
 				{
 					name: "on ownership init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetOwnershipInitStartingBlock(c)
 					},
 					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
@@ -297,12 +297,12 @@ func TestGetInitStartingBlock(t *testing.T) {
 			t.Parallel()
 			tests := []struct {
 				name             string
-				targetFunc       func(*shared.BlockHelper, context.Context) (uint64, error)
+				targetFunc       func(shared.BlockHelper, context.Context) (uint64, error)
 				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
 			}{
 				{
 					name: "on evo init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetEvoInitStartingBlock(c)
 					},
 					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
@@ -311,7 +311,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 				},
 				{
 					name: "on ownership init starting block",
-					targetFunc: func(b *shared.BlockHelper, c context.Context) (uint64, error) {
+					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetOwnershipInitStartingBlock(c)
 					},
 					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {

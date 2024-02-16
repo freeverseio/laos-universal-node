@@ -44,7 +44,7 @@ type processor struct {
 	client       blockchain.EthClient
 	stateService state.Service
 	scanner      scan.Scanner
-	*shared.BlockHelper
+	shared.BlockHelper
 	discoverer contractDiscoverer.Discoverer
 	updater    contractUpdater.Updater
 }
