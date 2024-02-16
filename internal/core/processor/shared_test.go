@@ -80,7 +80,7 @@ func TestGetInitStartingBlock(t *testing.T) {
 			chainLatestBlock      uint64
 			expectedStartingBlock uint64
 			blockNumberTimes      int
-			getLastBlockFunc      func(*stateMock.MockTx) *gomock.Call
+			getLastBlockFunc      func(*stateMock.MockTx)
 			targetFunc            func(shared.BlockHelper, context.Context) (uint64, error)
 		}{
 			{
@@ -90,8 +90,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      0,
 				expectedStartingBlock: 11,
 				blockNumberTimes:      0,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 10}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 10}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
@@ -104,8 +104,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      0,
 				expectedStartingBlock: 20,
 				blockNumberTimes:      0,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
@@ -118,8 +118,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      30,
 				expectedStartingBlock: 30,
 				blockNumberTimes:      1,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{Number: 0}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetOwnershipInitStartingBlock(c)
@@ -132,8 +132,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      0,
 				expectedStartingBlock: 11,
 				blockNumberTimes:      0,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 10}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 10}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
@@ -146,8 +146,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      0,
 				expectedStartingBlock: 20,
 				blockNumberTimes:      0,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
@@ -160,8 +160,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 				chainLatestBlock:      30,
 				expectedStartingBlock: 30,
 				blockNumberTimes:      1,
-				getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-					return tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
+				getLastBlockFunc: func(tx *stateMock.MockTx) {
+					tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: 0}, nil)
 				},
 				targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 					return b.GetEvoInitStartingBlock(c)
@@ -245,15 +245,15 @@ func TestGetInitStartingBlock(t *testing.T) {
 			tests := []struct {
 				name             string
 				targetFunc       func(shared.BlockHelper, context.Context) (uint64, error)
-				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
+				getLastBlockFunc func(*stateMock.MockTx)
 			}{
 				{
 					name: "on evo init starting block",
 					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetEvoInitStartingBlock(c)
 					},
-					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-						return tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
+					getLastBlockFunc: func(tx *stateMock.MockTx) {
+						tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
 					},
 				},
 				{
@@ -261,8 +261,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetOwnershipInitStartingBlock(c)
 					},
-					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-						return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
+					getLastBlockFunc: func(tx *stateMock.MockTx) {
+						tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, fmt.Errorf("storage failed"))
 					},
 				},
 			}
@@ -298,15 +298,15 @@ func TestGetInitStartingBlock(t *testing.T) {
 			tests := []struct {
 				name             string
 				targetFunc       func(shared.BlockHelper, context.Context) (uint64, error)
-				getLastBlockFunc func(*stateMock.MockTx) *gomock.Call
+				getLastBlockFunc func(*stateMock.MockTx)
 			}{
 				{
 					name: "on evo init starting block",
 					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetEvoInitStartingBlock(c)
 					},
-					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-						return tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, nil)
+					getLastBlockFunc: func(tx *stateMock.MockTx) {
+						tx.EXPECT().GetLastEvoBlock().Return(model.Block{}, nil)
 					},
 				},
 				{
@@ -314,8 +314,8 @@ func TestGetInitStartingBlock(t *testing.T) {
 					targetFunc: func(b shared.BlockHelper, c context.Context) (uint64, error) {
 						return b.GetOwnershipInitStartingBlock(c)
 					},
-					getLastBlockFunc: func(tx *stateMock.MockTx) *gomock.Call {
-						return tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, nil)
+					getLastBlockFunc: func(tx *stateMock.MockTx) {
+						tx.EXPECT().GetLastOwnershipBlock().Return(model.Block{}, nil)
 					},
 				},
 			}
