@@ -26,8 +26,16 @@ type processor struct {
 	stateService         state.Service
 }
 
-func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stateService state.Service) Processor {
-	return &processor{
+type ProcessorOption func(*processor)
+
+func WithBlockSearch(blockSearch search.Search) ProcessorOption {
+	return func(p *processor) {
+		p.blockSearch = blockSearch
+	}
+}
+
+func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stateService state.Service, options ...ProcessorOption) Processor {
+	p := &processor{
 		ownershipClient: ownershipClient,
 		evoClient:       evoClient,
 		ownershipBlockHelper: shared.NewBlockHelper(
@@ -47,6 +55,10 @@ func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stat
 		blockSearch:  search.New(ownershipClient, evoClient),
 		stateService: stateService,
 	}
+	for _, option := range options {
+		option(p)
+	}
+	return p
 }
 
 // IsMappingSyncedWithProcessing tells if the last mapped ownership block has reached the last processed ownership block

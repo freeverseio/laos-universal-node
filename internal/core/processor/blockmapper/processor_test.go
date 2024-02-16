@@ -1,10 +1,14 @@
 package blockmapper_test
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	searchMock "github.com/freeverseio/laos-universal-node/internal/core/block/search/mock"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/blockmapper"
 	clientMock "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
 	"github.com/freeverseio/laos-universal-node/internal/platform/model"
@@ -41,17 +45,17 @@ func TestIsMappingSyncedWithProcessing(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOwnershipClient := clientMock.NewMockEthClient(ctrl)
-			mockEvoClient := clientMock.NewMockEthClient(ctrl)
-			mockStateService := stateMock.NewMockService(ctrl)
+			ownClient := clientMock.NewMockEthClient(ctrl)
+			evoClient := clientMock.NewMockEthClient(ctrl)
+			stateService := stateMock.NewMockService(ctrl)
 			tx := stateMock.NewMockTx(ctrl)
 
-			mockStateService.EXPECT().NewTransaction().Return(tx, nil)
+			stateService.EXPECT().NewTransaction().Return(tx, nil)
 			tx.EXPECT().Discard()
 			tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(tt.lastMappedBlock, nil)
 			tx.EXPECT().GetLastOwnershipBlock().Return(tt.lastProcessedBlock, nil)
 
-			processor := blockmapper.New(&config.Config{}, mockOwnershipClient, mockEvoClient, mockStateService)
+			processor := blockmapper.New(&config.Config{}, ownClient, evoClient, stateService)
 			synced, err := processor.IsMappingSyncedWithProcessing()
 			if err != nil {
 				t.Errorf("got error '%v' while no error was expected", err)
@@ -132,5 +136,42 @@ func TestIsMappingSyncedWithProcessingError(t *testing.T) {
 				t.Errorf("got error '%v', expected '%v'", err, tt.expectedErr)
 			}
 		})
+	}
+}
+
+func TestMapNextBlock(t *testing.T) {
+	t.Parallel()
+	lastMappedOwnershipBlock := uint64(99)
+	toMapOwnershipBlock := uint64(100)
+	mappedEvoBlock := uint64(9)
+	nextEvoBlock := mappedEvoBlock + 1
+	nextEvoBlockHeader := types.Header{
+		Number: big.NewInt(int64(nextEvoBlock)),
+		Time:   uint64(123456),
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ownClient := clientMock.NewMockEthClient(ctrl)
+	evoClient := clientMock.NewMockEthClient(ctrl)
+	stateService := stateMock.NewMockService(ctrl)
+	search := searchMock.NewMockSearch(ctrl)
+	tx := stateMock.NewMockTx(ctrl)
+
+	tx.EXPECT().Discard()
+	stateService.EXPECT().NewTransaction().Return(tx, nil)
+	tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(lastMappedOwnershipBlock, nil)
+	tx.EXPECT().GetMappedEvoBlockNumber(uint64(99)).Return(mappedEvoBlock, nil)
+	evoClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(nextEvoBlock))).Return(&nextEvoBlockHeader, nil)
+	search.EXPECT().GetOwnershipBlockByTimestamp(context.Background(), nextEvoBlockHeader.Time, lastMappedOwnershipBlock).Return(toMapOwnershipBlock, nil)
+	tx.EXPECT().SetOwnershipEvoBlockMapping(toMapOwnershipBlock, nextEvoBlock).Return(nil)
+	tx.EXPECT().SetLastMappedOwnershipBlockNumber(toMapOwnershipBlock).Return(nil)
+	tx.EXPECT().Commit().Return(nil)
+
+	processor := blockmapper.New(&config.Config{}, ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
+	err := processor.MapNextBlock(context.Background())
+	if err != nil {
+		t.Errorf("got error '%v' while no error was expected", err)
 	}
 }
