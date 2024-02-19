@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	firstBlock               = "ownership_first_block"
 	lastBlock                = "ownership_last_block"
 	ownershipBlockTag        = "ownership_block_"
 	lastMappedOwnershipBlock = "mapped_ownership_last_block"
@@ -29,7 +30,14 @@ func NewService(tx storage.Tx) *service {
 	}
 }
 
-// TODO move the mapping methods to another package?
+func (s *service) SetFirstOwnershipBlock(block model.Block) error {
+	return sync.SetBlock(s.tx, firstBlock, block)
+}
+
+func (s *service) GetFirstOwnershipBlock() (model.Block, error) {
+	return sync.GetBlock(s.tx, firstBlock)
+}
+
 func (s *service) SetLastMappedOwnershipBlockNumber(blockNumber uint64) error {
 	return s.tx.Set([]byte(lastMappedOwnershipBlock), []byte(strconv.FormatUint(blockNumber, 10)))
 }

@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	firstBlock              = "evo_first_block"
 	lastBlock               = "evo_last_block"
 	nextEvoEventBlockPrefix = "next_evo_event_block"
 	lastEvoEventBlockPrefix = "last_evo_event_block"
@@ -24,6 +25,14 @@ func NewService(tx storage.Tx) *service {
 	return &service{
 		tx: tx,
 	}
+}
+
+func (s *service) SetFirstEvoBlock(block model.Block) error {
+	return sync.SetBlock(s.tx, firstBlock, block)
+}
+
+func (s *service) GetFirstEvoBlock() (model.Block, error) {
+	return sync.GetBlock(s.tx, firstBlock)
 }
 
 func (s *service) SetLastEvoBlock(block model.Block) error {

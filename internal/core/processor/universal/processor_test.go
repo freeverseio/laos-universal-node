@@ -265,6 +265,11 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 
 			stateService, tx, client, scanner, discoverer, updater := createMocks(t)
 			p := universal.NewProcessor(client, stateService, scanner, &config.Config{}, discoverer, updater)
+			startingBlockData := model.Block{
+				Number:    100,
+				Hash:      common.HexToHash("0xb72b31eb84c4bbbbd62aff06a3c8c88991ac7c118c47aa6fba3609ed1baa8fd3"),
+				Timestamp: 110,
+			}
 
 			stateService.EXPECT().NewTransaction().Return(tx, nil)
 
@@ -279,6 +284,15 @@ func TestProcessUniversalBlockRange(t *testing.T) {
 			discoverer.EXPECT().GetContracts(tx).Return([]string{"contract"}, nil)
 
 			updater.EXPECT().GetModelTransferEvents(ctx, tt.startingBlock, tt.blockDataFromDB.Number, []string{"contract"}).Return(tt.updateReturn, nil)
+
+			tx.EXPECT().GetFirstOwnershipBlock().Return(model.Block{}, nil)
+			client.EXPECT().
+				HeaderByNumber(ctx, big.NewInt(int64(startingBlockData.Number))).
+				Return(&types.Header{
+					Time:   startingBlockData.Timestamp,
+					Number: big.NewInt(int64(startingBlockData.Number)),
+				}, nil)
+			tx.EXPECT().SetFirstOwnershipBlock(startingBlockData).Return(nil)
 
 			updater.EXPECT().UpdateState(ctx, tx, []string{"contract"}, make(map[common.Address]uint64), tt.updateReturn, tt.startingBlock, tt.blockDataFromDB).Return(nil)
 

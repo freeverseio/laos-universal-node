@@ -315,6 +315,11 @@ func TestProcessEvoBlockRange(t *testing.T) {
 
 		lastBlockData := model.Block{Number: 120, Hash: common.HexToHash("0x123"), Timestamp: 150}
 		startingBlock := uint64(100)
+		startingBlockData := model.Block{
+			Number:    100,
+			Hash:      common.HexToHash("0xb72b31eb84c4bbbbd62aff06a3c8c88991ac7c118c47aa6fba3609ed1baa8fd3"),
+			Timestamp: 110,
+		}
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
 
@@ -328,6 +333,8 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
+		tx.EXPECT().
+			GetFirstEvoBlock().Return(startingBlockData, nil)
 
 		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
 
@@ -354,6 +361,11 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Timestamp: 150,
 		}
 		startingBlock := uint64(100)
+		startingBlockData := model.Block{
+			Number:    100,
+			Hash:      common.HexToHash("0xb72b31eb84c4bbbbd62aff06a3c8c88991ac7c118c47aa6fba3609ed1baa8fd3"),
+			Timestamp: 110,
+		}
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
 
@@ -367,6 +379,8 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
+		tx.EXPECT().
+			GetFirstEvoBlock().Return(startingBlockData, nil)
 
 		client.EXPECT().
 			BlockByNumber(ctx, big.NewInt(int64(lastBlockData.Number))).
@@ -397,6 +411,11 @@ func TestProcessEvoBlockRange(t *testing.T) {
 			Timestamp: 150,
 		}
 		startingBlock := uint64(100)
+		startingBlockData := model.Block{
+			Number:    100,
+			Hash:      common.HexToHash("0xb72b31eb84c4bbbbd62aff06a3c8c88991ac7c118c47aa6fba3609ed1baa8fd3"),
+			Timestamp: 110,
+		}
 		contract := common.HexToAddress("0x555")
 		event, adjustedEvent := createEventMintedWithExternalURI(lastBlockData.Number, contract)
 
@@ -410,6 +429,8 @@ func TestProcessEvoBlockRange(t *testing.T) {
 		tx.EXPECT().
 			StoreMintedWithExternalURIEvent(contract.String(), &adjustedEvent).
 			Return(nil)
+		tx.EXPECT().
+			GetFirstEvoBlock().Return(model.Block{}, nil)
 
 		client.EXPECT().
 			BlockByNumber(ctx, big.NewInt(int64(lastBlockData.Number))).
@@ -417,9 +438,16 @@ func TestProcessEvoBlockRange(t *testing.T) {
 				Time:   lastBlockData.Timestamp,
 				Number: big.NewInt(int64(lastBlockData.Number)),
 			}), nil)
+		client.EXPECT().
+			BlockByNumber(ctx, big.NewInt(int64(startingBlockData.Number))).
+			Return(types.NewBlockWithHeader(&types.Header{
+				Time:   startingBlockData.Timestamp,
+				Number: big.NewInt(int64(startingBlockData.Number)),
+			}), nil)
 
 		tx.EXPECT().SetNextEvoEventBlock(contract.String(), lastBlockData.Number)
 		tx.EXPECT().SetLastEvoBlock(lastBlockData).Return(nil)
+		tx.EXPECT().SetFirstEvoBlock(startingBlockData).Return(nil)
 		tx.EXPECT().Commit().Return(nil)
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})
