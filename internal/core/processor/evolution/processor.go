@@ -144,7 +144,7 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 		return err
 	}
 
-	err = updateLastBlockData(ctx, tx, p.client, lastBlock)
+	err = p.updateLastBlockData(ctx, tx, lastBlock)
 	if err != nil {
 		return err
 	}
@@ -186,8 +186,8 @@ func (p *processor) updateFirstBlockData(ctx context.Context, tx state.Tx, first
 	return nil
 }
 
-func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.EthClient, lastBlock uint64) error {
-	lastBlockData, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+func (p *processor) updateLastBlockData(ctx context.Context, tx state.Tx, lastBlock uint64) error {
+	lastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while fetching LaosEvolution end range block", "lastBlock", lastBlock, "err", err.Error())
 		return err

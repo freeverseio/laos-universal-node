@@ -235,7 +235,7 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		return err
 	}
 
-	lastBlockData, err := getBlockData(ctx, p.client, lastBlock)
+	lastBlockData, err := p.getBlockData(ctx, lastBlock)
 	if err != nil {
 		return err
 	}
@@ -312,7 +312,7 @@ func (p *processor) updateFirstBlockData(ctx context.Context, tx state.Tx, first
 		return err
 	}
 	if firstBlockStorage == defaultBlock {
-		firstBlockData, err := getBlockData(ctx, p.client, firstBlock)
+		firstBlockData, err := p.getBlockData(ctx, firstBlock)
 		if err != nil {
 			return err
 		}
@@ -328,8 +328,8 @@ func (p *processor) updateFirstBlockData(ctx context.Context, tx state.Tx, first
 	return nil
 }
 
-func getBlockData(ctx context.Context, client blockchain.EthClient, block uint64) (model.Block, error) {
-	header, err := client.HeaderByNumber(ctx, big.NewInt(int64(block)))
+func (p *processor) getBlockData(ctx context.Context, block uint64) (model.Block, error) {
+	header, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
 	if err != nil {
 		slog.Error("error occurred retrieving ownership block from L1", "block", block, "err", err.Error())
 		return model.Block{}, err
