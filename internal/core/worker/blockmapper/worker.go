@@ -32,14 +32,14 @@ func (w *worker) Run(ctx context.Context) {
 			slog.Info("context canceled")
 			return
 		default:
-			if err := w.ExecuteMapping(ctx); err != nil {
+			if err := w.executeMapping(ctx); err != nil {
 				slog.Error("error occurred while performing block mapping", "err", err)
 			}
 		}
 	}
 }
 
-func (w *worker) ExecuteMapping(ctx context.Context) error {
+func (w *worker) executeMapping(ctx context.Context) error {
 	synced, err := w.processor.IsMappingSyncedWithProcessing()
 	if err != nil {
 		return err
