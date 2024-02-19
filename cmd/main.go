@@ -18,11 +18,13 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	blockMapperProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/blockmapper"
 	evoprocessor "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	universalProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
+	blockMapperWorker "github.com/freeverseio/laos-universal-node/internal/core/worker/blockmapper"
 	evoworker "github.com/freeverseio/laos-universal-node/internal/core/worker/evolution"
 	universalWorker "github.com/freeverseio/laos-universal-node/internal/core/worker/universal"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
@@ -183,6 +185,13 @@ func run() error {
 		evoWorker := evoworker.New(c, processor)
 
 		return evoWorker.Run(ctx)
+	})
+
+	// Ownership-Evo block mapper
+	group.Go(func() error {
+		processor := blockMapperProcessor.New(c, ownershipChainClient, evoChainClient, stateService)
+		worker := blockMapperWorker.New(c.WaitingTime, processor)
+		return worker.Run(ctx)
 	})
 
 	// Universal node RPC server

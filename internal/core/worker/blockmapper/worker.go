@@ -10,7 +10,7 @@ import (
 )
 
 type Worker interface {
-	Run(ctx context.Context)
+	Run(ctx context.Context) error
 }
 
 type worker struct {
@@ -25,12 +25,12 @@ func New(waitingTime time.Duration, processor blockmapper.Processor) Worker {
 	}
 }
 
-func (w *worker) Run(ctx context.Context) {
+func (w *worker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			slog.Info("context canceled")
-			return
+			return nil
 		default:
 			if err := w.executeMapping(ctx); err != nil {
 				slog.Error("error occurred while performing block mapping", "err", err)
