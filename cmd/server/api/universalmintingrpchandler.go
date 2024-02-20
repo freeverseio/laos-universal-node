@@ -168,9 +168,24 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func (h *UniversalMintingRPCHandler) tokenURI(r *http.Request, blockNumber string, _ state.Service, req JSONRPCRequest) RPCResponse {
-	// TODO convert
-	errBlockTag := h.rpcMethodManager.ReplaceBlockTag(&req, RPCMethodEthCall, blockNumber)
+func (h *UniversalMintingRPCHandler) tokenURI(r *http.Request, blockNumber string, stateService state.Service, req JSONRPCRequest) RPCResponse {
+	// get the evo block corresponding to the ownership block in time from storage
+	evoBlock, err := getMappedEvoBlockNumber(blockNumber, stateService)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting evo block number: %w", err), req.ID)
+	}
+	// change the original request to use the corresponding evo block
+	req.Params[1] = stringToRawMessage(evoBlock)
+	// retrieve the latest evo block number from storage in case the request is for the latest block
+	lastEvoBlock, err := getLastEvoBlockNumberFromStorage(stateService)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting last evo block number: %w", err), req.ID)
+	}
+
+	// TODO get contract address from req.Params[0] (Params[0] must be parsed!), call "tx.GetCollectionAddress(contract)" and
+	// replace the contract address of the request with the collection address
+
+	errBlockTag := h.rpcMethodManager.ReplaceBlockTag(&req, RPCMethodEthCall, lastEvoBlock)
 	if errBlockTag != nil {
 		return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
 	}
@@ -278,4 +293,48 @@ func checkoutBlock(tx state.Tx, contractAddress common.Address, blockNumber stri
 		return err
 	}
 	return nil
+}
+
+func isBlockTag(blockNumber string) bool {
+	switch blockTag(blockNumber) {
+	case latest, pending, earliest, finalized, safe:
+		return true
+	}
+	return false
+}
+
+// TODO maybe pass tx instead of stateService
+func getMappedEvoBlockNumber(ownershipBlock string, stateService state.Service) (string, error) {
+	evoBlock := ownershipBlock
+	if !isBlockTag(ownershipBlock) {
+		tx, err := stateService.NewTransaction()
+		if err != nil {
+			return "", err
+		}
+		defer tx.Discard()
+		parsedBlockNumber, err := strconv.ParseUint(ownershipBlock, 10, 64)
+		if err != nil {
+			return "", err
+		}
+		evoBlockNumber, err := tx.GetMappedEvoBlockNumber(parsedBlockNumber)
+		if err != nil {
+			return "", err
+		}
+		evoBlock = fmt.Sprintf("0x%x", evoBlockNumber)
+	}
+	return evoBlock, nil
+}
+
+func getLastEvoBlockNumberFromStorage(stateService state.Service) (string, error) {
+	tx, err := stateService.NewTransaction()
+	if err != nil {
+		return "", fmt.Errorf("error creating a new transaction: %w", err)
+	}
+	defer tx.Discard()
+	block, err := tx.GetLastEvoBlock()
+	if err != nil {
+		return "", fmt.Errorf("error getting evo block number: %w", err)
+	}
+
+	return fmt.Sprintf("0x%x", block.Number), nil
 }
