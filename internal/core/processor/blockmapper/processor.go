@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/freeverseio/laos-universal-node/internal/config"
 	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
-	shared "github.com/freeverseio/laos-universal-node/internal/core/processor"
 	"github.com/freeverseio/laos-universal-node/internal/platform/blockchain"
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
@@ -18,12 +16,9 @@ type Processor interface {
 }
 
 type processor struct {
-	ownershipBlockHelper shared.BlockHelper
-	evoBlockHelper       shared.BlockHelper
-	ownershipClient      blockchain.EthClient
-	evoClient            blockchain.EthClient
-	blockSearch          search.Search
-	stateService         state.Service
+	evoClient    blockchain.EthClient
+	blockSearch  search.Search
+	stateService state.Service
 }
 
 type ProcessorOption func(*processor)
@@ -34,24 +29,9 @@ func WithBlockSearch(blockSearch search.Search) ProcessorOption {
 	}
 }
 
-func New(c *config.Config, ownershipClient, evoClient blockchain.EthClient, stateService state.Service, options ...ProcessorOption) Processor {
+func New(ownershipClient, evoClient blockchain.EthClient, stateService state.Service, options ...ProcessorOption) Processor {
 	p := &processor{
-		ownershipClient: ownershipClient,
-		evoClient:       evoClient,
-		ownershipBlockHelper: shared.NewBlockHelper(
-			ownershipClient,
-			stateService,
-			uint64(c.BlocksRange),
-			uint64(c.BlocksMargin),
-			c.StartingBlock,
-		),
-		evoBlockHelper: shared.NewBlockHelper(
-			evoClient,
-			stateService,
-			uint64(c.EvoBlocksRange),
-			uint64(c.EvoBlocksMargin),
-			c.EvoStartingBlock,
-		),
+		evoClient:    evoClient,
 		blockSearch:  search.New(ownershipClient, evoClient),
 		stateService: stateService,
 	}
@@ -149,7 +129,7 @@ func (p *processor) getInitialEvoBlock(ctx context.Context, lastMappedOwnershipB
 		evoBlock++
 	} else {
 		// if no block has ever been mapped, start mapping from the oldest user-defined block
-		evoBlock, err = p.getOldestUserDefinedBlock(ctx)
+		evoBlock, err = p.getOldestUserDefinedBlock(ctx, tx)
 		if err != nil {
 			return 0, err
 		}
@@ -158,33 +138,24 @@ func (p *processor) getInitialEvoBlock(ctx context.Context, lastMappedOwnershipB
 	return evoBlock, nil
 }
 
-func (p *processor) getOldestUserDefinedBlock(ctx context.Context) (uint64, error) {
-	ownershipStartingBlock, err := p.ownershipBlockHelper.GetOwnershipInitStartingBlock(ctx)
+func (p *processor) getOldestUserDefinedBlock(ctx context.Context, tx state.Tx) (uint64, error) {
+	ownStartingBlock, err := tx.GetFirstOwnershipBlock()
 	if err != nil {
-		return 0, fmt.Errorf("error occurred retrieving the ownership init starting block: %w", err)
+		return 0, fmt.Errorf("error occurred retrieving the first ownership block from storage: %w", err)
 	}
-	evoStartingBlock, err := p.evoBlockHelper.GetEvoInitStartingBlock(ctx)
+
+	evoStartingBlock, err := tx.GetFirstEvoBlock()
 	if err != nil {
-		return 0, fmt.Errorf("error occurred retrieving the evolution init starting block: %w", err)
+		return 0, fmt.Errorf("error occurred retrieving the first evolution block from storage: %w", err)
 	}
-	ownershipHeader, err := p.ownershipClient.HeaderByNumber(ctx, big.NewInt(int64(ownershipStartingBlock)))
-	if err != nil {
-		return 0, fmt.Errorf("error occurred retrieving block number %d from ownership chain: %w",
-			ownershipStartingBlock, err)
-	}
-	evoHeader, err := p.evoClient.HeaderByNumber(ctx, big.NewInt(int64(evoStartingBlock)))
-	if err != nil {
-		return 0, fmt.Errorf("error occurred retrieving block number %d from evolution chain: %w",
-			evoStartingBlock, err)
-	}
-	oldestBlock := evoStartingBlock
+	oldestBlock := evoStartingBlock.Number
 	// if the user-defined ownership block was produced before the user-defined evolution block,
 	// look for the evolution block corresponding to that ownership block in time
-	if ownershipHeader.Time < evoHeader.Time {
-		oldestBlock, err = p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownershipHeader.Time)
+	if ownStartingBlock.Timestamp < evoStartingBlock.Timestamp {
+		oldestBlock, err = p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownStartingBlock.Timestamp)
 		if err != nil {
 			return 0, fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
-				ownershipHeader.Time, ownershipStartingBlock, err)
+				ownStartingBlock.Timestamp, ownStartingBlock.Number, err)
 		}
 	}
 	return oldestBlock, nil

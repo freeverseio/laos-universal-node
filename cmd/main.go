@@ -189,7 +189,7 @@ func run() error {
 
 	// Ownership-Evo block mapper
 	group.Go(func() error {
-		processor := blockMapperProcessor.New(c, ownershipChainClient, evoChainClient, stateService)
+		processor := blockMapperProcessor.New(ownershipChainClient, evoChainClient, stateService)
 		worker := blockMapperWorker.New(c.WaitingTime, processor)
 		return worker.Run(ctx)
 	})

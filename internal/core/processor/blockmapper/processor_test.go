@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/freeverseio/laos-universal-node/internal/config"
 	searchMock "github.com/freeverseio/laos-universal-node/internal/core/block/search/mock"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/blockmapper"
 	clientMock "github.com/freeverseio/laos-universal-node/internal/platform/blockchain/mock"
@@ -55,7 +54,7 @@ func TestIsMappingSyncedWithProcessing(t *testing.T) {
 			tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(tt.lastMappedBlock, nil)
 			tx.EXPECT().GetLastOwnershipBlock().Return(tt.lastProcessedBlock, nil)
 
-			processor := blockmapper.New(&config.Config{}, ownClient, evoClient, stateService)
+			processor := blockmapper.New(ownClient, evoClient, stateService)
 			synced, err := processor.IsMappingSyncedWithProcessing()
 			if err != nil {
 				t.Errorf("got error '%v' while no error was expected", err)
@@ -130,7 +129,7 @@ func TestIsMappingSyncedWithProcessingError(t *testing.T) {
 			tt.getLastMappedBlockFunc(tx)
 			tt.getLastOwnershipBlockFunc(tx)
 
-			processor := blockmapper.New(&config.Config{}, mockOwnershipClient, mockEvoClient, mockStateService)
+			processor := blockmapper.New(mockOwnershipClient, mockEvoClient, mockStateService)
 			_, err := processor.IsMappingSyncedWithProcessing()
 			if err == nil || err.Error() != tt.expectedErr.Error() {
 				t.Errorf("got error '%v', expected '%v'", err, tt.expectedErr)
@@ -169,7 +168,7 @@ func TestMapNextBlock(t *testing.T) {
 	tx.EXPECT().SetLastMappedOwnershipBlockNumber(toMapOwnershipBlock).Return(nil)
 	tx.EXPECT().Commit().Return(nil)
 
-	processor := blockmapper.New(&config.Config{}, ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
+	processor := blockmapper.New(ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
 	err := processor.MapNextBlock(context.Background())
 	if err != nil {
 		t.Errorf("got error '%v' while no error was expected", err)
