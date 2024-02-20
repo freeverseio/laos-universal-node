@@ -2,6 +2,7 @@ package search_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -119,16 +120,28 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			evoClientCalls:      0,
 			expectedBlockNumber: 174,
 		},
+		{
+			name: "should find blocknumber in ownership chain with evo timestamp and starting point",
+			blockHeaders: []*types.Header{
+				{Number: big.NewInt(160), Time: 190000}, // Latest block header
+				{Number: big.NewInt(155), Time: 180000},
+			},
+			targetTimestamp: 180000,
+			targetFunc: func(s search.Search, ctx context.Context, ts uint64) (uint64, error) {
+				return s.GetOwnershipBlockByTimestamp(ctx, ts, 150)
+			},
+			ownClientCalls:      1,
+			evoClientCalls:      0,
+			expectedBlockNumber: 155,
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctrl := gomock.NewController(t)
+			ctrl, ownClient, evoClient := getMocks(t)
 			defer ctrl.Finish()
-
-			ownClient, evoClient := mockClient.NewMockEthClient(ctrl), mockClient.NewMockEthClient(ctrl)
 
 			// Setup mock responses for HeaderByNumber
 			for i, header := range tt.blockHeaders {
@@ -151,4 +164,56 @@ func TestGetBlockByTimestamp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetBlockByTimestampErr(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                     string
+		firstHeaderByNumberFunc  func(*mockClient.MockEthClient)
+		secondHeaderByNumberFunc func(*mockClient.MockEthClient)
+		expectedErr              error
+	}{
+		{
+			name: "should return error when first call to HeaderByNumber fails",
+			firstHeaderByNumberFunc: func(c *mockClient.MockEthClient) {
+				c.EXPECT().HeaderByNumber(context.Background(), nil).Return(nil, fmt.Errorf("blockchain client error"))
+			},
+			secondHeaderByNumberFunc: func(c *mockClient.MockEthClient) {},
+			expectedErr:              fmt.Errorf("blockchain client error"),
+		},
+		{
+			name: "should return error when second call to HeaderByNumber fails",
+			firstHeaderByNumberFunc: func(c *mockClient.MockEthClient) {
+				c.EXPECT().HeaderByNumber(context.Background(), nil).Return(&types.Header{Number: big.NewInt(100)}, nil)
+			},
+			secondHeaderByNumberFunc: func(c *mockClient.MockEthClient) {
+				c.EXPECT().HeaderByNumber(context.Background(), big.NewInt(50)).Return(nil, fmt.Errorf("blockchain client error"))
+			},
+			expectedErr: fmt.Errorf("blockchain client error"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(t.Name(), func(t *testing.T) {
+			t.Parallel()
+			ctrl, ownClient, evoClient := getMocks(t)
+			defer ctrl.Finish()
+			tt.firstHeaderByNumberFunc(ownClient)
+			tt.secondHeaderByNumberFunc(ownClient)
+
+			s := search.New(ownClient, evoClient)
+			_, err := s.GetOwnershipBlockByTimestamp(context.Background(), 200000)
+			if err == nil || err.Error() != tt.expectedErr.Error() {
+				t.Errorf("got error '%v', expected '%v'", err, tt.expectedErr)
+			}
+		})
+	}
+}
+
+func getMocks(t *testing.T) (ctrl *gomock.Controller, ownClient, evoClient *mockClient.MockEthClient) {
+	t.Helper()
+	ctrl = gomock.NewController(t)
+
+	return ctrl, mockClient.NewMockEthClient(ctrl), mockClient.NewMockEthClient(ctrl)
 }
