@@ -16,7 +16,7 @@ type mocks struct {
 	search *searchMock.MockSearch
 }
 
-func TestGetInitialEvoBlockError(t *testing.T) {
+func TestGetNextEvoBlockToBeMappedError(t *testing.T) {
 	t.Parallel()
 	t.Run("GetMappedEvoBlockNumber fails", func(t *testing.T) {
 		t.Parallel()
@@ -31,7 +31,7 @@ func TestGetInitialEvoBlockError(t *testing.T) {
 		tx.EXPECT().GetMappedEvoBlockNumber(lastMappedOwnershipBlock).Return(uint64(0), errMsg)
 
 		p := processor{}
-		_, err := p.getInitialEvoBlock(context.Background(), lastMappedOwnershipBlock, tx)
+		_, err := p.getNextEvoBlockToBeMapped(context.Background(), lastMappedOwnershipBlock, tx)
 		if err == nil || err.Error() != expectedErr.Error() {
 			t.Errorf("got error '%v' while error '%v' was expected", err, expectedErr)
 		}
@@ -48,14 +48,14 @@ func TestGetInitialEvoBlockError(t *testing.T) {
 		tx.EXPECT().GetFirstOwnershipBlock().Return(model.Block{}, errMsg)
 
 		p := processor{}
-		_, err := p.getInitialEvoBlock(context.Background(), lastMappedOwnershipBlock, tx)
+		_, err := p.getNextEvoBlockToBeMapped(context.Background(), lastMappedOwnershipBlock, tx)
 		if err == nil || err.Error() != expectedErr.Error() {
 			t.Errorf("got error '%v' while error '%v' was expected", err, expectedErr)
 		}
 	})
 }
 
-func TestGetOldestUserDefinedBlock(t *testing.T) {
+func TestGetOldestScannedBlock(t *testing.T) {
 	t.Parallel()
 	ctrl, mockObjects := getMocks(t)
 	defer ctrl.Finish()
@@ -78,7 +78,7 @@ func TestGetOldestUserDefinedBlock(t *testing.T) {
 	p := processor{
 		blockSearch: mockObjects.search,
 	}
-	gotOldestBlock, err := p.getOldestUserDefinedBlock(context.Background(), mockObjects.tx)
+	gotOldestBlock, err := p.getOldestScannedBlock(context.Background(), mockObjects.tx)
 	if err != nil {
 		t.Errorf("got error '%v' while no error was expected", err)
 	}
@@ -87,7 +87,7 @@ func TestGetOldestUserDefinedBlock(t *testing.T) {
 	}
 }
 
-func TestGetOldestUserDefinedBlockError(t *testing.T) {
+func TestGetOldestScannedBlockError(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name                       string
@@ -134,7 +134,7 @@ func TestGetOldestUserDefinedBlockError(t *testing.T) {
 			p := processor{
 				blockSearch: mockObjects.search,
 			}
-			_, err := p.getOldestUserDefinedBlock(context.Background(), mockObjects.tx)
+			_, err := p.getOldestScannedBlock(context.Background(), mockObjects.tx)
 			if err == nil || err.Error() != tt.expectedErr.Error() {
 				t.Errorf("got error '%v', expected '%v'", err, tt.expectedErr)
 			}

@@ -83,7 +83,7 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	}
 
 	// get evo block starting point to resume mapping procedure
-	evoBlock, err := p.getInitialEvoBlock(ctx, lastMappedOwnershipBlock, tx)
+	evoBlock, err := p.getNextEvoBlockToBeMapped(ctx, lastMappedOwnershipBlock, tx)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	return nil
 }
 
-func (p *processor) getInitialEvoBlock(ctx context.Context, lastMappedOwnershipBlock uint64, tx state.Tx) (uint64, error) {
+func (p *processor) getNextEvoBlockToBeMapped(ctx context.Context, lastMappedOwnershipBlock uint64, tx state.Tx) (uint64, error) {
 	var evoBlock uint64
 	var err error
 	// if a mapped block is found in storage, resume mapping from the next one
@@ -128,8 +128,8 @@ func (p *processor) getInitialEvoBlock(ctx context.Context, lastMappedOwnershipB
 		}
 		evoBlock++
 	} else {
-		// if no block has ever been mapped, start mapping from the oldest user-defined block
-		evoBlock, err = p.getOldestUserDefinedBlock(ctx, tx)
+		// if no block has ever been mapped, start mapping from the oldest scanned block
+		evoBlock, err = p.getOldestScannedBlock(ctx, tx)
 		if err != nil {
 			return 0, err
 		}
@@ -138,7 +138,7 @@ func (p *processor) getInitialEvoBlock(ctx context.Context, lastMappedOwnershipB
 	return evoBlock, nil
 }
 
-func (p *processor) getOldestUserDefinedBlock(ctx context.Context, tx state.Tx) (uint64, error) {
+func (p *processor) getOldestScannedBlock(ctx context.Context, tx state.Tx) (uint64, error) {
 	ownStartingBlock, err := tx.GetFirstOwnershipBlock()
 	if err != nil {
 		return 0, fmt.Errorf("error occurred retrieving the first ownership block from storage: %w", err)
@@ -149,7 +149,7 @@ func (p *processor) getOldestUserDefinedBlock(ctx context.Context, tx state.Tx) 
 		return 0, fmt.Errorf("error occurred retrieving the first evolution block from storage: %w", err)
 	}
 	oldestBlock := evoStartingBlock.Number
-	// if the user-defined ownership block was produced before the user-defined evolution block,
+	// if the first scanned ownership block was produced before the first scanned evolution block,
 	// look for the evolution block corresponding to that ownership block in time
 	if ownStartingBlock.Timestamp < evoStartingBlock.Timestamp {
 		oldestBlock, err = p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownStartingBlock.Timestamp)
