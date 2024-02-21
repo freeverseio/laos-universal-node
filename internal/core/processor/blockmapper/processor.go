@@ -83,7 +83,7 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	}
 
 	// get ownership block starting point to resume mapping procedure
-	ownershipBlock, err := p.getNextOwnershipBlockToBeMapped(ctx, lastMappedOwnershipBlock, tx)
+	toMapOwnershipBlock, err := p.getNextOwnershipBlockToBeMapped(ctx, lastMappedOwnershipBlock, tx)
 	if err != nil {
 		return err
 	}
@@ -96,25 +96,25 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	}
 
 	// given the ownership block timestamp, find the corresponding evo block number
-	ownershipHeader, err := p.ownershipClient.HeaderByNumber(ctx, big.NewInt(int64(ownershipBlock)))
+	toMapOwnershipHeader, err := p.ownershipClient.HeaderByNumber(ctx, big.NewInt(int64(toMapOwnershipBlock)))
 	if err != nil {
-		return fmt.Errorf("error occurred retrieving block number %d from ownership chain %w:", ownershipBlock, err)
+		return fmt.Errorf("error occurred retrieving block number %d from ownership chain %w:", toMapOwnershipBlock, err)
 	}
-	toMapEvoBlock, err := p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownershipHeader.Time, evoBlockStartingPoint)
+	toMapEvoBlock, err := p.blockSearch.GetEvolutionBlockByTimestamp(ctx, toMapOwnershipHeader.Time, evoBlockStartingPoint)
 	if err != nil {
 		return fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
-			ownershipHeader.Time, ownershipBlock, err)
+			toMapOwnershipHeader.Time, toMapOwnershipBlock, err)
 	}
 
 	// set ownership block -> evo block mapping
-	err = tx.SetOwnershipEvoBlockMapping(ownershipBlock, toMapEvoBlock)
+	err = tx.SetOwnershipEvoBlockMapping(toMapOwnershipBlock, toMapEvoBlock)
 	if err != nil {
 		return fmt.Errorf("error setting ownership block number %d (key) to evo block number %d (value) in storage: %w",
-			ownershipBlock, toMapEvoBlock, err)
+			toMapOwnershipBlock, toMapEvoBlock, err)
 	}
-	err = tx.SetLastMappedOwnershipBlockNumber(ownershipBlock)
+	err = tx.SetLastMappedOwnershipBlockNumber(toMapOwnershipBlock)
 	if err != nil {
-		return fmt.Errorf("error setting the last mapped ownership block number %d in storage: %w", ownershipBlock, err)
+		return fmt.Errorf("error setting the last mapped ownership block number %d in storage: %w", toMapOwnershipBlock, err)
 	}
 	err = tx.Commit()
 	if err != nil {
