@@ -16,9 +16,9 @@ type Processor interface {
 }
 
 type processor struct {
-	ownershipClient    blockchain.EthClient
-	blockSearch  search.Search
-	stateService state.Service
+	ownershipClient blockchain.EthClient
+	blockSearch     search.Search
+	stateService    state.Service
 }
 
 type ProcessorOption func(*processor)
@@ -31,9 +31,9 @@ func WithBlockSearch(blockSearch search.Search) ProcessorOption {
 
 func New(ownershipClient, evoClient blockchain.EthClient, stateService state.Service, options ...ProcessorOption) Processor {
 	p := &processor{
-		ownershipClient:    ownershipClient,
-		blockSearch:  search.New(ownershipClient, evoClient),
-		stateService: stateService,
+		ownershipClient: ownershipClient,
+		blockSearch:     search.New(ownershipClient, evoClient),
+		stateService:    stateService,
 	}
 	for _, option := range options {
 		option(p)
