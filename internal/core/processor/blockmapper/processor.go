@@ -16,7 +16,7 @@ type Processor interface {
 }
 
 type processor struct {
-	evoClient    blockchain.EthClient
+	ownershipClient    blockchain.EthClient
 	blockSearch  search.Search
 	stateService state.Service
 }
@@ -31,7 +31,7 @@ func WithBlockSearch(blockSearch search.Search) ProcessorOption {
 
 func New(ownershipClient, evoClient blockchain.EthClient, stateService state.Service, options ...ProcessorOption) Processor {
 	p := &processor{
-		evoClient:    evoClient,
+		ownershipClient:    ownershipClient,
 		blockSearch:  search.New(ownershipClient, evoClient),
 		stateService: stateService,
 	}
@@ -67,8 +67,8 @@ func (p *processor) IsMappingSyncedWithProcessing() (bool, error) {
 	return false, nil
 }
 
-// MapNextBlock retrieves the last mapped evo block number from storage, advances to the next one,
-// looks for the corresponding ownership block in time and stores the ownership-evo block pair
+// MapNextBlock retrieves the last mapped ownership block number from storage, advances to the next one,
+// looks for the corresponding evo block in time and stores the ownership-evo block pair
 func (p *processor) MapNextBlock(ctx context.Context) error {
 	tx, err := p.stateService.NewTransaction()
 	if err != nil {
@@ -82,32 +82,39 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 		return fmt.Errorf("error occurred retrieving the latest mapped ownership block from storage: %w", err)
 	}
 
-	// get evo block starting point to resume mapping procedure
-	evoBlock, err := p.getNextEvoBlockToBeMapped(ctx, lastMappedOwnershipBlock, tx)
+	// get ownership block starting point to resume mapping procedure
+	ownershipBlock, err := p.getNextOwnershipBlockToBeMapped(ctx, lastMappedOwnershipBlock, tx)
 	if err != nil {
 		return err
 	}
 
-	// given the evo block timestamp, find the corresponding ownership block number
-	evoHeader, err := p.evoClient.HeaderByNumber(ctx, big.NewInt(int64(evoBlock)))
+	// get the last mapped evolution block number to start searching from
+	evoBlockStartingPoint, err := tx.GetMappedEvoBlockNumber(lastMappedOwnershipBlock)
 	if err != nil {
-		return fmt.Errorf("error occurred retrieving block number %d from evolution chain %w:", evoBlock, err)
+		return fmt.Errorf("error occurred retrieving the mapped evolution block number by ownership block %d from storage: %w",
+			lastMappedOwnershipBlock, err)
 	}
-	toMapOwnershipBlock, err := p.blockSearch.GetOwnershipBlockByTimestamp(ctx, evoHeader.Time, lastMappedOwnershipBlock)
+
+	// given the ownership block timestamp, find the corresponding evo block number
+	ownershipHeader, err := p.ownershipClient.HeaderByNumber(ctx, big.NewInt(int64(ownershipBlock)))
 	if err != nil {
-		return fmt.Errorf("error occurred searching for ownership block number by target timestamp %d (evolution block number %d): %w",
-			evoHeader.Time, evoBlock, err)
+		return fmt.Errorf("error occurred retrieving block number %d from ownership chain %w:", ownershipBlock, err)
+	}
+	toMapEvoBlock, err := p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownershipHeader.Time, evoBlockStartingPoint)
+	if err != nil {
+		return fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
+			ownershipHeader.Time, ownershipBlock, err)
 	}
 
 	// set ownership block -> evo block mapping
-	err = tx.SetOwnershipEvoBlockMapping(toMapOwnershipBlock, evoBlock)
+	err = tx.SetOwnershipEvoBlockMapping(ownershipBlock, toMapEvoBlock)
 	if err != nil {
 		return fmt.Errorf("error setting ownership block number %d (key) to evo block number %d (value) in storage: %w",
-			toMapOwnershipBlock, evoBlock, err)
+			ownershipBlock, toMapEvoBlock, err)
 	}
-	err = tx.SetLastMappedOwnershipBlockNumber(toMapOwnershipBlock)
+	err = tx.SetLastMappedOwnershipBlockNumber(ownershipBlock)
 	if err != nil {
-		return fmt.Errorf("error setting the last mapped ownership block number %d in storage: %w", toMapOwnershipBlock, err)
+		return fmt.Errorf("error setting the last mapped ownership block number %d in storage: %w", ownershipBlock, err)
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -116,26 +123,21 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	return nil
 }
 
-func (p *processor) getNextEvoBlockToBeMapped(ctx context.Context, lastMappedOwnershipBlock uint64, tx state.Tx) (uint64, error) {
-	var evoBlock uint64
+func (p *processor) getNextOwnershipBlockToBeMapped(ctx context.Context, lastMappedOwnershipBlock uint64, tx state.Tx) (uint64, error) {
+	var ownBlock uint64
 	var err error
-	// if a mapped block is found in storage, resume mapping from the next one
+	// if a mapped block already exists, resume mapping from the next one
 	if lastMappedOwnershipBlock > 0 {
-		evoBlock, err = tx.GetMappedEvoBlockNumber(lastMappedOwnershipBlock)
-		if err != nil {
-			return 0, fmt.Errorf("error occurred retrieving the mapped evolution block number by ownership block %d from storage: %w",
-				lastMappedOwnershipBlock, err)
-		}
-		evoBlock++
+		ownBlock = lastMappedOwnershipBlock + 1
 	} else {
 		// if no block has ever been mapped, start mapping from the oldest scanned block
-		evoBlock, err = p.getOldestScannedBlock(ctx, tx)
+		ownBlock, err = p.getOldestScannedBlock(ctx, tx)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	return evoBlock, nil
+	return ownBlock, nil
 }
 
 func (p *processor) getOldestScannedBlock(ctx context.Context, tx state.Tx) (uint64, error) {
@@ -148,14 +150,14 @@ func (p *processor) getOldestScannedBlock(ctx context.Context, tx state.Tx) (uin
 	if err != nil {
 		return 0, fmt.Errorf("error occurred retrieving the first evolution block from storage: %w", err)
 	}
-	oldestBlock := evoStartingBlock.Number
-	// if the first scanned ownership block was produced before the first scanned evolution block,
-	// look for the evolution block corresponding to that ownership block in time
-	if ownStartingBlock.Timestamp < evoStartingBlock.Timestamp {
-		oldestBlock, err = p.blockSearch.GetEvolutionBlockByTimestamp(ctx, ownStartingBlock.Timestamp)
+	oldestBlock := ownStartingBlock.Number
+	// if the first scanned evo block was produced before the first scanned ownership block,
+	// look for the ownership block corresponding to that evo block in time
+	if evoStartingBlock.Timestamp < ownStartingBlock.Timestamp {
+		oldestBlock, err = p.blockSearch.GetOwnershipBlockByTimestamp(ctx, evoStartingBlock.Timestamp)
 		if err != nil {
-			return 0, fmt.Errorf("error occurred searching for evolution block number by target timestamp %d (ownership block number %d): %w",
-				ownStartingBlock.Timestamp, ownStartingBlock.Number, err)
+			return 0, fmt.Errorf("error occurred searching for ownership block number by target timestamp %d (evo block number %d): %w",
+				evoStartingBlock.Timestamp, evoStartingBlock.Number, err)
 		}
 	}
 	return oldestBlock, nil

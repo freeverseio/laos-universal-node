@@ -16,26 +16,8 @@ type mocks struct {
 	search *searchMock.MockSearch
 }
 
-func TestGetNextEvoBlockToBeMappedError(t *testing.T) {
+func TestGetNextOwnershipBlockToBeMappedError(t *testing.T) {
 	t.Parallel()
-	t.Run("GetMappedEvoBlockNumber fails", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		lastMappedOwnershipBlock := uint64(10)
-		errMsg := fmt.Errorf("err")
-		expectedErr := fmt.Errorf("error occurred retrieving the mapped evolution block number by ownership block %d from storage: %w",
-			lastMappedOwnershipBlock, errMsg)
-
-		tx := stateMock.NewMockTx(ctrl)
-		tx.EXPECT().GetMappedEvoBlockNumber(lastMappedOwnershipBlock).Return(uint64(0), errMsg)
-
-		p := processor{}
-		_, err := p.getNextEvoBlockToBeMapped(context.Background(), lastMappedOwnershipBlock, tx)
-		if err == nil || err.Error() != expectedErr.Error() {
-			t.Errorf("got error '%v' while error '%v' was expected", err, expectedErr)
-		}
-	})
 	t.Run("no mapping exists and GetFirstOwnershipBlock fails", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
@@ -48,7 +30,7 @@ func TestGetNextEvoBlockToBeMappedError(t *testing.T) {
 		tx.EXPECT().GetFirstOwnershipBlock().Return(model.Block{}, errMsg)
 
 		p := processor{}
-		_, err := p.getNextEvoBlockToBeMapped(context.Background(), lastMappedOwnershipBlock, tx)
+		_, err := p.getNextOwnershipBlockToBeMapped(context.Background(), lastMappedOwnershipBlock, tx)
 		if err == nil || err.Error() != expectedErr.Error() {
 			t.Errorf("got error '%v' while error '%v' was expected", err, expectedErr)
 		}
@@ -63,17 +45,17 @@ func TestGetOldestScannedBlock(t *testing.T) {
 	evoStartingBlock := uint64(20)
 	ownershipBlock := model.Block{
 		Number:    ownershipStartingBlock,
-		Timestamp: 1000,
+		Timestamp: 1500,
 	}
 	evoBlock := model.Block{
 		Number:    evoStartingBlock,
-		Timestamp: 1500,
+		Timestamp: 1000,
 	}
-	expectedOldestBlock := uint64(10)
+	expectedOldestBlock := uint64(95)
 
 	mockObjects.tx.EXPECT().GetFirstOwnershipBlock().Return(ownershipBlock, nil)
 	mockObjects.tx.EXPECT().GetFirstEvoBlock().Return(evoBlock, nil)
-	mockObjects.search.EXPECT().GetEvolutionBlockByTimestamp(context.Background(), ownershipBlock.Timestamp).Return(expectedOldestBlock, nil)
+	mockObjects.search.EXPECT().GetOwnershipBlockByTimestamp(context.Background(), evoBlock.Timestamp).Return(expectedOldestBlock, nil)
 
 	p := processor{
 		blockSearch: mockObjects.search,
@@ -90,11 +72,11 @@ func TestGetOldestScannedBlock(t *testing.T) {
 func TestGetOldestScannedBlockError(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                       string
-		expectedErr                error
-		getFirstOwnershipBlockFunc func(tx *stateMock.MockTx)
-		getFirstEvoBlockFunc       func(tx *stateMock.MockTx)
-		getEvoBlockByTimestamp     func(search *searchMock.MockSearch)
+		name                         string
+		expectedErr                  error
+		getFirstOwnershipBlockFunc   func(tx *stateMock.MockTx)
+		getFirstEvoBlockFunc         func(tx *stateMock.MockTx)
+		getOwnershipBlockByTimestamp func(search *searchMock.MockSearch)
 	}{
 		{
 			name:        "GetFirstEvoBlock fails",
@@ -105,19 +87,19 @@ func TestGetOldestScannedBlockError(t *testing.T) {
 			getFirstEvoBlockFunc: func(tx *stateMock.MockTx) {
 				tx.EXPECT().GetFirstEvoBlock().Return(model.Block{}, fmt.Errorf("err"))
 			},
-			getEvoBlockByTimestamp: func(search *searchMock.MockSearch) {},
+			getOwnershipBlockByTimestamp: func(search *searchMock.MockSearch) {},
 		},
 		{
-			name:        "search GetEvolutionBlockByTimestamp fails",
-			expectedErr: fmt.Errorf("error occurred searching for evolution block number by target timestamp 1000 (ownership block number 100): err"),
+			name:        "search GetOwnershipBlockByTimestamp fails",
+			expectedErr: fmt.Errorf("error occurred searching for ownership block number by target timestamp 1000 (evo block number 20): err"),
 			getFirstOwnershipBlockFunc: func(tx *stateMock.MockTx) {
-				tx.EXPECT().GetFirstOwnershipBlock().Return(model.Block{Timestamp: uint64(1000), Number: uint64(100)}, nil)
+				tx.EXPECT().GetFirstOwnershipBlock().Return(model.Block{Timestamp: uint64(1500), Number: uint64(100)}, nil)
 			},
 			getFirstEvoBlockFunc: func(tx *stateMock.MockTx) {
-				tx.EXPECT().GetFirstEvoBlock().Return(model.Block{Timestamp: uint64(1500), Number: uint64(20)}, nil)
+				tx.EXPECT().GetFirstEvoBlock().Return(model.Block{Timestamp: uint64(1000), Number: uint64(20)}, nil)
 			},
-			getEvoBlockByTimestamp: func(search *searchMock.MockSearch) {
-				search.EXPECT().GetEvolutionBlockByTimestamp(context.Background(), uint64(1000)).Return(uint64(0), fmt.Errorf("err"))
+			getOwnershipBlockByTimestamp: func(search *searchMock.MockSearch) {
+				search.EXPECT().GetOwnershipBlockByTimestamp(context.Background(), uint64(1000)).Return(uint64(0), fmt.Errorf("err"))
 			},
 		},
 	}
@@ -129,7 +111,7 @@ func TestGetOldestScannedBlockError(t *testing.T) {
 			defer ctrl.Finish()
 			tt.getFirstOwnershipBlockFunc(mockObjects.tx)
 			tt.getFirstEvoBlockFunc(mockObjects.tx)
-			tt.getEvoBlockByTimestamp(mockObjects.search)
+			tt.getOwnershipBlockByTimestamp(mockObjects.search)
 
 			p := processor{
 				blockSearch: mockObjects.search,

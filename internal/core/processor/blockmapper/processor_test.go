@@ -141,13 +141,13 @@ func TestIsMappingSyncedWithProcessingError(t *testing.T) {
 func TestMapNextBlock(t *testing.T) {
 	t.Parallel()
 	lastMappedOwnershipBlock := uint64(99)
-	toMapOwnershipBlock := uint64(100)
+	nextOwnershipBlock := uint64(100)
 	mappedEvoBlock := uint64(9)
-	nextEvoBlock := mappedEvoBlock + 1
-	nextEvoBlockHeader := types.Header{
-		Number: big.NewInt(int64(nextEvoBlock)),
+	nextOwnershipBlockHeader := types.Header{
+		Number: big.NewInt(int64(nextOwnershipBlock)),
 		Time:   uint64(123456),
 	}
+	toMapEvoBlock := uint64(10)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -158,14 +158,14 @@ func TestMapNextBlock(t *testing.T) {
 	search := searchMock.NewMockSearch(ctrl)
 	tx := stateMock.NewMockTx(ctrl)
 
-	tx.EXPECT().Discard()
 	stateService.EXPECT().NewTransaction().Return(tx, nil)
+	tx.EXPECT().Discard()
 	tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(lastMappedOwnershipBlock, nil)
 	tx.EXPECT().GetMappedEvoBlockNumber(uint64(99)).Return(mappedEvoBlock, nil)
-	evoClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(nextEvoBlock))).Return(&nextEvoBlockHeader, nil)
-	search.EXPECT().GetOwnershipBlockByTimestamp(context.Background(), nextEvoBlockHeader.Time, lastMappedOwnershipBlock).Return(toMapOwnershipBlock, nil)
-	tx.EXPECT().SetOwnershipEvoBlockMapping(toMapOwnershipBlock, nextEvoBlock).Return(nil)
-	tx.EXPECT().SetLastMappedOwnershipBlockNumber(toMapOwnershipBlock).Return(nil)
+	ownClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(nextOwnershipBlock))).Return(&nextOwnershipBlockHeader, nil)
+	search.EXPECT().GetEvolutionBlockByTimestamp(context.Background(), nextOwnershipBlockHeader.Time, mappedEvoBlock).Return(toMapEvoBlock, nil)
+	tx.EXPECT().SetOwnershipEvoBlockMapping(nextOwnershipBlock, toMapEvoBlock).Return(nil)
+	tx.EXPECT().SetLastMappedOwnershipBlockNumber(nextOwnershipBlock).Return(nil)
 	tx.EXPECT().Commit().Return(nil)
 
 	processor := blockmapper.New(ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
