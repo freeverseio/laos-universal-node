@@ -334,6 +334,9 @@ func getMappedEvoBlockNumber(ownershipBlock string, tx state.Tx) (string, error)
 		if err != nil {
 			return "", err
 		}
+		if evoBlockNumber == 0 {
+			return "", fmt.Errorf("mapped evo block corresponding to ownership block %s not found", ownershipBlock)
+		}
 		evoBlock = fmt.Sprintf("0x%x", evoBlockNumber)
 	}
 	return evoBlock, nil
