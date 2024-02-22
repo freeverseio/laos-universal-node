@@ -15,6 +15,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type mocks struct {
+	ownClient *clientMock.MockEthClient
+	evoClient *clientMock.MockEthClient
+	state     *stateMock.MockService
+	search    *searchMock.MockSearch
+	tx        *stateMock.MockTx
+}
+
 func TestIsMappingSyncedWithProcessing(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -117,19 +125,14 @@ func TestIsMappingSyncedWithProcessingError(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctrl := gomock.NewController(t)
+			ctrl, mockObjects := getMocks(t)
 			defer ctrl.Finish()
 
-			mockOwnershipClient := clientMock.NewMockEthClient(ctrl)
-			mockEvoClient := clientMock.NewMockEthClient(ctrl)
-			mockStateService := stateMock.NewMockService(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
+			tt.newTransactionFunc(mockObjects.state, mockObjects.tx)
+			tt.getLastMappedBlockFunc(mockObjects.tx)
+			tt.getLastOwnershipBlockFunc(mockObjects.tx)
 
-			tt.newTransactionFunc(mockStateService, tx)
-			tt.getLastMappedBlockFunc(tx)
-			tt.getLastOwnershipBlockFunc(tx)
-
-			processor := blockmapper.New(mockOwnershipClient, mockEvoClient, mockStateService)
+			processor := blockmapper.New(mockObjects.ownClient, mockObjects.evoClient, mockObjects.state)
 			_, err := processor.IsMappingSyncedWithProcessing()
 			if err == nil || err.Error() != tt.expectedErr.Error() {
 				t.Errorf("got error '%v', expected '%v'", err, tt.expectedErr)
@@ -149,26 +152,20 @@ func TestMapNextBlock(t *testing.T) {
 	}
 	toMapEvoBlock := uint64(10)
 
-	ctrl := gomock.NewController(t)
+	ctrl, mockObjects := getMocks(t)
 	defer ctrl.Finish()
 
-	ownClient := clientMock.NewMockEthClient(ctrl)
-	evoClient := clientMock.NewMockEthClient(ctrl)
-	stateService := stateMock.NewMockService(ctrl)
-	search := searchMock.NewMockSearch(ctrl)
-	tx := stateMock.NewMockTx(ctrl)
+	mockObjects.state.EXPECT().NewTransaction().Return(mockObjects.tx, nil)
+	mockObjects.tx.EXPECT().Discard()
+	mockObjects.tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(lastMappedOwnershipBlock, nil)
+	mockObjects.tx.EXPECT().GetMappedEvoBlockNumber(uint64(99)).Return(mappedEvoBlock, nil)
+	mockObjects.ownClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(nextOwnershipBlock))).Return(&nextOwnershipBlockHeader, nil)
+	mockObjects.search.EXPECT().GetEvolutionBlockByTimestamp(context.Background(), nextOwnershipBlockHeader.Time, mappedEvoBlock).Return(toMapEvoBlock, nil)
+	mockObjects.tx.EXPECT().SetOwnershipEvoBlockMapping(nextOwnershipBlock, toMapEvoBlock).Return(nil)
+	mockObjects.tx.EXPECT().SetLastMappedOwnershipBlockNumber(nextOwnershipBlock).Return(nil)
+	mockObjects.tx.EXPECT().Commit().Return(nil)
 
-	stateService.EXPECT().NewTransaction().Return(tx, nil)
-	tx.EXPECT().Discard()
-	tx.EXPECT().GetLastMappedOwnershipBlockNumber().Return(lastMappedOwnershipBlock, nil)
-	tx.EXPECT().GetMappedEvoBlockNumber(uint64(99)).Return(mappedEvoBlock, nil)
-	ownClient.EXPECT().HeaderByNumber(context.Background(), big.NewInt(int64(nextOwnershipBlock))).Return(&nextOwnershipBlockHeader, nil)
-	search.EXPECT().GetEvolutionBlockByTimestamp(context.Background(), nextOwnershipBlockHeader.Time, mappedEvoBlock).Return(toMapEvoBlock, nil)
-	tx.EXPECT().SetOwnershipEvoBlockMapping(nextOwnershipBlock, toMapEvoBlock).Return(nil)
-	tx.EXPECT().SetLastMappedOwnershipBlockNumber(nextOwnershipBlock).Return(nil)
-	tx.EXPECT().Commit().Return(nil)
-
-	processor := blockmapper.New(ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
+	processor := blockmapper.New(mockObjects.ownClient, mockObjects.evoClient, mockObjects.state, blockmapper.WithBlockSearch(mockObjects.search))
 	err := processor.MapNextBlock(context.Background())
 	if err != nil {
 		t.Errorf("got error '%v' while no error was expected", err)
@@ -412,30 +409,42 @@ func TestMapNextBlockError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
+			ctrl, mockObjects := getMocks(t)
 			defer ctrl.Finish()
 
-			ownClient := clientMock.NewMockEthClient(ctrl)
-			evoClient := clientMock.NewMockEthClient(ctrl)
-			stateService := stateMock.NewMockService(ctrl)
-			search := searchMock.NewMockSearch(ctrl)
-			tx := stateMock.NewMockTx(ctrl)
+			tt.newTransactionFunc(mockObjects.state, mockObjects.tx)
+			tt.getLastMappedOwnBlockFunc(mockObjects.tx)
+			tt.getFirstOwnershipBlockFunc(mockObjects.tx)
+			tt.getMappedEvoBlockFunc(mockObjects.tx)
+			tt.headerByNumberFunc(mockObjects.ownClient)
+			tt.getEvolutionBlockByTimestampFunc(mockObjects.search)
+			tt.setOwnershipEvoBlockMappingFunc(mockObjects.tx)
+			tt.setLastMappedOwnBlockFunc(mockObjects.tx)
+			tt.commitFunc(mockObjects.tx)
 
-			tt.newTransactionFunc(stateService, tx)
-			tt.getLastMappedOwnBlockFunc(tx)
-			tt.getFirstOwnershipBlockFunc(tx)
-			tt.getMappedEvoBlockFunc(tx)
-			tt.headerByNumberFunc(ownClient)
-			tt.getEvolutionBlockByTimestampFunc(search)
-			tt.setOwnershipEvoBlockMappingFunc(tx)
-			tt.setLastMappedOwnBlockFunc(tx)
-			tt.commitFunc(tx)
-
-			processor := blockmapper.New(ownClient, evoClient, stateService, blockmapper.WithBlockSearch(search))
+			processor := blockmapper.New(mockObjects.ownClient, mockObjects.evoClient, mockObjects.state, blockmapper.WithBlockSearch(mockObjects.search))
 			err := processor.MapNextBlock(context.Background())
 			if err == nil || err.Error() != tt.expectedErr.Error() {
 				t.Fatalf("got error '%v', want '%v'", err, tt.expectedErr)
 			}
 		})
+	}
+}
+
+func getMocks(t *testing.T) (ctrl *gomock.Controller, mockObjects mocks) {
+	ctrl = gomock.NewController(t)
+
+	ownClient := clientMock.NewMockEthClient(ctrl)
+	evoClient := clientMock.NewMockEthClient(ctrl)
+	stateService := stateMock.NewMockService(ctrl)
+	search := searchMock.NewMockSearch(ctrl)
+	tx := stateMock.NewMockTx(ctrl)
+
+	return ctrl, mocks{
+		ownClient: ownClient,
+		evoClient: evoClient,
+		state:     stateService,
+		search:    search,
+		tx:        tx,
 	}
 }

@@ -474,6 +474,7 @@ func TestRecoverFromReorg(t *testing.T) {
 			tx.EXPECT().SetLastOwnershipBlock(gomock.Any()).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanBlockData(tt.safeBlockNumber).Return(nil).Times(1)
 			tx.EXPECT().DeleteOrphanRootTags(int64(tt.safeBlockNumber)+1, int64(tt.startingBlock)).Return(nil).Times(1)
+			tx.EXPECT().SetLastMappedOwnershipBlockNumber(gomock.Any()).Return(nil).Times(1)
 
 			tx.EXPECT().Checkout(int64(tt.safeBlockNumber)).Return(tt.checkoutError).Times(1)
 

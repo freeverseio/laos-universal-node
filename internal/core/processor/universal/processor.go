@@ -78,6 +78,7 @@ func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 
 // RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
 // It will set the last ownership block to the block without reorg and delete all block hashes and block numbers after the block without reorg.
+// It will also set the ownership block without reorg as the last mapped block.
 // It will checkout the merkle tree at the block without reorg, commit the transaction to flush the data to disk,
 // and return the block without reorg.
 func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
@@ -109,7 +110,11 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	if errDeleteOrphanRootTags := tx.DeleteOrphanRootTags(int64(blockWithoutReorg.Number)+1, int64(currentBlock)); errDeleteOrphanRootTags != nil {
 		return nil, errDeleteOrphanRootTags
 	}
-	// TODO set block without reorg as last mapped block
+	// set last mapped block to block without reorg
+	err = tx.SetLastMappedOwnershipBlockNumber(blockWithoutReorg.Number)
+	if err != nil {
+		return nil, err
+	}
 
 	err = tx.Checkout(int64(blockWithoutReorg.Number))
 	if err != nil {
