@@ -98,7 +98,7 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	// given the ownership block timestamp, find the corresponding evo block number
 	toMapOwnershipHeader, err := p.ownershipClient.HeaderByNumber(ctx, big.NewInt(int64(toMapOwnershipBlock)))
 	if err != nil {
-		return fmt.Errorf("error occurred retrieving block number %d from ownership chain %w:", toMapOwnershipBlock, err)
+		return fmt.Errorf("error occurred retrieving block number %d from ownership chain: %w", toMapOwnershipBlock, err)
 	}
 	toMapEvoBlock, err := p.blockSearch.GetEvolutionBlockByTimestamp(ctx, toMapOwnershipHeader.Time, evoBlockStartingPoint)
 	if err != nil {
