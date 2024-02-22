@@ -179,7 +179,12 @@ func TestUniversalMintingRPCHandlerTableTests(t *testing.T) {
 			name: "Should execute TokenURI",
 			setupMocks: func(storage *mockTx.MockService, tx *mockTx.MockTx, httpClient *mock.MockHTTPClientInterface, rpcMethodManager *mock.MockRPCMethodManager) {
 				setUpHttpClientMocks(t, httpClient, `{"jsonrpc":"2.0","id":1,"result":"0x00477777730000000000"}`, nil)
-				setUpMockRpcMethodManager(t, rpcMethodManager, api.JSONRPCRequest{}, api.RPCMethodEthCall, "latest")
+				storage.EXPECT().NewTransaction().Return(tx, nil)
+				tx.EXPECT().Discard()
+				tx.EXPECT().GetCollectionAddress("0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A").Return(common.HexToAddress("0xffFFFFfFfffFFFFffffFFfFe00000000000001bE"), nil)
+				tx.EXPECT().GetLastEvoBlock().Return(model.Block{Number: uint64(589660)}, nil)
+				// 0x8ff5c is 589660 in base 16
+				setUpMockRpcMethodManager(t, rpcMethodManager, api.JSONRPCRequest{}, api.RPCMethodEthCall, "0x8ff5c")
 			},
 			request: `{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000064","to":"0x26CB70039FE1bd36b4659858d4c4D0cBcafd743A"}, "latest"],"id":1}`,
 			validate: func(t *testing.T, rr api.RPCResponse) {
