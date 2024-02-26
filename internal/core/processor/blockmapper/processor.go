@@ -3,6 +3,7 @@ package blockmapper
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 
 	"github.com/freeverseio/laos-universal-node/internal/core/block/search"
@@ -107,6 +108,7 @@ func (p *processor) MapNextBlock(ctx context.Context) error {
 	}
 
 	// set ownership block -> evo block mapping
+	slog.Debug("setting ownership block to evo block mapping", "toMapOwnershipBlock", toMapOwnershipBlock, "toMapEvoBlock", toMapEvoBlock)
 	err = tx.SetOwnershipEvoBlockMapping(toMapOwnershipBlock, toMapEvoBlock)
 	if err != nil {
 		return fmt.Errorf("error setting ownership block number %d (key) to evo block number %d (value) in storage: %w",
