@@ -44,7 +44,7 @@ type processor struct {
 	client       blockchain.EthClient
 	stateService state.Service
 	scanner      scan.Scanner
-	*shared.BlockHelper
+	shared.BlockHelper
 	discoverer contractDiscoverer.Discoverer
 	updater    contractUpdater.Updater
 }
@@ -78,6 +78,7 @@ func (p *processor) GetInitStartingBlock(ctx context.Context) (uint64, error) {
 
 // RecoverFromReorg is called when a reorg is detected. It will recursively check for reorgs until it finds a block without reorg.
 // It will set the last ownership block to the block without reorg and delete all block hashes and block numbers after the block without reorg.
+// It will also set the ownership block without reorg as the last mapped block.
 // It will checkout the merkle tree at the block without reorg, commit the transaction to flush the data to disk,
 // and return the block without reorg.
 func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (*model.Block, error) {
@@ -108,6 +109,11 @@ func (p *processor) RecoverFromReorg(ctx context.Context, currentBlock uint64) (
 	// deleting all root tags after the block without reorg
 	if errDeleteOrphanRootTags := tx.DeleteOrphanRootTags(int64(blockWithoutReorg.Number)+1, int64(currentBlock)); errDeleteOrphanRootTags != nil {
 		return nil, errDeleteOrphanRootTags
+	}
+	// set last mapped block to block without reorg
+	err = tx.SetLastMappedOwnershipBlockNumber(blockWithoutReorg.Number)
+	if err != nil {
+		return nil, err
 	}
 
 	err = tx.Checkout(int64(blockWithoutReorg.Number))
@@ -230,11 +236,11 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	// Get the last stored block number from the database
 	previousLastBlockDB, err := tx.GetLastOwnershipBlock()
 	if err != nil {
-		slog.Error("error occurred while reading LaosEvolution end range block hash", "err", err.Error())
+		slog.Error("error occurred while reading ownership end range block hash", "err", err.Error())
 		return err
 	}
 
-	lastBlockData, err := getLastBlockData(ctx, p.client, lastBlock)
+	lastBlockData, err := p.getBlockData(ctx, lastBlock)
 	if err != nil {
 		return err
 	}
@@ -271,6 +277,11 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 		return err
 	}
 
+	err = p.updateFirstBlockData(ctx, tx, startingBlock)
+	if err != nil {
+		return err
+	}
+
 	slog.Debug("setting ownership end range block hash for block number",
 		"blockNumber", lastBlockData.Number, "blockHash", lastBlockData.Hash, "timestamp", lastBlockData.Timestamp)
 
@@ -298,15 +309,39 @@ func (p *processor) ProcessUniversalBlockRange(ctx context.Context, startingBloc
 	return nil
 }
 
-func getLastBlockData(ctx context.Context, client blockchain.EthClient, lastBlock uint64) (model.Block, error) {
-	header, err := client.HeaderByNumber(ctx, big.NewInt(int64(lastBlock)))
+func (p *processor) updateFirstBlockData(ctx context.Context, tx state.Tx, firstBlock uint64) error {
+	defaultBlock := model.Block{}
+	firstBlockStorage, err := tx.GetFirstOwnershipBlock()
 	if err != nil {
-		slog.Error("error occurred retrieving ownership end range block from L1", "lastBlock", lastBlock, "err", err.Error())
+		slog.Error("error occurred retrieving first ownership block from storage", "err", err)
+		return err
+	}
+	if firstBlockStorage == defaultBlock {
+		firstBlockData, err := p.getBlockData(ctx, firstBlock)
+		if err != nil {
+			return err
+		}
+		slog.Debug("setting ownership first block data for block number",
+			"blockNumber", firstBlockData.Number, "blockHash", firstBlockData.Hash, "timestamp", firstBlockData.Timestamp)
+
+		err = tx.SetFirstOwnershipBlock(firstBlockData)
+		if err != nil {
+			slog.Error("error occurred setting first ownership block to storage", "firstBlock", firstBlock, "err", err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *processor) getBlockData(ctx context.Context, block uint64) (model.Block, error) {
+	header, err := p.client.HeaderByNumber(ctx, big.NewInt(int64(block)))
+	if err != nil {
+		slog.Error("error occurred retrieving ownership block from L1", "block", block, "err", err.Error())
 		return model.Block{}, err
 	}
 
 	return model.Block{
-		Number:    lastBlock,
+		Number:    block,
 		Timestamp: header.Time,
 		Hash:      header.Hash(),
 	}, nil

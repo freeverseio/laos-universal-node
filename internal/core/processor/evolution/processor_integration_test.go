@@ -32,6 +32,11 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 			Timestamp: 150,
 		}
 		startingBlock := uint64(100)
+		startingBlockData := model.Block{
+			Number:    100,
+			Hash:      common.HexToHash("0xb72b31eb84c4bbbbd62aff06a3c8c88991ac7c118c47aa6fba3609ed1baa8fd3"),
+			Timestamp: 110,
+		}
 		contract := common.HexToAddress("0x555")
 		event, _ := createEventMintedWithExternalURI(lastBlockData.Number, contract)
 
@@ -47,6 +52,12 @@ func TestProcessEvoBlockRangeWithBadger(t *testing.T) {
 			Return(types.NewBlockWithHeader(&types.Header{
 				Time:   lastBlockData.Timestamp,
 				Number: big.NewInt(int64(lastBlockData.Number)),
+			}), nil)
+		client.EXPECT().
+			BlockByNumber(ctx, big.NewInt(int64(startingBlockData.Number))).
+			Return(types.NewBlockWithHeader(&types.Header{
+				Time:   startingBlockData.Timestamp,
+				Number: big.NewInt(int64(startingBlockData.Number)),
 			}), nil)
 
 		p := evolution.NewProcessor(client, stateService, scanner, laosRpc, &config.Config{})

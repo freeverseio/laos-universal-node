@@ -50,6 +50,33 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: fmt.Errorf("universal contract's base URI points to a collection in a different evochain, contract discarded"),
 		},
+		{
+			name: "no global consensus in BaseURI",
+			event: scan.EventNewERC721Universal{
+				BaseURI:            "https://uloc.io/Parachain(9999)/AccountKey20(0x0000000000000000000000000000000000000000)",
+				BlockNumber:        100,
+				NewContractAddress: common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
+			},
+			expectedErr: fmt.Errorf("no global consensus ID found in base URI: https://uloc.io/Parachain(9999)/AccountKey20(0x0000000000000000000000000000000000000000)"),
+		},
+		{
+			name: "no parachain in BaseURI",
+			event: scan.EventNewERC721Universal{
+				BaseURI:            "https://uloc.io/GlobalConsensus(3)/AccountKey20(0x0000000000000000000000000000000000000000)",
+				BlockNumber:        100,
+				NewContractAddress: common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
+			},
+			expectedErr: fmt.Errorf("no parachain ID found in base URI: https://uloc.io/GlobalConsensus(3)/AccountKey20(0x0000000000000000000000000000000000000000)"),
+		},
+		{
+			name: "no collection address in BaseURI",
+			event: scan.EventNewERC721Universal{
+				BaseURI:            "https://uloc.io/GlobalConsensus(3)/Parachain(9999)/",
+				BlockNumber:        100,
+				NewContractAddress: common.HexToAddress("0xC3dd09D5387FA0Ab798e0ADC152d15b8d1a299DF"),
+			},
+			expectedErr: fmt.Errorf("no collection address found in base URI: https://uloc.io/GlobalConsensus(3)/Parachain(9999)/"),
+		},
 	}
 
 	for _, tt := range tests {

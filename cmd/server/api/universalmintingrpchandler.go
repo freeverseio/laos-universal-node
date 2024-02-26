@@ -1,10 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -13,7 +16,7 @@ import (
 	"github.com/freeverseio/laos-universal-node/internal/platform/state"
 )
 
-func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
+func (h *UniversalMintingRPCHandler) HandleUniversalMinting(r *http.Request, jsonRPCRequest JSONRPCRequest, stateService state.Service) RPCResponse {
 	// if call is eth_blockNumber we should return the latest block number
 	if jsonRPCRequest.Method == "eth_blockNumber" {
 		return blockNumber(stateService, jsonRPCRequest.ID)
@@ -53,7 +56,7 @@ func (h *UniversalMintingRPCHandler) HandleUniversalMinting(jsonRPCRequest JSONR
 		case erc721.TokenByIndex:
 			return tokenByIndex(calldata, params, blockNumber, stateService, jsonRPCRequest.ID)
 		case erc721.TokenURI:
-			return tokenURI(calldata, params, blockNumber, stateService, jsonRPCRequest.ID)
+			return h.tokenURI(params, r, blockNumber, stateService, jsonRPCRequest)
 		case erc721.SupportsInterface:
 			return supportsInterface(jsonRPCRequest.ID)
 		}
@@ -165,30 +168,81 @@ func tokenByIndex(callData erc721.CallData, params ethCallParamsRPCRequest, bloc
 	return getResponse(fmt.Sprintf("0x%064x", tokenId), id, err)
 }
 
-func tokenURI(callData erc721.CallData, params ethCallParamsRPCRequest, blockNumber string, stateService state.Service, id *json.RawMessage) RPCResponse {
-	tokenID, err := getParamBigInt(callData, "tokenId")
-	if err != nil {
-		slog.Error("error getting tokenId", "err", err)
-		return getErrorResponse(err, id)
-	}
-
+func (h *UniversalMintingRPCHandler) tokenURI(params ethCallParamsRPCRequest, r *http.Request, blockNumber string, stateService state.Service, req JSONRPCRequest) RPCResponse {
 	tx, err := stateService.NewTransaction()
 	if err != nil {
-		return getErrorResponse(err, id)
+		return getErrorResponse(fmt.Errorf("error creating transaction: %w", err), req.ID)
 	}
 	defer tx.Discard()
-	err = checkoutBlock(tx, common.HexToAddress(params.To), blockNumber)
+
+	// retrieve the collection address from the ownership contract
+	collectionAddress, err := getCollectionAddress(tx, params.To)
 	if err != nil {
-		slog.Error("error creating merkle trees", "err", err)
-		return getErrorResponse(err, id)
+		return getErrorResponse(fmt.Errorf("error getting collection address: %w", err), req.ID)
 	}
-	tokenURI, err := tx.TokenURI(common.HexToAddress(params.To), tokenID)
+	params.To = collectionAddress
+	// replace the ownership contract in the original request with the collection address
+	marshalledParams, err := json.Marshal(params)
 	if err != nil {
-		slog.Error("error retrieving token URI", "err", err)
-		return getErrorResponse(err, id)
+		return getErrorResponse(fmt.Errorf("error marshalling params for request: %w", err), req.ID)
 	}
-	encodedValue, err := erc721.AbiEncodeString(tokenURI)
-	return getResponse(encodedValue, id, err)
+	req.Params[0] = json.RawMessage(string(marshalledParams))
+
+	// get the evo block corresponding to the ownership block in time
+	evoBlock, err := getMappedEvoBlockNumber(blockNumber, tx)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting evo block number: %w", err), req.ID)
+	}
+	// replace the ownership block in the original request with the evo block
+	req.Params[1] = stringToRawMessage(evoBlock)
+
+	// retrieve the latest evo block number from storage in case the request is for the latest block
+	lastEvoBlock, err := getLastEvoBlockNumber(tx)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting last evo block number: %w", err), req.ID)
+	}
+
+	errBlockTag := h.rpcMethodManager.ReplaceBlockTag(&req, RPCMethodEthCall, lastEvoBlock)
+	if errBlockTag != nil {
+		return getErrorResponse(fmt.Errorf("error replacing block tag: %w", errBlockTag), req.ID)
+	}
+	// JSONRPCRequest to []byte
+	body, err := json.Marshal(req)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error marshalling request: %w", err), req.ID)
+	}
+	// Prepare the request for the EVM node
+	proxyReq, err := http.NewRequest(r.Method, h.rpcUrl, io.NopCloser(bytes.NewReader(body)))
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error creating request: %w", err), req.ID)
+	}
+	// Forward headers the request
+	for name, values := range r.Header {
+		for _, value := range values {
+			// we don't want to forward the Accept-Encoding header because we don't want to receive a encoded response (e.g. gzip)
+			if name != "Accept-Encoding" {
+				proxyReq.Header.Set(name, value)
+			}
+		}
+	}
+	// Send the request to the EVM node
+	resp, err := h.GetHttpClient().Do(proxyReq)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error sending request: %w", err), req.ID)
+	}
+	defer func() {
+		errClose := resp.Body.Close()
+		if errClose != nil {
+			slog.Error("error closing response body", "err", errClose)
+		}
+	}() // Check error on Close
+
+	response, err := getJsonRPCResponse(resp)
+	if err != nil {
+		return getErrorResponse(fmt.Errorf("error getting JSON RPC response: %w", err), req.ID)
+	}
+
+	return *response
 }
 
 func blockNumber(stateService state.Service, id *json.RawMessage) RPCResponse {
@@ -256,4 +310,51 @@ func checkoutBlock(tx state.Tx, contractAddress common.Address, blockNumber stri
 		return err
 	}
 	return nil
+}
+
+func isBlockTag(blockNumber string) bool {
+	switch blockTag(blockNumber) {
+	case latest, pending, earliest, finalized, safe:
+		return true
+	}
+	return false
+}
+
+func getMappedEvoBlockNumber(ownershipBlock string, tx state.Tx) (string, error) {
+	evoBlock := ownershipBlock
+	if !isBlockTag(ownershipBlock) {
+		if len(ownershipBlock) != 2 && ownershipBlock[:2] != "0x" {
+			return "", fmt.Errorf("invalid ownership block number format: %s", ownershipBlock)
+		}
+		parsedBlockNumber, err := strconv.ParseUint(ownershipBlock[2:], 16, 64)
+		if err != nil {
+			return "", err
+		}
+		evoBlockNumber, err := tx.GetMappedEvoBlockNumber(parsedBlockNumber)
+		if err != nil {
+			return "", err
+		}
+		if evoBlockNumber == 0 {
+			return "", fmt.Errorf("mapped evo block corresponding to ownership block %s not found", ownershipBlock)
+		}
+		evoBlock = fmt.Sprintf("0x%x", evoBlockNumber)
+	}
+	return evoBlock, nil
+}
+
+func getLastEvoBlockNumber(tx state.Tx) (string, error) {
+	block, err := tx.GetLastEvoBlock()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("0x%x", block.Number), nil
+}
+
+func getCollectionAddress(tx state.Tx, contractAddress string) (string, error) {
+	collectionAddress, err := tx.GetCollectionAddress(contractAddress)
+	if err != nil {
+		return "", err
+	}
+	return collectionAddress.String(), nil
 }

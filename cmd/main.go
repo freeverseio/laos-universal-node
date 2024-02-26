@@ -18,11 +18,13 @@ import (
 
 	"github.com/freeverseio/laos-universal-node/cmd/server"
 	"github.com/freeverseio/laos-universal-node/internal/config"
+	blockMapperProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/blockmapper"
 	evoprocessor "github.com/freeverseio/laos-universal-node/internal/core/processor/evolution"
 	universalProcessor "github.com/freeverseio/laos-universal-node/internal/core/processor/universal"
 	contractDiscoverer "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer"
 	"github.com/freeverseio/laos-universal-node/internal/core/processor/universal/discoverer/validator"
 	contractUpdater "github.com/freeverseio/laos-universal-node/internal/core/processor/universal/updater"
+	blockMapperWorker "github.com/freeverseio/laos-universal-node/internal/core/worker/blockmapper"
 	evoworker "github.com/freeverseio/laos-universal-node/internal/core/worker/evolution"
 	universalWorker "github.com/freeverseio/laos-universal-node/internal/core/worker/universal"
 	"github.com/freeverseio/laos-universal-node/internal/platform/scan"
@@ -185,6 +187,13 @@ func run() error {
 		return evoWorker.Run(ctx)
 	})
 
+	// Ownership-Evo block mapper
+	group.Go(func() error {
+		processor := blockMapperProcessor.New(ownershipChainClient, evoChainClient, stateService)
+		worker := blockMapperWorker.New(c.WaitingTime, processor)
+		return worker.Run(ctx)
+	})
+
 	// Universal node RPC server
 	group.Go(func() error {
 		rpcServer, err := server.New()
@@ -193,7 +202,7 @@ func run() error {
 		}
 		addr := fmt.Sprintf("0.0.0.0:%v", c.Port)
 		slog.Info("starting RPC server", "listen_address", addr)
-		return rpcServer.ListenAndServe(ctx, c.Rpc, addr, stateService)
+		return rpcServer.ListenAndServe(ctx, c.Rpc, c.EvoRpc, addr, stateService)
 	})
 
 	if err := group.Wait(); err != nil {

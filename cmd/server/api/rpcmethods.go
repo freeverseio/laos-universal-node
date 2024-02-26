@@ -281,11 +281,11 @@ func replaceBlockTagFromObject(req *JSONRPCRequest, blockNumberUnode string) err
 	return nil
 }
 
-func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) {
+func getBlockNumber(blockNumberRequest, blockNumberUnode string) (string, error) {
 	// Using switch to handle different cases
 	switch {
 	case len(blockNumberRequest) > 2 && blockNumberRequest[:2] == "0x":
-		c, err := compareHex(blockNumberRequest, blockNumberHash)
+		c, err := compareHex(blockNumberRequest, blockNumberUnode)
 		if err != nil {
 			return "", err
 		}
@@ -295,7 +295,7 @@ func getBlockNumber(blockNumberRequest, blockNumberHash string) (string, error) 
 		return blockNumberRequest, nil
 
 	case blockTag(blockNumberRequest) == latest:
-		return blockNumberHash, nil
+		return blockNumberUnode, nil
 
 	default:
 		return blockNumberRequest, nil

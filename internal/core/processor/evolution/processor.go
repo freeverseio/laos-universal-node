@@ -39,7 +39,7 @@ type processor struct {
 	scanner      scan.Scanner
 	laosHTTP     LaosRPCRequests
 	waitingTime  time.Duration
-	*shared.BlockHelper
+	shared.BlockHelper
 }
 
 func NewProcessor(client blockchain.EthClient,
@@ -124,7 +124,7 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 		}
 		slog.Debug("block not finalized, waiting for finality", "block", lastBlock)
 
-		shared.WaitBeforeNextRequest(ctx, p.waitingTime)
+		p.waitBeforeNextRequest(ctx)
 	}
 
 	events, err := p.scanner.ScanEvents(ctx, big.NewInt(int64(startingBlock)), big.NewInt(int64(lastBlock)), nil)
@@ -139,7 +139,12 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 		return err
 	}
 
-	err = updateLastBlockData(ctx, tx, p.client, lastBlock)
+	err = p.updateFirstBlockData(ctx, tx, startingBlock)
+	if err != nil {
+		return err
+	}
+
+	err = p.updateLastBlockData(ctx, tx, lastBlock)
 	if err != nil {
 		return err
 	}
@@ -152,15 +157,44 @@ func (p *processor) ProcessEvoBlockRange(ctx context.Context, startingBlock, las
 	return nil
 }
 
-func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.EthClient, lastBlock uint64) error {
-	lastBlockData, err := client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
+func (p *processor) updateFirstBlockData(ctx context.Context, tx state.Tx, firstBlock uint64) error {
+	defaultBlock := model.Block{}
+	firstBlockStorage, err := tx.GetFirstEvoBlock()
+	if err != nil {
+		slog.Error("error occurred retrieving first evo block from storage", "err", err)
+		return err
+	}
+	if firstBlockStorage == defaultBlock {
+		firstBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(firstBlock)))
+		if err != nil {
+			slog.Error("error occurred while fetching LaosEvolution block", "firstBlock", firstBlock, "err", err.Error())
+			return err
+		}
+		slog.Debug("setting evo first block data for block number",
+			"blockNumber", firstBlockData.Number(), "blockHash", firstBlockData.Hash(), "timestamp", firstBlockData.Header().Time)
+		block := model.Block{
+			Number:    firstBlock,
+			Timestamp: firstBlockData.Header().Time,
+			Hash:      firstBlockData.Hash(),
+		}
+		err = tx.SetFirstEvoBlock(block)
+		if err != nil {
+			slog.Error("error occurred setting first evo block to storage", "firstBlock", firstBlock, "err", err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *processor) updateLastBlockData(ctx context.Context, tx state.Tx, lastBlock uint64) error {
+	lastBlockData, err := p.client.BlockByNumber(ctx, big.NewInt(int64(lastBlock)))
 	if err != nil {
 		slog.Error("error occurred while fetching LaosEvolution end range block", "lastBlock", lastBlock, "err", err.Error())
 		return err
 	}
 
 	slog.Debug("setting evo end range block data for block number",
-		"blockNumber", lastBlockData.Number(), "blockHash", lastBlockData.Hash(), "Timestamps", lastBlockData.Header().Time)
+		"blockNumber", lastBlockData.Number(), "blockHash", lastBlockData.Hash(), "timestamp", lastBlockData.Header().Time)
 
 	block := model.Block{
 		Number:    lastBlock,
@@ -170,7 +204,7 @@ func updateLastBlockData(ctx context.Context, tx state.Tx, client blockchain.Eth
 
 	err = tx.SetLastEvoBlock(block)
 	if err != nil {
-		slog.Error("error occurred while setting lastEvoBlock to database",
+		slog.Error("error occurred while setting lastEvoBlock to storage",
 			"lastBlock", lastBlock, "err", err.Error())
 		return err
 	}
@@ -222,4 +256,13 @@ func (p *processor) hasBlockFinalize(blockNumber *big.Int) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (p *processor) waitBeforeNextRequest(ctx context.Context) {
+	timer := time.NewTimer(p.waitingTime)
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+	case <-timer.C:
+	}
 }

@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  kube-orb: circleci/kubernetes@1.3.1
   helm: circleci/helm@3.0.0
 
 executors:
@@ -22,12 +21,6 @@ commands:
           name: Build and push Docker image
           command: |
             ./scripts/dockerize-and-push.sh freeverseio/<< parameters.image >> << parameters.root >>
-  install_helmfile:
-    description: Install helmfile
-    steps:
-      - run:
-          name: Install helmfile
-          command: ./scripts/install-helmfile.sh
   check_code_coverage:
     description: checks code coverage
     steps:
@@ -78,47 +71,11 @@ jobs:
           name: Run golangci-lint
           command: |
             golangci-lint run
-  deployment_lint:
-    description: Lint Helm charts
-    executor: cimg-base
-    steps:
-      - checkout
-      - helm/install_helm_client:
-          version: v3.13.0
-      - install_helmfile
-      - run:
-          name: Lint Helm charts for development environment
-          command: |
-            cd deployment/
-            TAG=$CIRCLE_SHA1 helmfile lint
-  deploy_to_development:
-    description: Deploy to development environment
-    docker:
-      - image: cimg/deploy:2023.09
-    steps:
-      - checkout
-      - kube-orb/install-kubectl:
-          kubectl-version: 'v1.25.14'
-      - kube-orb/install-kubeconfig:
-          kubeconfig: KUBECONFIG_DEV_DATA
-      - helm/install_helm_client:
-          version: v3.13.0
-      - install_helmfile
-      - run:
-          name: Deploy to development environment
-          command: |
-            cd deployment/
-            TAG=$CIRCLE_SHA1 helmfile sync
 
 workflows:
   build_and_test:
     jobs:
       - lint
-      - deployment_lint:
-          context: dockerhub
-          filters:
-            tags:
-              only: /.*/
       - go_test:
           context: dockerhub
           filters:
@@ -132,13 +89,3 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - deploy_to_development:
-          filters:
-            branches:
-              only:
-                - main
-          requires:
-            - lint
-            - go_test
-            - deployment_lint
-            - dockerize_universalnode

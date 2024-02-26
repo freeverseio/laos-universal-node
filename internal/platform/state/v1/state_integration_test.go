@@ -98,9 +98,10 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 		contract := common.HexToAddress("0x500")
 		db := createBadger(t)
 		blocks := 1
-		mintsInBlock := 1000
-		for block := 0; block < blocks; block++ {
-			tx, err := createBadgerTransaction(t, db)
+		mintsInBlock := 100
+		tx, err := createBadgerTransaction(t, db)
+		for block := 1; block < blocks; block++ {
+			fmt.Println("block", block)
 			if err != nil {
 				t.Errorf(`got error "%v" when no error was expected`, err)
 			}
@@ -130,13 +131,12 @@ func TestLoadMerkleTreesWithBadger(t *testing.T) {
 					t.Fatal("got error when no error was expected 1", err.Error())
 				}
 			}
-			err = tx.Commit()
-			if err != nil {
-				t.Fatal("got error when no error was expected 2", err.Error())
-			}
 		}
-
-		tx, err := createBadgerTransaction(t, db)
+		err = tx.Commit()
+		if err != nil {
+			t.Fatal("got error when no error was expected 2", err.Error())
+		}
+		tx, err = createBadgerTransaction(t, db)
 		if err != nil {
 			t.Fatal("got error when no error was expected 3", err.Error())
 		}

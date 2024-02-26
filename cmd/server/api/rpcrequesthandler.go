@@ -89,8 +89,8 @@ func (h *GlobalRPCHandler) PostRPCRequestHandler(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *GlobalRPCHandler) HandleUniversalMinting(req JSONRPCRequest) RPCResponse {
-	return h.universalMintingRPCHandler.HandleUniversalMinting(req, h.stateService)
+func (h *GlobalRPCHandler) HandleUniversalMinting(r *http.Request, req JSONRPCRequest) RPCResponse {
+	return h.universalMintingRPCHandler.HandleUniversalMinting(r, req, h.stateService)
 }
 
 func (h *GlobalRPCHandler) HandleProxyRPC(r *http.Request, req JSONRPCRequest) RPCResponse {
@@ -105,7 +105,7 @@ func (h *GlobalRPCHandler) getRPCResponse(r *http.Request, req JSONRPCRequest) R
 	case "eth_call":
 		return h.handleEthCallMethod(r, req)
 	case "eth_blockNumber":
-		return h.HandleUniversalMinting(req)
+		return h.HandleUniversalMinting(r, req)
 	default:
 		return h.HandleProxyRPC(r, req)
 	}
@@ -136,7 +136,7 @@ func (h *GlobalRPCHandler) handleEthCallMethod(r *http.Request, req JSONRPCReque
 
 	// If contract is stored, use the specific handler for ERC721 universal minting.
 	if contractExists {
-		return h.HandleUniversalMinting(req)
+		return h.HandleUniversalMinting(r, req)
 	} else {
 		return h.HandleProxyRPC(r, req)
 	}

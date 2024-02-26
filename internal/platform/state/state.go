@@ -59,6 +59,8 @@ type EvolutionContractState interface {
 }
 
 type OwnershipSyncState interface {
+	SetFirstOwnershipBlock(block model.Block) error
+	GetFirstOwnershipBlock() (model.Block, error)
 	SetLastOwnershipBlock(block model.Block) error
 	GetLastOwnershipBlock() (model.Block, error)
 	GetOwnershipBlock(blockNumber uint64) (model.Block, error)
@@ -66,12 +68,18 @@ type OwnershipSyncState interface {
 	GetAllStoredBlockNumbers() ([]uint64, error)
 	DeleteOldStoredBlockNumbers() error
 	DeleteOrphanBlockData(blockNumberRef uint64) error
+	SetLastMappedOwnershipBlockNumber(blockNumber uint64) error
+	GetLastMappedOwnershipBlockNumber() (uint64, error)
+	SetOwnershipEvoBlockMapping(ownershipBlockNumber, evoBlockNumber uint64) error
+	GetMappedEvoBlockNumber(ownershipBlockNumber uint64) (uint64, error)
 }
 
 type EvolutionSyncState interface {
 	SetNextEvoEventBlock(contract string, blockNumber uint64) error
 	GetNextEvoEventBlock(contract string, blockNumber uint64) (uint64, error)
 
+	SetFirstEvoBlock(block model.Block) error
+	GetFirstEvoBlock() (model.Block, error)
 	SetLastEvoBlock(block model.Block) error
 	GetLastEvoBlock() (model.Block, error)
 }
