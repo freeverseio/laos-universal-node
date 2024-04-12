@@ -35,7 +35,7 @@ import (
 var version = "undefined"
 
 const (
-	klaosChainID = 2718
+	klaosNovaChainID = 27181
 )
 
 func main() {
@@ -166,7 +166,7 @@ func run() error {
 
 	// Evolution chain scanner
 	group.Go(func() error {
-		if evoChainID.Cmp(big.NewInt(klaosChainID)) == 0 {
+		if evoChainID.Cmp(big.NewInt(klaosNovaChainID)) == 0 {
 			slog.Info("***********************************************************************************************")
 			slog.Info("The KLAOS Parachain on Kusama is a test chain for the LAOS Parachain on Polkadot.")
 			slog.Info("KLAOS is not endorsed by the LAOS Foundation nor Freeverse")

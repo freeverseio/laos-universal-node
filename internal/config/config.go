@@ -12,12 +12,15 @@ import (
 )
 
 const (
-	klaosChainID                  = 2718
-	caladanChainID                = 667
-	klaosParachain         uint64 = 3336
-	caladanParachain       uint64 = 2900
-	klaosGlobalConsensus   string = "3"
-	caladanGlobalConsensus string = "0:0x22c48a576c33970622a2b4686a8aa5e4b58350247d69fb5d8015f12a8c8e1e4c"
+	klaosNovaChainID                = 27181
+	klaosChainID                    = 2718
+	caladanChainID                  = 667
+	klaosNovaParachain       uint64 = 2001
+	klaosParachain           uint64 = 3336
+	caladanParachain         uint64 = 2900
+	klaosGlobalConsensus     string = "3"
+	klaosNovaGlobalConsensus string = "0:0xbefcb1a5ce9db8d0a9f02b54280d7fb3684c5f8c8cd33a5ad8dd34e93f47891f"
+	caladanGlobalConsensus   string = "0:0x22c48a576c33970622a2b4686a8aa5e4b58350247d69fb5d8015f12a8c8e1e4c"
 )
 
 type Config struct {
@@ -107,9 +110,9 @@ func (c *Config) SetGlobalConsensusAndParachain(evoChainID *big.Int) error {
 	case evoChainID.Cmp(big.NewInt(caladanChainID)) == 0:
 		c.GlobalConsensus = caladanGlobalConsensus
 		c.Parachain = caladanParachain
-	case evoChainID.Cmp(big.NewInt(klaosChainID)) == 0:
-		c.GlobalConsensus = klaosGlobalConsensus
-		c.Parachain = klaosParachain
+	case evoChainID.Cmp(big.NewInt(klaosNovaChainID)) == 0:
+		c.GlobalConsensus = klaosNovaGlobalConsensus
+		c.Parachain = klaosNovaParachain
 	default:
 		return fmt.Errorf("unknown evolution chain id: %d", evoChainID)
 	}

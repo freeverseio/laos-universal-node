@@ -25,10 +25,10 @@ func TestValidChainID(t *testing.T) {
 			evoChainId:              big.NewInt(667),
 		},
 		{
-			name:                    "sets global consensus and parachain with klaos chain id",
-			expectedGlobalConsensus: "3",
-			expectedParachain:       3336,
-			evoChainId:              big.NewInt(2718),
+			name:                    "sets global consensus and parachain with klaos nova chain id",
+			expectedGlobalConsensus: "0:0xbefcb1a5ce9db8d0a9f02b54280d7fb3684c5f8c8cd33a5ad8dd34e93f47891f",
+			expectedParachain:       2001,
+			evoChainId:              big.NewInt(27181),
 		},
 	}
 	for _, tt := range tests {
