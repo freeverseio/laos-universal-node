@@ -26,7 +26,7 @@ func TestValidChainID(t *testing.T) {
 		},
 		{
 			name:                    "sets global consensus and parachain with klaos nova chain id",
-			expectedGlobalConsensus: "0:0xbefcb1a5ce9db8d0a9f02b54280d7fb3684c5f8c8cd33a5ad8dd34e93f47891f",
+			expectedGlobalConsensus: "0:0x4756c4042a431ad2bbe61d8c4b966c1328e7a8daa0110e9bbd3d4013138a0bd4",
 			expectedParachain:       2001,
 			evoChainId:              big.NewInt(27181),
 		},
