@@ -19,7 +19,7 @@ const (
 	klaosParachain           uint64 = 3336
 	caladanParachain         uint64 = 2900
 	klaosGlobalConsensus     string = "3"
-	klaosNovaGlobalConsensus string = "0:0xbefcb1a5ce9db8d0a9f02b54280d7fb3684c5f8c8cd33a5ad8dd34e93f47891f"
+	klaosNovaGlobalConsensus string = "0:0x4756c4042a431ad2bbe61d8c4b966c1328e7a8daa0110e9bbd3d4013138a0bd4"
 	caladanGlobalConsensus   string = "0:0x22c48a576c33970622a2b4686a8aa5e4b58350247d69fb5d8015f12a8c8e1e4c"
 )
 
